@@ -1,0 +1,126 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using OneCup.Application.Dtos.Auth;
+using OneCup.Application.Interfaces;
+using OneCup.Application.Options;
+using OneCup.Domain.Entities;
+using OneCup.Domain.Exceptions;
+using OneCup.Infrastructure.Persistence;
+
+namespace OneCup.Infrastructure.Services;
+
+/// <summary>
+/// 认证服务实现：编排登录/刷新/登出/获取当前用户。
+/// </summary>
+public class AuthService : IAuthService
+{
+    private readonly OneCupDbContext _db;
+    private readonly IJwtTokenService _jwt;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly JwtOptions _options;
+
+    public AuthService(
+        OneCupDbContext db,
+        IJwtTokenService jwt,
+        IPasswordHasher passwordHasher,
+        IOptions<JwtOptions> options)
+    {
+        _db = db;
+        _jwt = jwt;
+        _passwordHasher = passwordHasher;
+        _options = options.Value;
+    }
+
+    public async Task<TokenResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
+    {
+        var user = await _db.Users
+            .Include(u => u.Roles).ThenInclude(r => r.Permissions)
+            .FirstOrDefaultAsync(u => u.Username == request.Username, ct);
+
+        if (user is null || !user.IsActive || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+        {
+            throw new DomainException("用户名或密码错误");
+        }
+
+        return await IssueTokensAsync(user, ct);
+    }
+
+    public async Task<TokenResponse> RefreshAsync(RefreshRequest request, CancellationToken ct = default)
+    {
+        var stored = await _db.RefreshTokens
+            .Include(rt => rt.User).ThenInclude(u => u.Roles).ThenInclude(r => r.Permissions)
+            .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken, ct);
+
+        if (stored is null || stored.IsRevoked || stored.ExpiresAt <= DateTime.UtcNow)
+        {
+            throw new DomainException("刷新令牌无效或已过期");
+        }
+
+        // 轮换：吊销旧 token
+        stored.IsRevoked = true;
+        stored.UpdatedAt = DateTime.UtcNow;
+
+        return await IssueTokensAsync(stored.User, ct);
+    }
+
+    public async Task LogoutAsync(Guid userId, CancellationToken ct = default)
+    {
+        var tokens = await _db.RefreshTokens
+            .Where(rt => rt.UserId == userId && !rt.IsRevoked)
+            .ToListAsync(ct);
+
+        foreach (var rt in tokens)
+        {
+            rt.IsRevoked = true;
+            rt.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task<CurrentUser?> GetCurrentUserAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await _db.Users
+            .Include(u => u.Roles).ThenInclude(r => r.Permissions)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+
+        if (user is null) return null;
+
+        var roleCodes = user.Roles.Select(r => r.Code).ToList();
+        var permCodes = roleCodes.Contains("admin")
+            ? new List<string> { "*" }
+            : user.Roles.SelectMany(r => r.Permissions).Select(p => p.Code).Distinct().ToList();
+
+        return new CurrentUser
+        {
+            Id = user.Id,
+            Username = user.Username,
+            DisplayName = user.DisplayName,
+            Roles = roleCodes,
+            Permissions = permCodes,
+        };
+    }
+
+    /// <summary>签发 access + refresh token 对并持久化 refresh token。</summary>
+    private async Task<TokenResponse> IssueTokensAsync(User user, CancellationToken ct)
+    {
+        var accessToken = _jwt.GenerateAccessToken(user);
+        var refreshToken = new RefreshToken
+        {
+            Token = _jwt.GenerateRefreshToken(),
+            UserId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddDays(_options.RefreshTokenDays),
+            IsRevoked = false,
+        };
+
+        _db.RefreshTokens.Add(refreshToken);
+        await _db.SaveChangesAsync(ct);
+
+        return new TokenResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken.Token,
+            ExpiresIn = _options.AccessTokenMinutes * 60,
+        };
+    }
+}
