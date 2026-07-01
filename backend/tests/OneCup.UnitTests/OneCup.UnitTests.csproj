@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\OneCup.Domain\OneCup.Domain.csproj" />
+    <ProjectReference Include="..\..\src\OneCup.Infrastructure\OneCup.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
