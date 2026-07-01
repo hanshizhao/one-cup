@@ -1,0 +1,61 @@
+# ── .NET ───────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+[Bb]in/
+[Oo]bj/
+*.dll
+*.pdb
+*.cache
+*.log
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nuget.props
+*.nuget.targets
+
+# ── Node.js / 前端 ─────────────────────────────
+node_modules/
+dist/
+.cache/
+.parcel-cache/
+.next/
+.npm
+.yarn/cache
+.yarn/install-state.gz
+.eslintcache
+.stylelintcache
+*.local
+
+# ── IDE / 编辑器 ───────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── 环境变量 / 密钥 ─────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pfx
+*.key
+
+# ── 日志 / 临时文件 ─────────────────────────────
+logs/
+*.log
+tmp/
+temp/
+
+# ── ZCode ──────────────────────────────────────
+# 保留 .zcode/skills (项目级 skill 需要提交)
+# 忽略其他 ZCode 运行时文件
+.zcode/exec/
+.zcode/db/
+.zcode/log/

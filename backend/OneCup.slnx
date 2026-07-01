@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OneCup.Api/OneCup.Api.csproj" />
+    <Project Path="src/OneCup.Application/OneCup.Application.csproj" />
+    <Project Path="src/OneCup.Domain/OneCup.Domain.csproj" />
+    <Project Path="src/OneCup.Infrastructure/OneCup.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OneCup.UnitTests/OneCup.UnitTests.csproj" />
+  </Folder>
+</Solution>
