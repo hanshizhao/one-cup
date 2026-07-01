@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────
+# OneCup 开发环境基础设施
+# 部署位置: 云服务器
+# 包含服务: PostgreSQL
+# ─────────────────────────────────────────────────────────────
+#
+# 部署步骤:
+#   1. 将整个 infra/ 目录上传到云服务器
+#   2. 复制 .env.example 为 .env, 填入真实密码
+#   3. docker compose up -d
+#
+# 安全须知:
+#   PostgreSQL 端口会映射到宿主机公网 IP, 必须配置防火墙:
+#     - 云服务器安全组: 入站规则只放行 5432 端口给你的开发机公网 IP
+#     - 不要对 0.0.0.0/0 开放 5432
+#   数据库密码通过 .env 文件注入, 不硬编码在本文件中
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: onecup-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-onecup}
+      POSTGRES_USER: ${POSTGRES_USER:-onecup}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?必须在 .env 中设置 POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - onecup-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-onecup} -d ${POSTGRES_DB:-onecup}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  onecup-pg-data:
