@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────
 # OneCup 开发环境基础设施
 # 部署位置: 云服务器
-# 包含服务: PostgreSQL
+# 包含服务: PostgreSQL + pgAdmin
 # ─────────────────────────────────────────────────────────────
 #
 # 部署步骤:
@@ -10,10 +10,11 @@
 #   3. docker compose up -d
 #
 # 安全须知:
-#   PostgreSQL 端口会映射到宿主机公网 IP, 必须配置防火墙:
-#     - 云服务器安全组: 入站规则只放行 5432 端口给你的开发机公网 IP
-#     - 不要对 0.0.0.0/0 开放 5432
-#   数据库密码通过 .env 文件注入, 不硬编码在本文件中
+#   数据库端口和 pgAdmin 端口都映射到宿主机公网 IP, 必须配置防火墙:
+#     - 15207 (PostgreSQL): 只放行给开发机公网 IP
+#     - 15672 (pgAdmin):    只放行给开发机公网 IP
+#     - 不要对 0.0.0.0/0 开放这些端口
+#   所有密码通过 .env 文件注入, 不硬编码在本文件中
 
 services:
   postgres:
@@ -25,7 +26,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-onecup}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?必须在 .env 中设置 POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-15207}:5432"
     volumes:
       - onecup-pg-data:/var/lib/postgresql/data
     healthcheck:
@@ -34,5 +35,21 @@ services:
       timeout: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: onecup-pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?必须在 .env 中设置 PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?必须在 .env 中设置 PGADMIN_PASSWORD}
+    ports:
+      - "${PGADMIN_PORT:-15672}:80"
+    volumes:
+      - onecup-pgadmin-data:/var/lib/pgadmin
+
 volumes:
   onecup-pg-data:
+  onecup-pgadmin-data:
