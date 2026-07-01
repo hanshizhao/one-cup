@@ -35,6 +35,8 @@ import Settings from '../Settings';
 import styles from './style/index.module.less';
 import defaultLocale from '@/locale';
 import useStorage from '@/utils/useStorage';
+import { logout as logoutApi } from '@/api/auth';
+import { removeTokens } from '@/utils/token';
 import { generatePermission } from '@/routes';
 
 function Navbar({ show }: { show: boolean }) {
@@ -48,8 +50,13 @@ function Navbar({ show }: { show: boolean }) {
   const { setLang, lang, theme, setTheme } = useContext(GlobalContext);
 
   function logout() {
-    setUserStatus('logout');
-    window.location.href = '/login';
+    logoutApi()
+      .catch(() => {})
+      .finally(() => {
+        removeTokens();
+        localStorage.setItem('userStatus', 'logout');
+        window.location.href = '/login';
+      });
   }
 
   function onMenuItemClick(key) {
