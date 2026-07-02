@@ -1,4 +1,4 @@
-namespace OneCup.Infrastructure.Interfaces;
+namespace OneCup.Application.Interfaces;
 
 /// <summary>
 /// 失败锁定存储抽象。当前为内存实现,多实例部署替换为 Redis(见 spec 9.2)。

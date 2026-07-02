@@ -7,7 +7,6 @@ using OneCup.Application.Options;
 using OneCup.Application.Services;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
-using OneCup.Infrastructure.Interfaces;
 using OneCup.Infrastructure.Persistence;
 using OneCup.Infrastructure.Services;
 

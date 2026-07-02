@@ -11,7 +11,6 @@ using OneCup.Application.Options;
 using OneCup.Application.Services;
 using OneCup.Application.Validators;
 using OneCup.Domain.Exceptions;
-using OneCup.Infrastructure.Interfaces;
 using OneCup.Infrastructure.Lockout;
 using OneCup.Infrastructure.Persistence;
 using OneCup.Infrastructure.Services;
