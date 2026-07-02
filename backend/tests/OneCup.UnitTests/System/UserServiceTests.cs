@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
+using OneCup.Application.Services;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
 using OneCup.Infrastructure.Persistence;
@@ -25,7 +26,7 @@ public class UserServiceTests
         db.Users.AddRange(seedUsers);
         db.SaveChanges();
 
-        var svc = new UserService(db, new PasswordHasher());
+        var svc = new UserService(new Repository<User>(db), new Repository<Role>(db), new UnitOfWork(db), new PasswordHasher());
         return (db, svc);
     }
 

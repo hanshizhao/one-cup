@@ -1,24 +1,36 @@
-using Microsoft.EntityFrameworkCore;
 using OneCup.Application.Common;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
+using OneCup.Application.Specifications;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
-using OneCup.Infrastructure.Persistence;
 
-namespace OneCup.Infrastructure.Services;
+namespace OneCup.Application.Services;
 
 /// <summary>
 /// 编号规则管理服务实现。
+/// 通过 IRepository + Specification 访问数据,不直接依赖 EF Core;
+/// 写入操作通过 IUnitOfWork 提交。
+/// GetLogsAsync 涉及 NumberingLogs ⧝ NumberingRules 的左连接投影,
+/// 通用 Specification(Where/Include/OrderBy/Paging)无法表达,故走 IRepository.Query()
+/// 逃生舱口 + System.Linq LINQ join(不引入 EF Core 耦合)。
 /// </summary>
 public class NumberingRuleService : INumberingRuleService
 {
-    private readonly OneCupDbContext _db;
+    private readonly IRepository<NumberingRule> _rules;
+    private readonly IRepository<NumberingLog> _logs;
+    private readonly IUnitOfWork _uow;
     private readonly INumberingClock _clock;
 
-    public NumberingRuleService(OneCupDbContext db, INumberingClock clock)
+    public NumberingRuleService(
+        IRepository<NumberingRule> rules,
+        IRepository<NumberingLog> logs,
+        IUnitOfWork uow,
+        INumberingClock clock)
     {
-        _db = db;
+        _rules = rules;
+        _logs = logs;
+        _uow = uow;
         _clock = clock;
     }
 
@@ -26,24 +38,11 @@ public class NumberingRuleService : INumberingRuleService
         int page, int pageSize, string? keyword, string? targetType, bool? isActive,
         CancellationToken ct = default)
     {
-        var query = _db.NumberingRules.AsQueryable();
+        // 关键:总数用仅含过滤条件的 FilterSpec 统计,绝不能用带分页的 PagedSpec,
+        // 否则 Repository.CountAsync 会应用 Skip/Take,只统计当前页子集。
+        var total = await _rules.CountAsync(new NumberingRuleFilterSpec(keyword, targetType, isActive), ct);
 
-        if (!string.IsNullOrWhiteSpace(keyword))
-        {
-            keyword = keyword.Trim();
-            query = query.Where(r => r.Name.Contains(keyword) || r.Prefix.Contains(keyword));
-        }
-        if (!string.IsNullOrEmpty(targetType))
-            query = query.Where(r => r.TargetType == targetType);
-        if (isActive is not null)
-            query = query.Where(r => r.IsActive == isActive);
-
-        var total = await query.CountAsync(ct);
-        var rules = await query
-            .OrderByDescending(r => r.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
+        var rules = await _rules.ListAsync(new NumberingRulePagedSpec(keyword, targetType, isActive, page, pageSize), ct);
 
         return new PagedResult<NumberingRuleListItemDto>
         {
@@ -65,7 +64,7 @@ public class NumberingRuleService : INumberingRuleService
 
     public async Task<NumberingRuleDto?> GetAsync(Guid id, CancellationToken ct = default)
     {
-        var r = await _db.NumberingRules.FirstOrDefaultAsync(x => x.Id == id, ct);
+        var r = await _rules.FirstOrDefaultAsync(new NumberingRuleByIdSpec(id), ct);
         if (r is null) return null;
         return ToDto(r);
     }
@@ -75,7 +74,7 @@ public class NumberingRuleService : INumberingRuleService
         ValidateRequest(request.Prefix, request.Separator, request.SeqLength);
 
         // 同 targetType 启用规则唯一性
-        if (await _db.NumberingRules.AnyAsync(r => r.TargetType == request.TargetType && r.IsActive, ct))
+        if (await _rules.AnyAsync(new NumberingRuleActiveTargetTypeSpec(request.TargetType), ct))
             throw new DomainException("该业务类型已有启用规则，请先停用现有的");
 
         var rule = new NumberingRule
@@ -91,14 +90,15 @@ public class NumberingRuleService : INumberingRuleService
             Remark = request.Remark,
             IsActive = true,
         };
-        _db.NumberingRules.Add(rule);
-        await _db.SaveChangesAsync(ct);
+        await _rules.AddAsync(rule, ct);
+        await _uow.SaveChangesAsync(ct);
         return ToDto(rule);
     }
 
     public async Task UpdateAsync(Guid id, UpdateNumberingRuleRequest request, CancellationToken ct = default)
     {
-        var rule = await _db.NumberingRules.FirstOrDefaultAsync(r => r.Id == id, ct)
+        // 载入已跟踪实体(load-then-modify 写入用 tracked load)。
+        var rule = await _rules.FirstOrDefaultAsync(new NumberingRuleByIdSpec(id), ct)
             ?? throw new DomainException("规则不存在");
 
         if (rule.IsActive && HasKeyFieldChange(request))
@@ -119,28 +119,29 @@ public class NumberingRuleService : INumberingRuleService
 
             // 改关键字段时复检唯一性（防止停用规则改成与他人冲突的 targetType 再保存）
             if (request.TargetType is not null &&
-                await _db.NumberingRules.AnyAsync(r => r.Id != id && r.TargetType == rule.TargetType && r.IsActive, ct))
+                await _rules.AnyAsync(new NumberingRuleActiveTargetTypeSpec(rule.TargetType, id), ct))
                 throw new DomainException("该业务类型已有启用规则，请先停用现有的");
 
             ValidateRequest(rule.Prefix, rule.Separator, rule.SeqLength);
         }
 
-        await _db.SaveChangesAsync(ct);
+        await _uow.SaveChangesAsync(ct);
     }
 
     public async Task UpdateStatusAsync(Guid id, bool isActive, CancellationToken ct = default)
     {
-        var rule = await _db.NumberingRules.FirstOrDefaultAsync(r => r.Id == id, ct)
+        // 载入已跟踪实体(load-then-modify 写入用 tracked load)。
+        var rule = await _rules.FirstOrDefaultAsync(new NumberingRuleByIdSpec(id), ct)
             ?? throw new DomainException("规则不存在");
 
         if (isActive && !rule.IsActive)
         {
             // 启用时校验该 targetType 唯一性
-            if (await _db.NumberingRules.AnyAsync(r => r.Id != id && r.TargetType == rule.TargetType && r.IsActive, ct))
+            if (await _rules.AnyAsync(new NumberingRuleActiveTargetTypeSpec(rule.TargetType, id), ct))
                 throw new DomainException("该业务类型已有启用规则，请先停用现有的");
         }
         rule.IsActive = isActive;
-        await _db.SaveChangesAsync(ct);
+        await _uow.SaveChangesAsync(ct);
     }
 
     public async Task<PagedResult<NumberingLogListItemDto>> GetLogsAsync(
@@ -148,51 +149,59 @@ public class NumberingRuleService : INumberingRuleService
         Guid? ruleId, string? code, DateTime? startDate, DateTime? endDate,
         CancellationToken ct = default)
     {
-        var query = from log in _db.NumberingLogs
-                    join rule in _db.NumberingRules on log.RuleId equals rule.Id into rg
-                    from rule in rg.DefaultIfEmpty()
-                    select new { log, rule };
-
-        if (!string.IsNullOrEmpty(targetType))
-            query = query.Where(x => x.log.TargetType == targetType);
-        if (!string.IsNullOrEmpty(categoryCode))
-            query = query.Where(x => x.log.CategoryCode == categoryCode);
-        if (ruleId is not null)
-            query = query.Where(x => x.log.RuleId == ruleId);
-        if (!string.IsNullOrWhiteSpace(code))
+        // 左连接(NumberingLogs ⧝ NumberingRules)投影:通用 Specification 无法表达,
+        // 走 IRepository.Query() 逃生舱口 + System.Linq LINQ join。
+        // 仅用 System.Linq 操作符(Where/OrderBy/Skip/Take/Select/ToList/Count),
+        // 不使用 EF Core 扩展方法(ToListAsync/CountAsync),以保持 Application 零 EF 依赖。
+        // ct 传入底层 Queryable 时无法透传(LINQ 同步迭代),故用 Task.Run 包裹同步物化。
+        return await Task.Run(() =>
         {
-            code = code.Trim();
-            query = query.Where(x => x.log.GeneratedCode.Contains(code));
-        }
-        if (startDate is not null)
-            query = query.Where(x => x.log.CreatedAt >= startDate);
-        if (endDate is not null)
-            query = query.Where(x => x.log.CreatedAt <= endDate);
+            var query = from log in _logs.Query()
+                        join rule in _rules.Query() on log.RuleId equals rule.Id into rg
+                        from rule in rg.DefaultIfEmpty()
+                        select new { log, rule };
 
-        var total = await query.CountAsync(ct);
-        var rows = await query
-            .OrderByDescending(x => x.log.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        return new PagedResult<NumberingLogListItemDto>
-        {
-            Items = rows.Select(x => new NumberingLogListItemDto
+            if (!string.IsNullOrEmpty(targetType))
+                query = query.Where(x => x.log.TargetType == targetType);
+            if (!string.IsNullOrEmpty(categoryCode))
+                query = query.Where(x => x.log.CategoryCode == categoryCode);
+            if (ruleId is not null)
+                query = query.Where(x => x.log.RuleId == ruleId);
+            if (!string.IsNullOrWhiteSpace(code))
             {
-                Id = x.log.Id,
-                GeneratedCode = x.log.GeneratedCode,
-                TargetType = x.log.TargetType,
-                CategoryCode = x.log.CategoryCode,
-                PeriodKey = x.log.PeriodKey,
-                SeqValue = x.log.SeqValue,
-                CreatedAt = x.log.CreatedAt,
-                RuleName = x.rule?.Name,
-            }).ToList(),
-            Total = total,
-            Page = page,
-            PageSize = pageSize,
-        };
+                code = code.Trim();
+                query = query.Where(x => x.log.GeneratedCode.Contains(code));
+            }
+            if (startDate is not null)
+                query = query.Where(x => x.log.CreatedAt >= startDate);
+            if (endDate is not null)
+                query = query.Where(x => x.log.CreatedAt <= endDate);
+
+            var total = query.Count();
+            var rows = query
+                .OrderByDescending(x => x.log.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new PagedResult<NumberingLogListItemDto>
+            {
+                Items = rows.Select(x => new NumberingLogListItemDto
+                {
+                    Id = x.log.Id,
+                    GeneratedCode = x.log.GeneratedCode,
+                    TargetType = x.log.TargetType,
+                    CategoryCode = x.log.CategoryCode,
+                    PeriodKey = x.log.PeriodKey,
+                    SeqValue = x.log.SeqValue,
+                    CreatedAt = x.log.CreatedAt,
+                    RuleName = x.rule?.Name,
+                }).ToList(),
+                Total = total,
+                Page = page,
+                PageSize = pageSize,
+            };
+        }, ct);
     }
 
     private NumberingRuleDto ToDto(NumberingRule r) => new()

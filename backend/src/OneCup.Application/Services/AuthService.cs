@@ -1,22 +1,25 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
+using OneCup.Application.Specifications;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
-using OneCup.Infrastructure.Interfaces;
-using OneCup.Infrastructure.Persistence;
 
-namespace OneCup.Infrastructure.Services;
+namespace OneCup.Application.Services;
 
 /// <summary>
 /// 认证服务实现：编排登录/刷新/登出/获取当前用户。
+/// 通过 IRepository + Specification 访问数据,不直接依赖 EF Core;
+/// 写入操作通过 IUnitOfWork 提交事务。
+/// 承载 Stage A 安全特性:失败锁定(lockout-before-DB)、审计日志、中性错误消息。
 /// </summary>
 public class AuthService : IAuthService
 {
-    private readonly OneCupDbContext _db;
+    private readonly IRepository<User> _users;
+    private readonly IRepository<RefreshToken> _refreshTokens;
+    private readonly IUnitOfWork _uow;
     private readonly IJwtTokenService _jwt;
     private readonly IPasswordHasher _passwordHasher;
     private readonly JwtOptions _options;
@@ -25,7 +28,9 @@ public class AuthService : IAuthService
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
-        OneCupDbContext db,
+        IRepository<User> users,
+        IRepository<RefreshToken> refreshTokens,
+        IUnitOfWork uow,
         IJwtTokenService jwt,
         IPasswordHasher passwordHasher,
         IOptions<JwtOptions> options,
@@ -33,7 +38,9 @@ public class AuthService : IAuthService
         ILockoutStore lockout,
         ILogger<AuthService> logger)
     {
-        _db = db;
+        _users = users;
+        _refreshTokens = refreshTokens;
+        _uow = uow;
         _jwt = jwt;
         _passwordHasher = passwordHasher;
         _options = options.Value;
@@ -54,10 +61,8 @@ public class AuthService : IAuthService
             throw new AccountLockedException(remaining);
         }
 
-        // 2. 查用户
-        var user = await _db.Users
-            .Include(u => u.Roles).ThenInclude(r => r.Permissions)
-            .FirstOrDefaultAsync(u => u.Username == request.Username, ct);
+        // 2. 查用户(含 Roles.Permissions,登录后权限聚合需要)
+        var user = await _users.FirstOrDefaultAsync(new UserByUsernameWithRolesSpec(request.Username), ct);
 
         if (user is null || !user.IsActive || !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
@@ -76,9 +81,9 @@ public class AuthService : IAuthService
 
     public async Task<TokenResponse> RefreshAsync(RefreshRequest request, CancellationToken ct = default)
     {
-        var stored = await _db.RefreshTokens
-            .Include(rt => rt.User).ThenInclude(u => u.Roles).ThenInclude(r => r.Permissions)
-            .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken, ct);
+        // 加载刷新令牌(含 User→Roles→Permissions 三级 Include)。
+        // tracked via FirstOrDefaultAsync(无 AsNoTracking),后续轮换(置 IsRevoked)随 SaveChanges 持久化。
+        var stored = await _refreshTokens.FirstOrDefaultAsync(new RefreshTokenByTokenSpec(request.RefreshToken), ct);
 
         if (stored is null || stored.IsRevoked || stored.ExpiresAt <= DateTime.UtcNow)
         {
@@ -96,26 +101,26 @@ public class AuthService : IAuthService
 
     public async Task LogoutAsync(Guid userId, CancellationToken ct = default)
     {
-        var tokens = await _db.RefreshTokens
-            .Where(rt => rt.UserId == userId && !rt.IsRevoked)
-            .ToListAsync(ct);
+        // 加载该用户所有未吊销的刷新令牌。
+        // ListAsync 走 AsNoTracking 返回 detached 实体,修改后需逐个 Update 重新 Attach 为 Modified,
+        // 随 SaveChanges 持久化(与原 _db 的 tracked 行为等价)。
+        var tokens = await _refreshTokens.ListAsync(new ActiveRefreshTokensByUserSpec(userId), ct);
 
         foreach (var rt in tokens)
         {
             rt.IsRevoked = true;
             rt.UpdatedAt = DateTime.UtcNow;
+            _refreshTokens.Update(rt);
         }
 
         _logger.LogInformation("登出吊销 refresh token:UserId={UserId}, 数量={Count}", userId, tokens.Count);
 
-        await _db.SaveChangesAsync(ct);
+        await _uow.SaveChangesAsync(ct);
     }
 
     public async Task<CurrentUser?> GetCurrentUserAsync(Guid userId, CancellationToken ct = default)
     {
-        var user = await _db.Users
-            .Include(u => u.Roles).ThenInclude(r => r.Permissions)
-            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var user = await _users.FirstOrDefaultAsync(new UserByIdWithRolesPermissionsSpec(userId), ct);
 
         if (user is null) return null;
 
@@ -144,8 +149,8 @@ public class AuthService : IAuthService
             IsRevoked = false,
         };
 
-        _db.RefreshTokens.Add(refreshToken);
-        await _db.SaveChangesAsync(ct);
+        await _refreshTokens.AddAsync(refreshToken, ct);
+        await _uow.SaveChangesAsync(ct);
 
         return new TokenResponse
         {

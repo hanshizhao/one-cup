@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
-using OneCup.Infrastructure.Interfaces;
 
 namespace OneCup.Infrastructure.Lockout;
 

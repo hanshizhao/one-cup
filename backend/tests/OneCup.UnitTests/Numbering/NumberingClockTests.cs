@@ -1,5 +1,5 @@
 using OneCup.Application.Common;
-using OneCup.Infrastructure.Services;
+using OneCup.Application.Services;
 
 namespace OneCup.UnitTests.Numbering;
 
