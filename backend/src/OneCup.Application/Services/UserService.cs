@@ -1,45 +1,39 @@
-using Microsoft.EntityFrameworkCore;
 using OneCup.Application.Common;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
+using OneCup.Application.Specifications;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
-using OneCup.Infrastructure.Persistence;
 
-namespace OneCup.Infrastructure.Services;
+namespace OneCup.Application.Services;
 
 /// <summary>
 /// 用户管理服务实现。
+/// 通过 IRepository + Specification 访问数据,不直接依赖 EF Core;
+/// 写入操作通过 IUnitOfWork 提交事务。
 /// </summary>
 public class UserService : IUserService
 {
-    private readonly OneCupDbContext _db;
+    private readonly IRepository<User> _users;
+    private readonly IRepository<Role> _roles;
+    private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _passwordHasher;
 
-    public UserService(OneCupDbContext db, IPasswordHasher passwordHasher)
+    public UserService(IRepository<User> users, IRepository<Role> roles, IUnitOfWork uow, IPasswordHasher passwordHasher)
     {
-        _db = db;
+        _users = users;
+        _roles = roles;
+        _uow = uow;
         _passwordHasher = passwordHasher;
     }
 
     public async Task<PagedResult<UserListItemDto>> GetListAsync(int page, int pageSize, string? keyword, CancellationToken ct = default)
     {
-        var query = _db.Users
-            .Include(u => u.Roles)
-            .AsQueryable();
+        // 关键:总数用仅含过滤条件的 UserFilterSpec 统计,绝不能用带分页的 UserPagedSpec,
+        // 否则 Repository.CountAsync 会应用 Skip/Take,只统计当前页子集。
+        var total = await _users.CountAsync(new UserFilterSpec(keyword), ct);
 
-        if (!string.IsNullOrWhiteSpace(keyword))
-        {
-            keyword = keyword.Trim();
-            query = query.Where(u => u.Username.Contains(keyword) || u.DisplayName.Contains(keyword));
-        }
-
-        var total = await query.CountAsync(ct);
-        var users = await query
-            .OrderByDescending(u => u.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
+        var users = await _users.ListAsync(new UserPagedSpec(keyword, page, pageSize), ct);
 
         return new PagedResult<UserListItemDto>
         {
@@ -61,9 +55,7 @@ public class UserService : IUserService
 
     public async Task<UserDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var user = await _db.Users
-            .Include(u => u.Roles)
-            .FirstOrDefaultAsync(u => u.Id == id, ct);
+        var user = await _users.FirstOrDefaultAsync(new UserByIdWithRolesSpec(id), ct);
 
         if (user is null) return null;
 
@@ -83,14 +75,19 @@ public class UserService : IUserService
     public async Task<UserDto> CreateAsync(CreateUserRequest request, CancellationToken ct = default)
     {
         // 用户名唯一校验
-        if (await _db.Users.AnyAsync(u => u.Username == request.Username, ct))
+        if (await _users.AnyAsync(new UserByUsernameSpec(request.Username), ct))
         {
             throw new DomainException($"用户名「{request.Username}」已存在");
         }
 
-        var roles = await _db.Roles
-            .Where(r => request.RoleIds.Contains(r.Id))
-            .ToListAsync(ct);
+        // 按角色 Id 逐个加载:Role 无 Include 需求,GetByIdAsync(FindAsync) 返回
+        // 变更跟踪器已跟踪的实体,后续 AddAsync(user) 复用同一实例,避免重复跟踪冲突。
+        var roles = new List<Role>();
+        foreach (var roleId in request.RoleIds)
+        {
+            var role = await _roles.GetByIdAsync(roleId, ct);
+            if (role is not null) roles.Add(role);
+        }
 
         var user = new User
         {
@@ -102,17 +99,15 @@ public class UserService : IUserService
             Roles = roles,
         };
 
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync(ct);
+        await _users.AddAsync(user, ct);
+        await _uow.SaveChangesAsync(ct);
 
         return await GetByIdAsync(user.Id, ct) ?? throw new DomainException("用户创建失败");
     }
 
     public async Task<UserDto> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken ct = default)
     {
-        var user = await _db.Users
-            .Include(u => u.Roles)
-            .FirstOrDefaultAsync(u => u.Id == id, ct)
+        var user = await _users.FirstOrDefaultAsync(new UserByIdWithRolesSpec(id), ct)
             ?? throw new DomainException("用户不存在");
 
         // admin 保护：不能禁用 admin 用户
@@ -124,14 +119,20 @@ public class UserService : IUserService
         // admin 保护：如果用户当前有 admin 角色，保留它（不能被移除）
         var hasAdminRole = user.Roles.Any(r => r.Code == SystemConstants.AdminRoleCode);
 
-        var roles = await _db.Roles
-            .Where(r => request.RoleIds.Contains(r.Id))
-            .ToListAsync(ct);
+        // 按角色 Id 逐个加载:GetByIdAsync(FindAsync) 返回变更跟踪器已跟踪的实例,
+        // 复用同一实例避免重复跟踪冲突(ListAsync 走 AsNoTracking 会带来 detached 实体)。
+        var roles = new List<Role>();
+        foreach (var roleId in request.RoleIds)
+        {
+            var role = await _roles.GetByIdAsync(roleId, ct);
+            if (role is not null) roles.Add(role);
+        }
 
         // admin 保护：如果用户原来是 admin，确保 admin 角色仍在列表中
         if (hasAdminRole)
         {
-            var adminRole = await _db.Roles.FirstAsync(r => r.Code == SystemConstants.AdminRoleCode, ct);
+            var adminRole = await _roles.GetByIdAsync(SystemConstants.AdminRoleId, ct)
+                ?? throw new DomainException("管理员角色不存在");
             if (!roles.Any(r => r.Code == SystemConstants.AdminRoleCode))
             {
                 roles.Add(adminRole);
@@ -143,23 +144,23 @@ public class UserService : IUserService
         user.IsActive = request.IsActive;
         user.Roles = roles;
 
-        await _db.SaveChangesAsync(ct);
+        await _uow.SaveChangesAsync(ct);
 
         return await GetByIdAsync(user.Id, ct) ?? throw new DomainException("用户更新失败");
     }
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordRequest request, CancellationToken ct = default)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct)
+        var user = await _users.GetByIdAsync(id, ct)
             ?? throw new DomainException("用户不存在");
 
         user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
-        await _db.SaveChangesAsync(ct);
+        await _uow.SaveChangesAsync(ct);
     }
 
     public async Task UpdateStatusAsync(Guid id, UpdateStatusRequest request, CancellationToken ct = default)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct)
+        var user = await _users.GetByIdAsync(id, ct)
             ?? throw new DomainException("用户不存在");
 
         // admin 保护：不能禁用 admin 用户
@@ -169,6 +170,6 @@ public class UserService : IUserService
         }
 
         user.IsActive = request.IsActive;
-        await _db.SaveChangesAsync(ct);
+        await _uow.SaveChangesAsync(ct);
     }
 }
