@@ -34,8 +34,6 @@ export default function LoginForm() {
     } else {
       removeLoginParams();
     }
-    // 记录登录状态（与 checkLogin 兼容的过渡标志）
-    localStorage.setItem('userStatus', 'login');
     // 跳转首页
     window.location.href = '/';
   }
