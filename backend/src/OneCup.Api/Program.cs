@@ -226,3 +226,7 @@ app.UseExceptionHandler(appBuilder =>
 app.MapControllers();
 
 app.Run();
+
+// 暴露为 public partial class,供 WebApplicationFactory<Program>(集成测试)引用。
+// 必须位于所有顶级语句之后(类型声明不能穿插在顶级语句中间)。
+public partial class Program { }
