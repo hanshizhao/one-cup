@@ -93,8 +93,9 @@ public class UserService : IUserService
     {
         await _createValidator.EnsureValidAsync(request, ct);
 
-        // 用户名唯一校验
-        if (await _users.AnyAsync(new UserByUsernameSpec(request.Username), ct))
+        // 用户名唯一校验:必须绕过软删除过滤器,否则已删除用户占用的用户名会被误判为可用,
+        // 导致 AddAsync 走到全局唯一索引冲突 → DbUpdateException → 500(而非清晰 400)。
+        if (await _users.AnyIgnoringFiltersAsync(new UserByUsernameSpec(request.Username), ct))
         {
             throw new DomainException($"用户名「{request.Username}」已存在");
         }

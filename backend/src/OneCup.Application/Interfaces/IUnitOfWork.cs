@@ -43,6 +43,14 @@ public interface IRepository<T> where T : BaseEntity
 
     Task<bool> AnyAsync(ISpecification<T>? spec, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 绕过全局 QueryFilter(如软删除过滤器)判断是否存在匹配实体。
+    /// 用于唯一性预检:已软删除记录占用的唯一值(如用户名)仍需被识别为"已占用",
+    /// 以便返回清晰的 400 而非触发数据库唯一索引冲突(500)。
+    /// EF 的 IgnoreQueryFilters 封装在 Infrastructure 实现内,Application 层不感知 EF。
+    /// </summary>
+    Task<bool> AnyIgnoringFiltersAsync(ISpecification<T>? spec, CancellationToken cancellationToken = default);
+
     Task<T?> FirstOrDefaultAsync(ISpecification<T> spec, CancellationToken cancellationToken = default);
 
     Task AddAsync(T entity, CancellationToken cancellationToken = default);

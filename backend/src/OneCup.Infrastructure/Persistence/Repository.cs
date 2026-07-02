@@ -37,6 +37,13 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public async Task<bool> AnyAsync(ISpecification<T>? spec, CancellationToken cancellationToken = default)
         => await ApplySpecification(spec).AnyAsync(cancellationToken);
 
+    /// <summary>
+    /// 绕过全局 QueryFilter(软删除)判断是否存在匹配实体。
+    /// 在 IgnoreQueryFilters 的 Set 上应用 Specification,供唯一性预检使用。
+    /// </summary>
+    public async Task<bool> AnyIgnoringFiltersAsync(ISpecification<T>? spec, CancellationToken cancellationToken = default)
+        => await ApplySpecification(spec, ignoreFilters: true).AnyAsync(cancellationToken);
+
     public async Task<T?> FirstOrDefaultAsync(ISpecification<T> spec, CancellationToken cancellationToken = default)
         => await ApplySpecification(spec).FirstOrDefaultAsync(cancellationToken);
 
@@ -56,9 +63,11 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     /// <summary>
     /// 将 Specification 翻译为 EF Core IQueryable:应用 Criteria / Includes / OrderBy / 分页。
     /// </summary>
-    private IQueryable<T> ApplySpecification(ISpecification<T>? spec)
+    private IQueryable<T> ApplySpecification(ISpecification<T>? spec, bool ignoreFilters = false)
     {
-        var query = _context.Set<T>().AsQueryable();
+        var query = ignoreFilters
+            ? _context.Set<T>().IgnoreQueryFilters().AsQueryable()
+            : _context.Set<T>().AsQueryable();
         if (spec is null) return query;
         if (spec.Criteria is not null) query = query.Where(spec.Criteria);
         foreach (var include in spec.Includes) query = query.Include(include);   // 字符串路径,EF Core 支持 "Roles.Permissions"

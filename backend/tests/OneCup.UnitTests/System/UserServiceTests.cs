@@ -97,6 +97,29 @@ public class UserServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_DuplicateSoftDeletedUsername_Throws()
+    {
+        // 回归:用户名唯一索引是全局的(不按 IsDeleted 过滤),故已删除用户名不可复用。
+        // Stage C 引入软删除 QueryFilter 后,普通 AnyAsync 会漏看已删除记录 → 误判可用 → 触发
+        // 全局唯一索引冲突 → DbUpdateException(500)。CreateAsync 需用 AnyIgnoringFiltersAsync
+        // 预检,返回清晰 400。InMemory 不强制唯一索引,本测试验证的是服务层预检。
+        var user = MakeUser("recyclable", "待删除用户");
+        var (db, svc) = Setup(user);
+
+        await svc.DeleteAsync(user.Id);   // 软删除
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() =>
+            svc.CreateAsync(new CreateUserRequest
+            {
+                Username = "recyclable",   // 与已删除用户同名
+                DisplayName = "新用户",
+                Password = "Password1",
+                RoleIds = [SeedData.DeveloperRoleId],
+            }));
+        Assert.Contains("已存在", ex.Message);
+    }
+
+    [Fact]
     public async Task UpdateStatusAsync_DisableAdminUser_Throws()
     {
         var adminUser = MakeUser("admin", "管理员");
