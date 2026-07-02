@@ -103,6 +103,9 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("perm_codes", "system:role:manage"));
 });
 
+// 权限拒绝审计日志:装饰默认 handler,在 403 时记 Warning
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, AuthorizationAuditHandler>();
+
 // ── 限流 ──
 builder.Services.AddRateLimiter(options =>
 {

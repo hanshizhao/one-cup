@@ -88,6 +88,8 @@ public class AuthService : IAuthService
         // 轮换：吊销旧 token
         stored.IsRevoked = true;
         stored.UpdatedAt = DateTime.UtcNow;
+        _logger.LogInformation("Refresh token 轮换吊销:UserId={UserId}, Token={TokenMask}",
+            stored.User.Id, MaskToken(stored.Token));
 
         return await IssueTokensAsync(stored.User, ct);
     }
@@ -103,6 +105,8 @@ public class AuthService : IAuthService
             rt.IsRevoked = true;
             rt.UpdatedAt = DateTime.UtcNow;
         }
+
+        _logger.LogInformation("登出吊销 refresh token:UserId={UserId}, 数量={Count}", userId, tokens.Count);
 
         await _db.SaveChangesAsync(ct);
     }
@@ -150,4 +154,8 @@ public class AuthService : IAuthService
             ExpiresIn = _options.AccessTokenMinutes * 60,
         };
     }
+
+    /// <summary>掩码 token,只保留前 8 字符用于日志识别。</summary>
+    private static string MaskToken(string token) =>
+        token.Length <= 8 ? "****" : $"{token[..8]}****";
 }
