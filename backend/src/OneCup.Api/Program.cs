@@ -150,6 +150,20 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+// ── 数据库迁移（可选，由配置开关 Database:MigrateOnStartup 控制）──────────
+// 生产默认 false（appsettings.json），开发默认 true（appsettings.Development.json），
+// compose 部署用环境变量 Database__MigrateOnStartup=true 显式覆盖。
+if (builder.Configuration.GetValue("Database:MigrateOnStartup", false))
+{
+    using var scope = app.Services.CreateScope();
+    var sp = scope.ServiceProvider;
+    var db = sp.GetRequiredService<OneCup.Infrastructure.Persistence.OneCupDbContext>();
+    var migrateLogger = sp.GetRequiredService<ILogger<Program>>();
+    migrateLogger.LogInformation("正在应用数据库迁移...");
+    await db.Database.MigrateAsync();
+    migrateLogger.LogInformation("数据库迁移完成");
+}
+
 // ── 中间件管道 ───────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {

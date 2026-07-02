@@ -1,0 +1,40 @@
+# 仓库根 .dockerignore — 减少 Docker 构建上下文体积
+# 同时作用于后端和前端 Dockerfile (context 都是仓库根)
+
+# ── Git / 文档 / 工具 ──
+.git
+.gitignore
+*.md
+!frontend/README.md
+docs/
+.zcode/
+.superpowers/
+.github/
+
+# ── IDE / 编辑器 ──
+.vscode/
+.idea/
+*.user
+*.suo
+
+# ── 后端构建产物 ──
+**/bin/
+**/obj/
+
+# ── 前端 ──
+frontend/node_modules/
+frontend/dist/
+frontend/.eslintcache
+
+# ── 本地环境配置 ( secrets 不进镜像 ) ──
+infra/.env
+**/appsettings.*.local.json
+**/secrets.json
+
+# ── 测试 ──
+backend/tests/
+
+# ── 系统 ──
+.DS_Store
+Thumbs.db
+nul
