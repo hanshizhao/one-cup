@@ -1214,7 +1214,8 @@ Expected: package added
 Run:
 ```bash
 cd backend/src/OneCup.Api
-dotnet user-secrets set "Jwt:SecretKey" "OneCup_Super_Secret_Key_At_Least_32_Chars_2026!"
+# 生成一个 32+ 字符的随机密钥，不要使用文档中的示例值
+dotnet user-secrets set "Jwt:SecretKey" "<你生成的随机密钥>"
 ```
 Expected: `Successfully saved...`
 

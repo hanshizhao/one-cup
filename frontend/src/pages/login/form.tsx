@@ -9,7 +9,8 @@ import {
 import { FormInstance } from '@arco-design/web-react/es/Form';
 import { IconLock, IconUser } from '@arco-design/web-react/icon';
 import React, { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
+import { login as loginApi } from '@/api/auth';
+import { setTokens } from '@/utils/token';
 import useStorage from '@/utils/useStorage';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
@@ -33,7 +34,7 @@ export default function LoginForm() {
     } else {
       removeLoginParams();
     }
-    // 记录登录状态
+    // 记录登录状态（与 checkLogin 兼容的过渡标志）
     localStorage.setItem('userStatus', 'login');
     // 跳转首页
     window.location.href = '/';
@@ -42,15 +43,14 @@ export default function LoginForm() {
   function login(params) {
     setErrorMessage('');
     setLoading(true);
-    axios
-      .post('/api/user/login', params)
+    loginApi(params.userName, params.password)
       .then((res) => {
-        const { status, msg } = res.data;
-        if (status === 'ok') {
-          afterLoginSuccess(params);
-        } else {
-          setErrorMessage(msg || t['login.form.login.errMsg']);
-        }
+        setTokens(res.accessToken, res.refreshToken);
+        afterLoginSuccess(params);
+      })
+      .catch((err) => {
+        const msg = err.response?.data?.message || t['login.form.login.errMsg'];
+        setErrorMessage(msg);
       })
       .finally(() => {
         setLoading(false);
@@ -84,7 +84,7 @@ export default function LoginForm() {
         className={styles['login-form']}
         layout="vertical"
         ref={formRef}
-        initialValues={{ userName: 'admin', password: 'admin' }}
+        initialValues={{ userName: 'admin', password: '' }}
       >
         <Form.Item
           field="userName"

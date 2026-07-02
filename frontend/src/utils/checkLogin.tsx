@@ -1,3 +1,5 @@
+import { getAccessToken } from '@/utils/token';
+
 export default function checkLogin() {
-  return localStorage.getItem('userStatus') === 'login';
+  return !!getAccessToken();
 }

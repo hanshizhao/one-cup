@@ -1,7 +1,14 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using OneCup.Api.Services;
 using OneCup.Application.Interfaces;
+using OneCup.Application.Options;
 using OneCup.Domain.Exceptions;
 using OneCup.Infrastructure.Persistence;
+using OneCup.Infrastructure.Services;
+using System.Security.Claims;
+using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +43,35 @@ builder.Services.AddCors(options =>
               .AllowCredentials());
 });
 
+// ── 认证授权 (JWT) ─────────────────────────────────────────────
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSection["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwtSection["Audience"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["SecretKey"]!)),
+            NameClaimType = ClaimTypes.Name,
+            ClockSkew = TimeSpan.Zero,
+        };
+    });
+builder.Services.AddAuthorization();
+
+// ── 依赖注入:认证相关服务 ─────────────────────────────────────
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddSingleton<CurrentUserService>();
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
 
 // ── 中间件管道 ───────────────────────────────────────────────
@@ -46,7 +82,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
-// 全局异常处理:领域异常 → 400,其他 → 500
+app.UseAuthentication();
+app.UseAuthorization();
+
+// 全局异常处理:认证异常 → 401, 领域异常 → 400, 其他 → 500
 app.UseExceptionHandler(appBuilder =>
 {
     appBuilder.Run(async context =>
@@ -56,6 +95,7 @@ app.UseExceptionHandler(appBuilder =>
 
         context.Response.StatusCode = exception switch
         {
+            UnauthorizedException => StatusCodes.Status401Unauthorized,
             DomainException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError,
         };
