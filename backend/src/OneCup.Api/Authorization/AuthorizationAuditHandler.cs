@@ -26,7 +26,7 @@ public class AuthorizationAuditHandler : IAuthorizationMiddlewareResultHandler
         AuthorizationPolicy policy,
         PolicyAuthorizationResult result)
     {
-        if (!result.Succeeded)
+        if (result.Forbidden)
         {
             var userId = context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             var endpoint = context.GetEndpoint()?.DisplayName;

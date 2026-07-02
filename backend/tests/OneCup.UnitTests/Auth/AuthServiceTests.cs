@@ -215,8 +215,6 @@ public class AuthServiceTests
             service.LoginAsync(new LoginRequest { Username = "inactive", Password = "correct-anyway" }));
     }
 
-    private static ILockoutStore NoLockStore() => new FakeLockoutStore();
-
     [Fact]
     public async Task Login_locked_account_throws_AccountLockedException()
     {

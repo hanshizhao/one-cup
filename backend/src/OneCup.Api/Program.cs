@@ -125,14 +125,8 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 
-    // 全局兜底:按 IP,120 次/分钟
-    options.AddFixedWindowLimiter("global", opt =>
-    {
-        opt.PermitLimit = 120;
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueLimit = 0;
-    });
-
+    // 部署注意:限流按 RemoteIpAddress 分区。若部署在反向代理(nginx/ALB)后,
+    // 必须配置 UseForwardedHeaders,否则所有客户端共享代理 IP,限流失效。
     options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(ctx =>
     {
         var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
