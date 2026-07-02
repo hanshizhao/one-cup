@@ -16,12 +16,12 @@ public abstract class Specification<T> : ISpecification<T>
 
     IReadOnlyList<string> ISpecification<T>.Includes => Includes;
 
-    public void ApplyCriteria(Expression<Func<T, bool>> criteria) => Criteria = criteria;
-    public void ApplyInclude(string navigationPath) => Includes.Add(navigationPath);
-    public void ApplyOrderBy(Expression<Func<T, object>> orderBy) => OrderBy = orderBy;
-    public void ApplyOrderByDescending(Expression<Func<T, object>> orderByDescending) =>
+    protected void ApplyCriteria(Expression<Func<T, bool>> criteria) => Criteria = criteria;
+    protected void ApplyInclude(string navigationPath) => Includes.Add(navigationPath);
+    protected void ApplyOrderBy(Expression<Func<T, object>> orderBy) => OrderBy = orderBy;
+    protected void ApplyOrderByDescending(Expression<Func<T, object>> orderByDescending) =>
         OrderByDescending = orderByDescending;
-    public void ApplyPaging(int page, int pageSize)
+    protected void ApplyPaging(int page, int pageSize)
     {
         Skip = (page - 1) * pageSize;
         Take = pageSize;

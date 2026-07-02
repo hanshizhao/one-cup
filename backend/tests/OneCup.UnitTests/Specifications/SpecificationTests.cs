@@ -8,7 +8,7 @@ public class SpecificationTests
     [Fact]
     public void Empty_specification_has_no_criteria_or_paging()
     {
-        ISpecification<User> spec = new TestSpec();
+        var spec = (ISpecification<User>)new EmptyUserSpec();
         Assert.Null(spec.Criteria);
         Assert.Empty(spec.Includes);
         Assert.Null(spec.Skip);
@@ -16,32 +16,40 @@ public class SpecificationTests
     }
 
     [Fact]
-    public void Apply_criteria_sets_criteria()
+    public void Criteria_applied_in_constructor_sets_criteria()
     {
-        var spec = new TestSpec();
-        spec.ApplyCriteria(u => u.Username == "admin");
+        var spec = (ISpecification<User>)new UserByAdminSpec();
         Assert.NotNull(spec.Criteria);
     }
 
     [Fact]
-    public void ApplyInclude_adds_string_path()
+    public void Includes_applied_in_constructor_add_string_paths()
     {
-        var spec = new TestSpec();
-        spec.ApplyInclude("Roles");
-        spec.ApplyInclude("Roles.Permissions");
+        var spec = (ISpecification<User>)new UserWithRolesSpec();
         Assert.Equal(2, spec.Includes.Count);
         Assert.Contains("Roles.Permissions", spec.Includes);
     }
 
     [Fact]
-    public void ApplyPaging_sets_skip_take()
+    public void Paging_applied_in_constructor_sets_skip_take()
     {
-        var spec = new TestSpec();
-        spec.ApplyPaging(page: 2, pageSize: 10);
+        var spec = (ISpecification<User>)new UserPagedSpec(2, 10);
         Assert.Equal(10, spec.Skip);
         Assert.Equal(10, spec.Take);
     }
 
-    // 测试用具体类(基类是抽象的)
-    internal class TestSpec : Specification<User> { }
+    // Realistic concrete specs that apply in their constructors
+    internal class EmptyUserSpec : Specification<User> { }
+    internal class UserByAdminSpec : Specification<User>
+    {
+        public UserByAdminSpec() { ApplyCriteria(u => u.Username == "admin"); }
+    }
+    internal class UserWithRolesSpec : Specification<User>
+    {
+        public UserWithRolesSpec() { ApplyInclude("Roles"); ApplyInclude("Roles.Permissions"); }
+    }
+    internal class UserPagedSpec : Specification<User>
+    {
+        public UserPagedSpec(int page, int pageSize) { ApplyPaging(page, pageSize); }
+    }
 }
