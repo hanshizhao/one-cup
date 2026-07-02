@@ -104,4 +104,19 @@ public class UserServiceTests
         var updated = await db.Users.FirstAsync(u => u.Id == user.Id);
         Assert.NotEqual("$2a$12$placeholder", updated.PasswordHash);
     }
+
+    [Fact]
+    public async Task UpdateAsync_DisableAdminUser_Throws()
+    {
+        var adminUser = MakeUser("admin", "管理员");
+        adminUser.Id = SeedData.AdminUserId;
+        var (db, svc) = Setup(adminUser);
+        await Assert.ThrowsAsync<DomainException>(() =>
+            svc.UpdateAsync(SeedData.AdminUserId, new UpdateUserRequest
+            {
+                DisplayName = "管理员",
+                IsActive = false,
+                RoleIds = [],
+            }));
+    }
 }

@@ -78,4 +78,31 @@ public class RoleServiceTests
         var (db, svc) = Setup();
         await Assert.ThrowsAsync<DomainException>(() => svc.DeleteAsync(SeedData.AdminRoleId));
     }
+
+    [Fact]
+    public async Task DeleteAsync_WithAssociatedUsers_Throws()
+    {
+        var (db, svc) = Setup();
+        // 创建一个有用户的角色
+        var role = new Role { Name = "测试", Code = "tester" };
+        db.Roles.Add(role);
+        var user = new User { Username = "u1", DisplayName = "用户", PasswordHash = "x", Roles = [role] };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() => svc.DeleteAsync(role.Id));
+        Assert.Contains("用户", ex.Message);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NoAssociatedUsers_Succeeds()
+    {
+        var (db, svc) = Setup();
+        var role = new Role { Name = "空角色", Code = "empty" };
+        db.Roles.Add(role);
+        await db.SaveChangesAsync();
+
+        await svc.DeleteAsync(role.Id);
+        Assert.Empty(db.Roles.Where(r => r.Code == "empty"));
+    }
 }
