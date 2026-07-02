@@ -18,7 +18,7 @@ public class JwtTokenServiceTests
         RefreshTokenDays = 7,
     };
 
-    private JwtTokenService CreateService() => new(Options.Create(_testOptions));
+    private JwtTokenService CreateService() => new(Microsoft.Extensions.Options.Options.Create(_testOptions));
 
     private static User CreateUserWithRoles(List<Role> roles) => new()
     {

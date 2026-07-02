@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OneCup.Api.Authorization;
 using OneCup.Api.Services;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
+using OneCup.Application.Validators;
 using OneCup.Domain.Exceptions;
 using OneCup.Infrastructure.Persistence;
 using OneCup.Infrastructure.Services;
@@ -47,6 +49,9 @@ builder.Services.AddCors(options =>
 
 // ── 认证授权 (JWT) ─────────────────────────────────────────────
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+
+builder.Services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
+builder.Services.AddOptions<JwtOptions>().ValidateOnStart();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

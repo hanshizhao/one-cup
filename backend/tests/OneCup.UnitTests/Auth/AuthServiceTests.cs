@@ -115,7 +115,7 @@ public class AuthServiceTests
     {
         passwordHasher ??= new FakePasswordHasher();
         jwt ??= new FakeJwtTokenService();
-        return new AuthService(db, jwt, passwordHasher, Options.Create(_options));
+        return new AuthService(db, jwt, passwordHasher, Microsoft.Extensions.Options.Options.Create(_options));
     }
 
     // ════════════════════════════════════════════════════════════════
