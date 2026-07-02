@@ -21,7 +21,7 @@ public class JwtOptionsValidator : IValidateOptions<JwtOptions>
         }
 
         // UTF-8 字节数(HS256 要求 ≥256 bit = 32 字节)
-        if (System.Text.Encoding.UTF8.GetByteCount(options.SecretKey) < 32)
+        if (global::System.Text.Encoding.UTF8.GetByteCount(options.SecretKey) < 32)
         {
             return ValidateOptionsResult.Fail("Jwt:SecretKey 长度不足,HS256 要求至少 32 字节(256 bit)。");
         }

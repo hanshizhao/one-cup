@@ -1,3 +1,4 @@
+using FluentValidation;
 using OneCup.Application.Common;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
@@ -18,13 +19,36 @@ public class UserService : IUserService
     private readonly IRepository<Role> _roles;
     private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IValidator<CreateUserRequest> _createValidator;
+    private readonly IValidator<UpdateUserRequest> _updateValidator;
+    private readonly IValidator<ResetPasswordRequest> _resetValidator;
 
-    public UserService(IRepository<User> users, IRepository<Role> roles, IUnitOfWork uow, IPasswordHasher passwordHasher)
+    public UserService(
+        IRepository<User> users,
+        IRepository<Role> roles,
+        IUnitOfWork uow,
+        IPasswordHasher passwordHasher,
+        IValidator<CreateUserRequest> createValidator,
+        IValidator<UpdateUserRequest> updateValidator,
+        IValidator<ResetPasswordRequest> resetValidator)
     {
         _users = users;
         _roles = roles;
         _uow = uow;
         _passwordHasher = passwordHasher;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
+        _resetValidator = resetValidator;
+    }
+
+    /// <summary>手动校验请求 DTO,失败抛 DomainException(全局映射 400)。</summary>
+    private static async Task ValidateAsync<T>(IValidator<T> validator, T request, CancellationToken ct)
+    {
+        var result = await validator.ValidateAsync(request, ct);
+        if (!result.IsValid)
+        {
+            throw new DomainException(string.Join("; ", result.Errors.Select(e => e.ErrorMessage)));
+        }
     }
 
     public async Task<PagedResult<UserListItemDto>> GetListAsync(int page, int pageSize, string? keyword, CancellationToken ct = default)
@@ -74,6 +98,8 @@ public class UserService : IUserService
 
     public async Task<UserDto> CreateAsync(CreateUserRequest request, CancellationToken ct = default)
     {
+        await ValidateAsync(_createValidator, request, ct);
+
         // 用户名唯一校验
         if (await _users.AnyAsync(new UserByUsernameSpec(request.Username), ct))
         {
@@ -107,6 +133,8 @@ public class UserService : IUserService
 
     public async Task<UserDto> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken ct = default)
     {
+        await ValidateAsync(_updateValidator, request, ct);
+
         var user = await _users.FirstOrDefaultAsync(new UserByIdWithRolesSpec(id), ct)
             ?? throw new DomainException("用户不存在");
 
@@ -151,6 +179,8 @@ public class UserService : IUserService
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordRequest request, CancellationToken ct = default)
     {
+        await ValidateAsync(_resetValidator, request, ct);
+
         var user = await _users.GetByIdAsync(id, ct)
             ?? throw new DomainException("用户不存在");
 
