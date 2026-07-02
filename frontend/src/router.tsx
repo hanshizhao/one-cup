@@ -1,16 +1,29 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter, redirect, Navigate } from 'react-router-dom';
+import { Spin } from '@arco-design/web-react';
 import { store, setUserInfo } from '@/store';
 import { getCurrentUser } from '@/api/auth';
 import { getAccessToken } from '@/utils/token';
 import PageLayout from '@/layout';
 import Login from '@/pages/login';
 import Forbidden from '@/pages/exception/403';
-import UserPage from '@/pages/system/user';
-import RolePage from '@/pages/system/role';
-import PermissionPage from '@/pages/system/permission';
-import NumberingPage from '@/pages/system/numbering';
 import RequirePermission from '@/components/RequirePermission';
+
+// 业务页按需懒加载(代码分割)
+const UserPage = lazy(() => import('@/pages/system/user'));
+const RolePage = lazy(() => import('@/pages/system/role'));
+const PermissionPage = lazy(() => import('@/pages/system/permission'));
+const NumberingPage = lazy(() => import('@/pages/system/numbering'));
+
+const PageFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+    <Spin />
+  </div>
+);
+
+const withSuspense = (node: React.ReactNode) => (
+  <Suspense fallback={<PageFallback />}>{node}</Suspense>
+);
 
 /**
  * 把后端的 permCodes (["fabric:read", ...] 或 ["*"])
@@ -77,7 +90,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/system/user" replace /> },
       {
         path: 'system/user',
-        element: (
+        element: withSuspense(
           <RequirePermission resource="system:user" actions={['manage']}>
             <UserPage />
           </RequirePermission>
@@ -85,16 +98,16 @@ export const router = createBrowserRouter([
       },
       {
         path: 'system/role',
-        element: (
+        element: withSuspense(
           <RequirePermission resource="system:role" actions={['manage']}>
             <RolePage />
           </RequirePermission>
         ),
       },
-      { path: 'system/permission', element: <PermissionPage /> },
+      { path: 'system/permission', element: withSuspense(<PermissionPage />) },
       {
         path: 'system/numbering',
-        element: (
+        element: withSuspense(
           <RequirePermission resource="system:numbering" actions={['view']}>
             <NumberingPage />
           </RequirePermission>
