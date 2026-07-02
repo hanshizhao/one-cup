@@ -25,11 +25,10 @@ public class RoleService : IRoleService
             .Include(r => r.Permissions)
             .ToListAsync(ct);
 
-        // 批量统计每个角色的用户数
-        var userCounts = await _db.Users
-            .SelectMany(u => u.Roles.Select(r => new { UserId = u.Id, RoleId = r.Id }))
-            .GroupBy(x => x.RoleId)
-            .ToDictionaryAsync(g => g.Key, g => g.Select(x => x.UserId).Distinct().Count(), ct);
+        // 批量统计每个角色的用户数：通过角色导航按 Id 分组计数（可被任意 provider 翻译）
+        var userCounts = await _db.Roles
+            .Select(r => new { RoleId = r.Id, Count = r.Users.Count })
+            .ToDictionaryAsync(x => x.RoleId, x => x.Count, ct);
 
         return roles.Select(r => new RoleListItemDto
         {
