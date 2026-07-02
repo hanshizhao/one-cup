@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { isSSR } from '@/utils/is';
 
-const getDefaultStorage = (key) => {
+const getDefaultStorage = (key: string) => {
   if (!isSSR) {
     return localStorage.getItem(key);
   } else {
@@ -15,8 +15,8 @@ const getDefaultStorage = (key) => {
 function useStorage(
   key: string,
   defaultValue?: string
-): [string, (string) => void, () => void] {
-  const [storedValue, setStoredValue] = useState(
+): [string | undefined, (value: string) => void, () => void] {
+  const [storedValue, setStoredValue] = useState<string | undefined>(
     getDefaultStorage(key) || defaultValue
   );
 

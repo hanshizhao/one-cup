@@ -15,8 +15,7 @@ import {
   IconPoweroff,
   IconLoading,
 } from '@arco-design/web-react/icon';
-import { useSelector } from 'react-redux';
-import { GlobalState } from '@/store';
+import { useAppSelector } from '@/store';
 import { GlobalContext } from '@/context';
 import useLocale from '@/utils/useLocale';
 import Logo from '@/assets/logo.svg';
@@ -28,7 +27,7 @@ import { removeTokens } from '@/utils/token';
 
 function Navbar({ show }: { show: boolean }) {
   const t = useLocale();
-  const { userInfo, userLoading } = useSelector((state: GlobalState) => state);
+  const { userInfo, userLoading } = useAppSelector((state) => state.userInfo);
 
   const { setLang, lang, theme, setTheme } = useContext(GlobalContext);
 
@@ -41,7 +40,7 @@ function Navbar({ show }: { show: boolean }) {
       });
   }
 
-  function onMenuItemClick(key) {
+  function onMenuItemClick(key: string) {
     if (key === 'logout') {
       logout();
     }
@@ -85,9 +84,9 @@ function Navbar({ show }: { show: boolean }) {
               position: 'br',
             }}
             trigger="hover"
-            onChange={(value) => {
-              setLang(value);
-              const nextLang = defaultLocale[value];
+            onChange={(value: string) => {
+              setLang?.(value);
+              const nextLang = defaultLocale[value as keyof typeof defaultLocale];
               Message.info(`${nextLang['message.lang.tips']}${value}`);
             }}
           />
@@ -102,7 +101,7 @@ function Navbar({ show }: { show: boolean }) {
           >
             <IconButton
               icon={theme !== 'dark' ? <IconMoonFill /> : <IconSunFill />}
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              onClick={() => setTheme?.(theme === 'light' ? 'dark' : 'light')}
             />
           </Tooltip>
         </li>

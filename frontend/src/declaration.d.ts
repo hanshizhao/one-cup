@@ -25,3 +25,13 @@ declare module '*.png' {
   const value: string;
   export default value;
 }
+
+declare module 'nprogress' {
+  interface NProgress {
+    start: () => NProgress;
+    done: (force?: boolean) => NProgress;
+    configure: (options?: Record<string, any>) => NProgress;
+  }
+  const progress: NProgress;
+  export default progress;
+}

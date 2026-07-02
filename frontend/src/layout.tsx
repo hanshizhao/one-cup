@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Switch, Route, Redirect, useHistory } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Breadcrumb, Spin } from '@arco-design/web-react';
 import cs from 'classnames';
 import {
@@ -7,17 +7,12 @@ import {
   IconMenuFold,
   IconMenuUnfold,
 } from '@arco-design/web-react/icon';
-import { useSelector } from 'react-redux';
-import qs from 'query-string';
+import { useAppSelector } from '@/store';
 import NProgress from 'nprogress';
 import Navbar from './components/NavBar';
 import Footer from './components/Footer';
 import useRoute, { IRoute } from '@/routes';
-import { isArray } from './utils/is';
 import useLocale from './utils/useLocale';
-import getUrlParams from './utils/getUrlParams';
-import lazyload from './utils/lazyload';
-import { GlobalState } from './store';
 import styles from './style/layout.module.less';
 
 const MenuItem = Menu.Item;
@@ -26,7 +21,7 @@ const SubMenu = Menu.SubMenu;
 const Sider = Layout.Sider;
 const Content = Layout.Content;
 
-function getIconFromKey(key) {
+function getIconFromKey(key: string) {
   switch (key) {
     case 'system':
       return <IconSettings className={styles.icon} />;
@@ -35,49 +30,43 @@ function getIconFromKey(key) {
   }
 }
 
-function getFlattenRoutes(routes) {
-  const mod = import.meta.glob('./pages/**/[a-z[]*.tsx');
-  const res = [];
-  function travel(_routes) {
+/** 查找扁平化后的菜单项中是否有该 key 的可点击叶子节点。 */
+function findLeafRoute(routes: IRoute[], key: string): IRoute | undefined {
+  let result: IRoute | undefined;
+  function travel(_routes: IRoute[]) {
     _routes.forEach((route) => {
       const visibleChildren = (route.children || []).filter(
         (child) => !child.ignore
       );
       if (route.key && (!route.children || !visibleChildren.length)) {
-        try {
-          route.component = lazyload(mod[`./pages/${route.key}/index.tsx`]);
-          res.push(route);
-        } catch (e) {
-          console.log(route.key);
-          console.error(e);
+        if (route.key === key) {
+          result = route;
         }
       }
-
-      if (isArray(route.children) && route.children.length) {
+      if (route.children && route.children.length) {
         travel(route.children);
       }
     });
   }
   travel(routes);
-  return res;
+  return result;
 }
 
 function PageLayout() {
-  const urlParams = getUrlParams();
-  const history = useHistory();
-  const pathname = history.location.pathname;
-  const currentComponent = qs.parseUrl(pathname).url.slice(1);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
+  const currentComponent = pathname.slice(1);
   const locale = useLocale();
-  const { settings, userLoading, userInfo } = useSelector(
-    (state: GlobalState) => state
-  );
+  const { settings } = useAppSelector((state) => state);
+  const { userInfo, userLoading } = useAppSelector((state) => state.userInfo);
 
   const [routes, defaultRoute] = useRoute(userInfo?.permissions);
   const defaultSelectedKeys = [currentComponent || defaultRoute];
   const paths = (currentComponent || defaultRoute).split('/');
   const defaultOpenKeys = paths.slice(0, paths.length - 1);
 
-  const [breadcrumb, setBreadCrumb] = useState([]);
+  const [breadcrumb, setBreadCrumb] = useState<React.ReactNode[]>([]);
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [selectedKeys, setSelectedKeys] =
     useState<string[]>(defaultSelectedKeys);
@@ -91,21 +80,18 @@ function PageLayout() {
   const navbarHeight = 60;
   const menuWidth = collapsed ? 48 : settings.menuWidth;
 
-  const showNavbar = settings.navbar && urlParams.navbar !== false;
-  const showMenu = settings.menu && urlParams.menu !== false;
-  const showFooter = settings.footer && urlParams.footer !== false;
+  const showNavbar = settings.navbar;
+  const showMenu = settings.menu;
+  const showFooter = settings.footer;
 
-  const flattenRoutes = useMemo(() => getFlattenRoutes(routes) || [], [routes]);
-
-  function onClickMenuItem(key) {
-    const currentRoute = flattenRoutes.find((r) => r.key === key);
-    const component = currentRoute.component;
-    const preload = component.preload();
+  function onClickMenuItem(key: string) {
+    const currentRoute = findLeafRoute(routes, key);
+    if (!currentRoute) {
+      return;
+    }
     NProgress.start();
-    preload.then(() => {
-      history.push(currentRoute.path ? currentRoute.path : `/${key}`);
-      NProgress.done();
-    });
+    navigate(currentRoute.path ? currentRoute.path : `/${key}`);
+    NProgress.done();
   }
 
   function toggleCollapse() {
@@ -116,33 +102,35 @@ function PageLayout() {
   const paddingTop = showNavbar ? { paddingTop: navbarHeight } : {};
   const paddingStyle = { ...paddingLeft, ...paddingTop };
 
-  function renderRoutes(locale) {
+  function renderRoutes(routeLocale: Record<string, string>) {
     routeMap.current.clear();
-    return function travel(_routes: IRoute[], level, parentNode = []) {
+    return function travel(
+      _routes: IRoute[],
+      parentNode: string[] = []
+    ) {
       return _routes.map((route) => {
-        const { breadcrumb = true, ignore } = route;
+        const { breadcrumb: showBreadcrumb = true, ignore } = route;
         const iconDom = getIconFromKey(route.key);
         const titleDom = (
           <>
-            {iconDom} {locale[route.name] || route.name}
+            {iconDom} {routeLocale[route.name] || route.name}
           </>
         );
 
         routeMap.current.set(
           `/${route.key}`,
-          breadcrumb ? [...parentNode, route.name] : []
+          showBreadcrumb ? [...parentNode, route.name] : []
         );
 
         const visibleChildren = (route.children || []).filter((child) => {
-          const { ignore, breadcrumb = true } = child;
-          if (ignore || route.ignore) {
+          const { ignore: childIgnore, breadcrumb = true } = child;
+          if (childIgnore || route.ignore) {
             routeMap.current.set(
               `/${child.key}`,
               breadcrumb ? [...parentNode, route.name, child.name] : []
             );
           }
-
-          return !ignore;
+          return !childIgnore;
         });
 
         if (ignore) {
@@ -152,7 +140,7 @@ function PageLayout() {
           menuMap.current.set(route.key, { subMenu: true });
           return (
             <SubMenu key={route.key} title={titleDom}>
-              {travel(visibleChildren, level + 1, [...parentNode, route.name])}
+              {travel(visibleChildren, [...parentNode, route.name])}
             </SubMenu>
           );
         }
@@ -186,6 +174,7 @@ function PageLayout() {
     const routeConfig = routeMap.current.get(pathname);
     setBreadCrumb(routeConfig || []);
     updateMenuStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   return (
@@ -222,7 +211,7 @@ function PageLayout() {
                     setOpenKeys(openKeys);
                   }}
                 >
-                  {renderRoutes(locale)(routes, 1)}
+                  {renderRoutes(locale)(routes)}
                 </Menu>
               </div>
               <div className={styles['collapse-btn']} onClick={toggleCollapse}>
@@ -237,31 +226,16 @@ function PageLayout() {
                   <Breadcrumb>
                     {breadcrumb.map((node, index) => (
                       <Breadcrumb.Item key={index}>
-                        {typeof node === 'string' ? locale[node] || node : node}
+                        {typeof node === 'string'
+                          ? locale[node] || node
+                          : node}
                       </Breadcrumb.Item>
                     ))}
                   </Breadcrumb>
                 </div>
               )}
               <Content>
-                <Switch>
-                  {flattenRoutes.map((route, index) => {
-                    return (
-                      <Route
-                        key={index}
-                        path={`/${route.key}`}
-                        component={route.component}
-                      />
-                    );
-                  })}
-                  <Route exact path="/">
-                    <Redirect to={`/${defaultRoute}`} />
-                  </Route>
-                  <Route
-                    path="*"
-                    component={lazyload(() => import('./pages/exception/403'))}
-                  />
-                </Switch>
+                <Outlet />
               </Content>
             </div>
             {showFooter && <Footer />}
