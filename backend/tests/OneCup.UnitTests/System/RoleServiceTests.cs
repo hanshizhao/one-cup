@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OneCup.Application.Dtos.System;
+using OneCup.Application.Services;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
 using OneCup.Infrastructure.Persistence;
-using OneCup.Infrastructure.Services;
 
 namespace OneCup.UnitTests.System;
 
@@ -21,7 +21,7 @@ public class RoleServiceTests
         db.Permissions.Add(new Permission { Id = SeedData.PermFabricRead, Code = "fabric:read", Name = "查看面料" });
         db.SaveChanges();
 
-        var svc = new RoleService(db);
+        var svc = new RoleService(new Repository<Role>(db), new Repository<Permission>(db), new UnitOfWork(db));
         return (db, svc);
     }
 
