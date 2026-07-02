@@ -61,4 +61,13 @@ public class UsersController : ControllerBase
         await _userService.UpdateStatusAsync(id, request, ct);
         return NoContent();
     }
+
+    /// <summary>删除用户(软删除;admin 账号受保护;同步吊销其 refresh token)。</summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _userService.DeleteAsync(id, ct);
+        return NoContent();
+    }
 }

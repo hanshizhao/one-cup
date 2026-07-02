@@ -17,6 +17,7 @@ public class UserService : IUserService
 {
     private readonly IRepository<User> _users;
     private readonly IRepository<Role> _roles;
+    private readonly IRepository<RefreshToken> _refreshTokens;
     private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IValidator<CreateUserRequest> _createValidator;
@@ -26,6 +27,7 @@ public class UserService : IUserService
     public UserService(
         IRepository<User> users,
         IRepository<Role> roles,
+        IRepository<RefreshToken> refreshTokens,
         IUnitOfWork uow,
         IPasswordHasher passwordHasher,
         IValidator<CreateUserRequest> createValidator,
@@ -34,6 +36,7 @@ public class UserService : IUserService
     {
         _users = users;
         _roles = roles;
+        _refreshTokens = refreshTokens;
         _uow = uow;
         _passwordHasher = passwordHasher;
         _createValidator = createValidator;
@@ -190,6 +193,34 @@ public class UserService : IUserService
         }
 
         user.IsActive = request.IsActive;
+        await _uow.SaveChangesAsync(ct);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        // GetByIdAsync 走 FindAsync(tracked,不受 QueryFilter 影响),能找到未删除的用户;
+        // 已删除的用户再次删除按"不存在"处理(抛 DomainException)。
+        var user = await _users.GetByIdAsync(id, ct)
+            ?? throw new DomainException("用户不存在");
+
+        // admin 保护：不能删除系统内置管理员账号
+        if (user.Id == SystemConstants.AdminUserId)
+        {
+            throw new DomainException("不能删除系统管理员账号");
+        }
+
+        user.IsDeleted = true;
+
+        // 同步吊销该用户所有未吊销的 refresh token(ActiveRefreshTokensByUserSpec 已在 AuthSpecs 定义)。
+        // ListAsync 走 AsNoTracking 返回 detached 实体,修改后需逐个 Update 重新 Attach 为 Modified,
+        // 随 SaveChanges 持久化(与 AuthService.LogoutAsync 一致的处理方式)。
+        var activeTokens = await _refreshTokens.ListAsync(new ActiveRefreshTokensByUserSpec(id), ct);
+        foreach (var token in activeTokens)
+        {
+            token.IsRevoked = true;
+            _refreshTokens.Update(token);
+        }
+
         await _uow.SaveChangesAsync(ct);
     }
 }

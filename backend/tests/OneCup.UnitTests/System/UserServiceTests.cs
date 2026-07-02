@@ -28,7 +28,8 @@ public class UserServiceTests
         db.SaveChanges();
 
         var svc = new UserService(
-            new Repository<User>(db), new Repository<Role>(db), new UnitOfWork(db), new PasswordHasher(),
+            new Repository<User>(db), new Repository<Role>(db), new Repository<RefreshToken>(db),
+            new UnitOfWork(db), new PasswordHasher(),
             new CreateUserRequestValidator(), new UpdateUserRequestValidator(), new ResetPasswordRequestValidator());
         return (db, svc);
     }
@@ -128,5 +129,63 @@ public class UserServiceTests
                 IsActive = false,
                 RoleIds = [SeedData.AdminRoleId],
             }));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_SoftDeletesUser()
+    {
+        var user = MakeUser("del", "待删除");
+        var (db, svc) = Setup(user);
+
+        await svc.DeleteAsync(user.Id);
+
+        // 权威断言：直接查 DB(绕过 QueryFilter)确认 IsDeleted 已置 true。
+        var raw = await db.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == user.Id);
+        Assert.True(raw.IsDeleted);
+
+        // InMemory 在 LINQ 查询上确实执行 HasQueryFilter(经探测验证)，
+        // 故经仓储/规范过滤后的 GetByIdAsync 应返回 null。
+        var gone = await svc.GetByIdAsync(user.Id);
+        Assert.Null(gone);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AdminUser_Throws()
+    {
+        var adminUser = MakeUser("admin", "管理员");
+        adminUser.Id = SeedData.AdminUserId;
+        var (db, svc) = Setup(adminUser);
+
+        await Assert.ThrowsAsync<DomainException>(() => svc.DeleteAsync(SeedData.AdminUserId));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NonExistentUser_Throws()
+    {
+        var (db, svc) = Setup();
+
+        await Assert.ThrowsAsync<DomainException>(() => svc.DeleteAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RevokesActiveRefreshTokens()
+    {
+        var user = MakeUser("tk", "令牌用户");
+        var (db, svc) = Setup(user);
+
+        // 2 个未吊销 + 1 个已吊销令牌
+        db.RefreshTokens.AddRange(
+            new RefreshToken { Token = "t1", UserId = user.Id, IsRevoked = false, ExpiresAt = DateTime.UtcNow.AddDays(1) },
+            new RefreshToken { Token = "t2", UserId = user.Id, IsRevoked = false, ExpiresAt = DateTime.UtcNow.AddDays(1) },
+            new RefreshToken { Token = "t3", UserId = user.Id, IsRevoked = true, ExpiresAt = DateTime.UtcNow.AddDays(1) });
+        db.SaveChanges();
+        // 清理变更跟踪器,避免上面 attach 的实体干扰后续断言。
+        db.ChangeTracker.Clear();
+
+        await svc.DeleteAsync(user.Id);
+
+        var tokens = await db.RefreshTokens.IgnoreQueryFilters()
+            .Where(t => t.UserId == user.Id).ToListAsync();
+        Assert.All(tokens, t => Assert.True(t.IsRevoked));
     }
 }
