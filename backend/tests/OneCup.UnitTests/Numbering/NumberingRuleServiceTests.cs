@@ -18,7 +18,11 @@ public class NumberingRuleServiceTests
             .UseInMemoryDatabase($"numbering-rule-{Guid.NewGuid()}")
             .UseInternalServiceProvider(BuildServiceProvider())
             .Options);
-        var svc = new NumberingRuleService(db, new NumberingClock());
+        var svc = new NumberingRuleService(
+            new Repository<NumberingRule>(db),
+            new Repository<NumberingLog>(db),
+            new UnitOfWork(db),
+            new NumberingClock());
         return (db, svc);
     }
 
