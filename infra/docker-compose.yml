@@ -1,22 +1,32 @@
 # ─────────────────────────────────────────────────────────────
-# OneCup 开发环境基础设施
+# OneCup 全栈部署 (数据库 + 后端 + 前端)
 # 部署位置: 云服务器
-# 包含服务: PostgreSQL + pgAdmin
 # ─────────────────────────────────────────────────────────────
 #
 # 部署步骤:
-#   1. 将整个 infra/ 目录上传到云服务器
-#   2. 复制 .env.example 为 .env, 填入真实密码
-#   3. docker compose up -d
+#   1. 将整个项目仓库上传到云服务器 (或 git clone)
+#   2. cd infra && cp .env.example .env, 填入真实密码和密钥
+#   3. docker compose up -d --build
+#
+# 服务说明:
+#   - postgres : PostgreSQL 17 数据库
+#   - pgadmin  : 数据库管理界面 (可选, 仅开发/运维用)
+#   - backend  : .NET API (启动时自动迁移数据库)
+#   - frontend : 前端静态文件 (nginx 托管 + 反代 API)
+#
+# 访问地址:
+#   - 前端:   http://<服务器IP>:${FRONTEND_PORT:-8080}
+#   - API:    http://<服务器IP>:${FRONTEND_PORT:-8080}/api/ (经 nginx 反代)
+#   - pgAdmin: http://<服务器IP>:${PGADMIN_PORT:-15672}
 #
 # 安全须知:
-#   数据库端口和 pgAdmin 端口都映射到宿主机公网 IP, 必须配置防火墙:
-#     - 15207 (PostgreSQL): 只放行给开发机公网 IP
-#     - 15672 (pgAdmin):    只放行给开发机公网 IP
-#     - 不要对 0.0.0.0/0 开放这些端口
-#   所有密码通过 .env 文件注入, 不硬编码在本文件中
+#   - 生产环境建议在前方再加一层反向代理 (nginx/Caddy) 处理 HTTPS
+#   - 所有密码/密钥通过 .env 文件注入, 不硬编码
+#   - 数据库端口默认不对公网开放 (仅 compose 内部网络可达);
+#     如需从开发机直连, 在 postgres.ports 处取消注释并配置防火墙白名单
 
 services:
+  # ── 数据库 ──────────────────────────────────────────────────
   postgres:
     image: postgres:17-alpine
     container_name: onecup-postgres
@@ -25,8 +35,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-onecup}
       POSTGRES_USER: ${POSTGRES_USER:-onecup}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?必须在 .env 中设置 POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT:-15207}:5432"
+    # 生产默认不暴露 DB 端口到公网 (后端通过 compose 内部网络访问)
+    # 开发需从本机直连时, 取消下面注释:
+    # ports:
+    #   - "${POSTGRES_PORT:-15207}:5432"
     volumes:
       - onecup-pg-data:/var/lib/postgresql/data
     healthcheck:
@@ -35,6 +47,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── 数据库管理 (可选, 仅运维用) ────────────────────────────
   pgadmin:
     image: dpage/pgadmin4:2026-03-30-1
     container_name: onecup-pgadmin
@@ -49,6 +62,52 @@ services:
       - "${PGADMIN_PORT:-15672}:80"
     volumes:
       - onecup-pgadmin-data:/var/lib/pgadmin
+
+  # ── 后端 API ───────────────────────────────────────────────
+  backend:
+    build:
+      context: ..                          # 仓库根 (Dockerfile 内 COPY 相对仓库根)
+      dockerfile: backend/src/OneCup.Api/Dockerfile
+    image: onecup-backend:latest
+    container_name: onecup-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy         # 等 DB 真正 ready 才启动, 避免迁移连空库
+    environment:
+      # 连接串用 compose 服务名 postgres (内部 DNS), 不是宿主机 IP
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB:-onecup};Username=${POSTGRES_USER:-onecup};Password=${POSTGRES_PASSWORD:?需设置 POSTGRES_PASSWORD}
+      # 启动即迁移 (方案 B1): 容器启动后自动应用 EF Core 迁移
+      - Database__MigrateOnStartup=true
+      # JWT 配置
+      - Jwt__SecretKey=${JWT_SECRET:?必须在 .env 中设置 JWT_SECRET (至少32字节)}
+      - Jwt__Issuer=OneCup
+      - Jwt__Audience=OneCup
+      - Jwt__AccessTokenMinutes=30
+      - Jwt__RefreshTokenDays=7
+      # 运行环境
+      - ASPNETCORE_ENVIRONMENT=Production
+      # CORS: 允许前端访问 (前端经 nginx 反代实际同源, 此处兜底)
+      - Cors__AllowedOrigins__0=http://localhost:${FRONTEND_PORT:-8080}
+      - Cors__AllowedOrigins__1=http://${SERVER_HOST:-localhost}:${FRONTEND_PORT:-8080}
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+
+  # ── 前端 (nginx 静态托管 + API 反代) ───────────────────────
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+      args:
+        # 前端走 nginx 反代访问 API, 用相对路径
+        - VITE_API_BASE_URL=/api
+    image: onecup-frontend:latest
+    container_name: onecup-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
 
 volumes:
   onecup-pg-data:
