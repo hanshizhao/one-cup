@@ -10,6 +10,8 @@ using OneCup.Application.Options;
 using OneCup.Application.Services;
 using OneCup.Application.Validators;
 using OneCup.Domain.Exceptions;
+using OneCup.Infrastructure.Interfaces;
+using OneCup.Infrastructure.Lockout;
 using OneCup.Infrastructure.Persistence;
 using OneCup.Infrastructure.Services;
 using System.Security.Claims;
@@ -82,6 +84,11 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<CurrentUserService>();
 builder.Services.AddHttpContextAccessor();
+
+// ── 登录失败锁定 (内存方案) ──────────────────────────────────
+builder.Services.AddMemoryCache();
+builder.Services.Configure<LockoutOptions>(builder.Configuration.GetSection(LockoutOptions.SectionName));
+builder.Services.AddSingleton<ILockoutStore, MemoryLockoutStore>();
 
 // ── 授权策略 (基于 JWT perm_codes claim) ───────────────────────
 // admin 角色的 perm_codes 含通配 "*",由 WildcardAuthorizationHandler 放行所有策略。

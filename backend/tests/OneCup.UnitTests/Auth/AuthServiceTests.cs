@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
@@ -6,6 +7,7 @@ using OneCup.Application.Options;
 using OneCup.Application.Services;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
+using OneCup.Infrastructure.Interfaces;
 using OneCup.Infrastructure.Persistence;
 using OneCup.Infrastructure.Services;
 
@@ -112,12 +114,15 @@ public class AuthServiceTests
     private AuthService CreateAuthService(
         OneCupDbContext db,
         FakePasswordHasher? passwordHasher = null,
-        FakeJwtTokenService? jwt = null)
+        FakeJwtTokenService? jwt = null,
+        ILockoutStore? lockout = null)
     {
         passwordHasher ??= new FakePasswordHasher();
         jwt ??= new FakeJwtTokenService();
+        lockout ??= new FakeLockoutStore();
         var permCalc = new PermissionCalculator();
-        return new AuthService(db, jwt, passwordHasher, Microsoft.Extensions.Options.Options.Create(_options), permCalc);
+        var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance;
+        return new AuthService(db, jwt, passwordHasher, Microsoft.Extensions.Options.Options.Create(_options), permCalc, lockout, logger);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -208,6 +213,47 @@ public class AuthServiceTests
         // Act + Assert
         await Assert.ThrowsAsync<UnauthorizedException>(() =>
             service.LoginAsync(new LoginRequest { Username = "inactive", Password = "correct-anyway" }));
+    }
+
+    private static ILockoutStore NoLockStore() => new FakeLockoutStore();
+
+    [Fact]
+    public async Task Login_locked_account_throws_AccountLockedException()
+    {
+        // 安排:存储报告该用户已锁定
+        var lockedStore = new FakeLockoutStore { IsLockedResult = true, Remaining = TimeSpan.FromMinutes(10) };
+        var db = await CreateContextAsync(nameof(Login_locked_account_throws_AccountLockedException));
+        var sut = CreateAuthService(db, lockout: lockedStore);
+
+        // 断言
+        var ex = await Assert.ThrowsAsync<AccountLockedException>(
+            () => sut.LoginAsync(new LoginRequest { Username = "admin", Password = "any" }, default));
+        Assert.NotNull(ex.RetryAfter);
+    }
+
+    [Fact]
+    public async Task Login_wrong_password_records_failure()
+    {
+        var store = new FakeLockoutStore();
+        var db = await CreateContextAsync(nameof(Login_wrong_password_records_failure));
+        var sut = CreateAuthService(db,
+            passwordHasher: new FakePasswordHasher { VerifyResult = (_, _) => false },
+            lockout: store);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => sut.LoginAsync(new LoginRequest { Username = "admin", Password = "wrong" }, default));
+        Assert.Equal(1, store.FailureCount);
+    }
+
+    [Fact]
+    public async Task Login_success_resets_failures()
+    {
+        var store = new FakeLockoutStore { FailureCount = 3 };
+        var db = await CreateContextAsync(nameof(Login_success_resets_failures));
+        var sut = CreateAuthService(db, lockout: store);
+
+        await sut.LoginAsync(new LoginRequest { Username = "admin", Password = "pass" }, default);
+        Assert.True(store.WasReset);
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -441,5 +487,19 @@ public class AuthServiceTests
         public string GenerateAccessToken(User user) => AccessToken;
 
         public string GenerateRefreshToken() => $"fake-refresh-{++_refreshCounter}";
+    }
+
+    /// <summary>可控的锁定存储 fake。</summary>
+    private sealed class FakeLockoutStore : ILockoutStore
+    {
+        public bool IsLockedResult { get; set; }
+        public TimeSpan? Remaining { get; set; }
+        public int FailureCount { get; set; }
+        public bool WasReset { get; set; }
+
+        public Task<bool> IsLockedAsync(string key, CancellationToken ct = default) => Task.FromResult(IsLockedResult);
+        public Task RecordFailureAsync(string key, CancellationToken ct = default) { FailureCount++; return Task.CompletedTask; }
+        public Task ResetAsync(string key, CancellationToken ct = default) { WasReset = true; return Task.CompletedTask; }
+        public Task<TimeSpan?> GetRemainingLockoutAsync(string key, CancellationToken ct = default) => Task.FromResult(Remaining);
     }
 }
