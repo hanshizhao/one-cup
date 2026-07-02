@@ -319,29 +319,37 @@ var bucket = await _db.NumberingCounters
 
 **为什么不用 PG 的 `ON CONFLICT DO UPDATE`**：那会强绑定 PostgreSQL，违背项目的可替换性原则。行锁方案在 EF Core 里有通用写法，换库成本低。
 
-### 4.4 服务层重试机制
+### 4.4 服务层重试机制 + 事务归属
 
-针对"桶唯一约束冲突"，包一层有限重试（最多 3 次）：
+**事务归属（重要）**：`GenerateAsync` **不开、不提交事务**——它在调用方已开启的事务内执行（见 §2.5 调用方契约）。这是 B+ 方案"业务对象落库失败则计数随事务回滚、不跳号"的核心保证。
+
+**fail-fast 守卫**：方法入口检测 `_db.Database.CurrentTransaction is null` 时抛 `DomainException("GenerateAsync 必须在调用方的事务内调用")`。这防止静默不安全调用——`FOR UPDATE` 行锁依赖活动事务，无事务调用会让锁失效。
+
+针对"桶唯一约束冲突"（新品类/新周期首次建桶时的竞态），包一层有限重试（最多 3 次）。注意：因为是调用方持事务，冲突时**不能回滚整个事务**（否则业务对象也回滚），而是清理 ChangeTracker 里失败的 Added 实体后重试：
 
 ```csharp
-public async Task<string> GenerateAsync(string targetType, string? categoryCode)
+public async Task<string> GenerateAsync(string targetType, string? categoryCode, CancellationToken ct = default)
 {
+    // fail-fast：必须在调用方事务内（FOR UPDATE 依赖事务；B+ 回滚保证依赖事务）
+    if (_db.Database.CurrentTransaction is null)
+        throw new DomainException("GenerateAsync 必须在调用方的事务内调用");
+
     for (int attempt = 0; attempt < 3; attempt++)
     {
-        using var tx = await _db.Database.BeginTransactionAsync();
         try
         {
-            // ... 步骤 1-7 ...
-            await tx.CommitAsync();
-            return code;
+            // ... 步骤 1-7（行锁取号、自增、拼码、写日志）...
+            return code;   // 不提交事务，由调用方控制（见 §2.5）
         }
         catch (Exception ex) when (IsUniqueConstraintViolation(ex))
         {
-            await tx.RollbackAsync();
-            continue;   // 桶被别人建了，重试时 SELECT 会找到它
+            // 桶被别人建了：detach 失败的 Added 实体，重试时 SELECT 会找到已建桶
+            foreach (var entry in _db.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
+                entry.State = EntityState.Detached;
+            continue;
         }
     }
-    throw new DomainException("编号生成失败：并发冲突重试超限");
+    throw new DomainException("编号生成失败：并发冲突，请重试");
 }
 ```
 

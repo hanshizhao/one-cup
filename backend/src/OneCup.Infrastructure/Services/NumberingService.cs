@@ -93,7 +93,10 @@ public class NumberingService : INumberingService
             }
             catch (Exception ex) when (IsUniqueConstraintViolation(ex))
             {
-                // 桶竞态：分离失败的实体，使变更跟踪器干净后重试（下次 SELECT 会找到对方已提交的桶）
+                // 桶竞态：分离失败的 Added 实体，使变更跟踪器干净后重试（下次 SELECT 会找到对方已提交的桶）。
+                // 注意：EF Core 在环境事务内的 SaveChanges 自动创建 savepoint，唯一约束冲突时回滚到 savepoint，
+                // 使事务保持可用（PG 默认会在 23505 后进入 aborted 态，savepoint 保护重试的 SELECT 不受影响）。
+                // 这是 EF Core 6.0+ 的默认行为，依赖此机制使重试安全。
                 foreach (var entry in _db.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
                     entry.State = EntityState.Detached;
                 continue;
