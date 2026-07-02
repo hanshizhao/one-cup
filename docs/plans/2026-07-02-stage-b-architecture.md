@@ -20,6 +20,9 @@
 - 业务规则保持不变:admin 保护、角色删除关联用户校验、登录失败锁定、通配权限——这些是阶段A已验证的行为,迁移不得改变语义。
 - `SeedData.AdminUserId` 等是 internal(在 Infrastructure),被 UserService 业务保护引用。迁移 Service 到 Application 前,需把 admin 相关常量提升为 Application 层 public 常量。
 - `OneCup.UnitTests` 当前只引用 Domain + Infrastructure,需新增引用 Application。
+- **Numbering 模块(同事合并)处理**:NumberingClock、NumberingRuleService 纳入迁移(同 User/Role 范式);**NumberingService 暂留 Infrastructure**——它用 `FromSqlRaw FOR UPDATE` 行锁 + 调用方持事务守卫 + ChangeTracker 手动 Detach + PG 23505 异常解析,Repository/Specification 抽象力不从心,属持久化/并发基础设施职责。
+- `IUnitOfWork` 须新增**事务抽象**(`ExecuteInTransactionAsync` / `IApplicationTransaction`),供 Application 层 Service 表达事务边界,并支持 NumberingService 这类要求调用方持事务的场景。
+- `IApplicationTransaction` 是 Application 层抽象,不泄漏 EF Core 的 `IDbContextTransaction` 类型;Infrastructure 实现包装它。
 
 ---
 
@@ -36,6 +39,11 @@
 | `OneCup.Application/Services/RoleService.cs` | 迁移 | Move+Modify |
 | `OneCup.Application/Services/PermissionService.cs` | 迁移 | Move+Modify |
 | `OneCup.Application/Services/AuthService.cs` | 迁移 | Move+Modify |
+| `OneCup.Application/Services/NumberingClock.cs` | 迁移(纯时钟,零依赖) | Move |
+| `OneCup.Application/Services/NumberingRuleService.cs` | 迁移(CRUD+分页,Repository 范式) | Move+Modify |
+| `OneCup.Application/Interfaces/IApplicationTransaction.cs` | 事务抽象(不泄漏 EF 类型) | Create |
+| `OneCup.Infrastructure/Persistence/UnitOfWork.cs` | 实现事务抽象(包装 IDbContextTransaction) | Modify |
+| `OneCup.Infrastructure/Services/NumberingService.cs` | 留 Infrastructure,适配事务抽象 | Modify |
 | `OneCup.Application/Interfaces/ILockoutStore.cs` | 从 Infrastructure 提升到 Application(AuthService 依赖) | Move |
 | `OneCup.Infrastructure/Lockout/MemoryLockoutStore.cs` | 实现留在 Infrastructure,接口引用改 Application | Modify |
 | `OneCup.Api/Program.cs` | using 更新 + DI(无逻辑变) | Modify |
@@ -806,6 +814,167 @@ git commit -m "feat(arch): AuthService 迁移到 Application (多级 Include + R
 
 ---
 
+## Task 8a: 迁移 NumberingClock(纯时钟,零依赖)
+
+**Files:**
+- Move: `backend/src/OneCup.Infrastructure/Services/NumberingClock.cs` → `backend/src/OneCup.Application/Services/NumberingClock.cs`
+- Modify: `backend/src/OneCup.Infrastructure/Services/NumberingService.cs`(它依赖 INumberingClock,接口已在 Application,实现随 NumberingClock 一起上移;NumberingService 留 Infrastructure 但构造注入的 NumberingClock 实现现在来自 Application —— DI 自动解析)
+- Modify: `backend/tests/OneCup.UnitTests/`(NumberingClockTests.cs using 更新)
+
+> NumberingClock 是纯时钟抽象(UTC→北京时间),零 DB 依赖,迁移几乎只是改命名空间。它随 NumberingService 构造注入,但实现上移到 Application 后,Infrastructure 的 NumberingService 通过 DI 拿到它(Infrastructure→Application 方向合法)。
+
+- [ ] **Step 1: 迁移文件**
+
+移动 `NumberingClock.cs` 到 `backend/src/OneCup.Application/Services/`,命名空间改 `OneCup.Application.Services`。内容不变(只引用 INumberingClock + BCL)。
+
+- [ ] **Step 2: 更新测试 using**
+
+`NumberingClockTests.cs` 的 `using OneCup.Infrastructure.Services` 改为 `using OneCup.Application.Services`。
+
+- [ ] **Step 3: 构建并测试**
+
+Run: `dotnet build backend/src/OneCup.Api/OneCup.Api.csproj && dotnet test backend/tests/OneCup.UnitTests`
+Expected: 全 PASS(NumberingClock 相关测试不受影响,DI 自动解析新位置)。
+
+- [ ] **Step 4: 提交**
+
+```bash
+git add -A
+git commit -m "feat(arch): NumberingClock 迁移到 Application (纯时钟抽象)"
+```
+
+---
+
+## Task 8b: 事务抽象(IApplicationTransaction + ExecuteInTransactionAsync)
+
+**Files:**
+- Create: `backend/src/OneCup.Application/Interfaces/IApplicationTransaction.cs`
+- Modify: `backend/src/OneCup.Application/Interfaces/IUnitOfWork.cs`(加 `ExecuteInTransactionAsync`)
+- Modify: `backend/src/OneCup.Infrastructure/Persistence/UnitOfWork.cs`(实现,包装 EF `IDbContextTransaction`)
+- Modify: `backend/src/OneCup.Infrastructure/Services/NumberingService.cs`(调用方事务守卫改用抽象)
+- Test: `backend/tests/OneCup.UnitTests/Persistence/UnitOfWorkTransactionTests.cs`
+
+> NumberingService 要求调用方持事务(否则 fail-fast)。迁移后业务 Service 在 Application 层拿不到 DbContext,需要事务抽象。`IApplicationTransaction` 不暴露 EF 类型;`ExecuteInTransactionAsync` 是最常用的便捷形式(回调内执行,自动提交/回滚)。
+
+- [ ] **Step 1: 定义 IApplicationTransaction + 扩展 IUnitOfWork**
+
+```csharp
+// backend/src/OneCup.Application/Interfaces/IApplicationTransaction.cs
+namespace OneCup.Application.Interfaces;
+
+/// <summary>
+/// 应用层事务抽象,不泄漏 EF Core 的 IDbContextTransaction。
+/// </summary>
+public interface IApplicationTransaction : IAsyncDisposable
+{
+    /// <summary>提交事务。</summary>
+    Task CommitAsync(CancellationToken ct = default);
+
+    /// <summary>回滚事务。</summary>
+    Task RollbackAsync(CancellationToken ct = default);
+}
+```
+
+在 `IUnitOfWork` 加:
+```csharp
+    /// <summary>在事务中执行操作,自动提交(回调正常)或回滚(回调抛异常)。</summary>
+    Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default);
+```
+
+- [ ] **Step 2: UnitOfWork 实现**
+
+```csharp
+// UnitOfWork.cs 增加
+public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default)
+{
+    // EF Core 会在环境事务内自动为各 SaveChanges 建立 savepoint
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        await action();
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}
+```
+
+- [ ] **Step 3: 写测试**
+
+```csharp
+// 用 EF InMemory 验证 ExecuteInTransactionAsync 在回调成功时提交、抛异常时回滚(重新执行不报"已有事务")
+// 注:InMemory provider 的事务是 no-op,但能验证控制流(提交/回滚不抛二次异常)
+```
+
+- [ ] **Step 4: 运行测试**
+
+Run: `dotnet test backend/tests/OneCup.UnitTests --filter "FullyQualifiedName~UnitOfWorkTransactionTests"`
+Expected: PASS。
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add -A
+git commit -m "feat(arch): IApplicationTransaction 事务抽象 (不泄漏 EF 类型)"
+```
+
+---
+
+## Task 8c: 迁移 NumberingRuleService(CRUD+分页,left-join)
+
+**Files:**
+- Move: `backend/src/OneCup.Infrastructure/Services/NumberingRuleService.cs` → `backend/src/OneCup.Application/Services/NumberingRuleService.cs`
+- Create: `backend/src/OneCup.Application/Specifications/NumberingSpecs.cs`
+- Modify: `backend/tests/OneCup.UnitTests/System/NumberingRuleServiceTests.cs`(构造改为注入 Repository)
+
+> 与 UserService 同形(GetById + 分页过滤 + AnyAsync 唯一校验)。唯一特殊点:`GetLogsAsync` 的 left-join(规则⧹日志)。由于 left-join 用 LINQ `join ... into ... DefaultIfEmpty` 表达,而当前 Specification 只支持 Where/Include/OrderBy/Paging,**left-join 投影不适合塞进通用 Specification**。
+>
+> **决策**:`GetLogsAsync` 的 left-join 查询保留为 NumberingRuleService 内的一段 LINQ——但这要求 Service 能拿到 IQueryable,与"Service 不依赖 DbContext"冲突。两个解法:
+> - **解法A**:给 IRepository 加一个 `IQueryable<T> Query()` 暴露(最小泄漏,但让复杂查询可表达)。
+> - **解法B**:`GetLogsAsync` 单独走一个专用查询接口/Specification,在 Infrastructure 实现该查询,Application 只定义 DTO 与接口签名。
+>
+> 本 Task 采用**解法A**(给 IRepository 加 `Query()`),因为它能覆盖 left-join 这类投影查询,且 IQueryable 本身不是 EF Core 类型(System.Linq),Application 引用 IQueryablте 不破坏零 EF 约束。Repository 实现 Query() 返回 `_db.Set<T>().AsQueryable()`。
+
+- [ ] **Step 1: 给 IRepository 加 Query()**
+
+在 `IRepository<T>` 加 `IQueryable<T> Query();`,Repository 实现返回 `_db.Set<T>().AsQueryable()`。
+> 注:这是"逃生舱口",供 left-join/聚合投影等通用 Specification 难表达的场景。规范用法仍优先 ListAsync(spec)。
+
+- [ ] **Step 2: 定义 NumberingSpecs**
+
+```csharp
+// backend/src/OneCup.Application/Specifications/NumberingSpecs.cs
+public class NumberingRulePagedSpec : Specification<NumberingRule> { /* keyword/category/status 过滤 + 分页 */ }
+public class NumberingRuleByIdSpec : Specification<NumberingRule> { ApplyCriteria(x => x.Id == id); }
+public class NumberingRuleByCodeSpec : Specification<NumberingRule> { ApplyCriteria(x => x.Code == code); }
+```
+(left-join 的 GetLogsAsync 不用 Spec,直接用 Query() + LINQ join)
+
+- [ ] **Step 3: 迁移 NumberingRuleService**
+
+搬到 Application,依赖 `IRepository<NumberingRule>` + `IRepository<NumberingLog>` + `IUnitOfWork` + `INumberingClock`(已上移)。CRUD/分页用 Spec,GetLogsAsync 用 `_logs.Query()` + LINQ left-join。
+
+- [ ] **Step 4: 更新 NumberingRuleServiceTests 构造**
+
+注入 Repository/UoW。用例逻辑不变。
+
+- [ ] **Step 5: 构建并测试**
+
+Run: `dotnet test backend/tests/OneCup.UnitTests`
+Expected: 全 PASS。
+
+- [ ] **Step 6: 提交**
+
+```bash
+git add -A
+git commit -m "feat(arch): NumberingRuleService 迁移到 Application (left-join via Query())"
+```
+
+---
+
 ## Task 9: 清理 Infrastructure 残留 + DI 收尾
 
 **Files:**
@@ -815,7 +984,7 @@ git commit -m "feat(arch): AuthService 迁移到 Application (多级 Include + R
 
 - [ ] **Step 1: 确认 Infrastructure/Services 剩余文件**
 
-`backend/src/OneCup.Infrastructure/Services/` 应只剩 `JwtTokenService.cs`、`PasswordHasher.cs`(技术细节,留在 Infrastructure)。其余已迁移。
+`backend/src/OneCup.Infrastructure/Services/` 应只剩 `JwtTokenService.cs`、`PasswordHasher.cs`、`NumberingService.cs`(技术细节/并发基础设施,留在 Infrastructure)。其余已迁移。
 
 - [ ] **Step 2: 确认 Program.cs using 与 DI**
 
