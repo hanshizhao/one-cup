@@ -157,7 +157,7 @@ catch
 ### 2.6 编辑与启停的约束
 
 **编辑接口（已启用规则锁关键字段）**，服务层校验：
-- 若规则 `IsActive=true`：仅 `remark` 可改；修改 `name/prefix/targetType/includeCategory/dateSegment/seqLength/separator/resetPeriod` → 返回 400 "已启用的规则不可修改关键配置，请先停用"
+- 若规则 `IsActive=true`：仅 `name` 和 `remark` 可改（`name` 是人类可读标签，不影响生成的编码格式）；修改 `prefix/targetType/includeCategory/dateSegment/seqLength/separator/resetPeriod` → 返回 400 "已启用的规则不可修改关键配置，请先停用"
 - 若规则 `IsActive=false`：所有字段可改
 
 **启停接口（启用时校验唯一性）**：
