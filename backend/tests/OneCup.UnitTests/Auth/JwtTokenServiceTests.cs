@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using OneCup.Application.Options;
+using OneCup.Application.Services;
 using OneCup.Domain.Entities;
 using OneCup.Infrastructure.Services;
 
@@ -18,7 +19,7 @@ public class JwtTokenServiceTests
         RefreshTokenDays = 7,
     };
 
-    private JwtTokenService CreateService() => new(Options.Create(_testOptions));
+    private JwtTokenService CreateService() => new(Microsoft.Extensions.Options.Options.Create(_testOptions), new PermissionCalculator());
 
     private static User CreateUserWithRoles(List<Role> roles) => new()
     {

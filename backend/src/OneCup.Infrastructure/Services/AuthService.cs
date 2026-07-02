@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
+using OneCup.Infrastructure.Interfaces;
 using OneCup.Infrastructure.Persistence;
 
 namespace OneCup.Infrastructure.Services;
@@ -18,29 +20,56 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _jwt;
     private readonly IPasswordHasher _passwordHasher;
     private readonly JwtOptions _options;
+    private readonly IPermissionCalculator _permCalc;
+    private readonly ILockoutStore _lockout;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         OneCupDbContext db,
         IJwtTokenService jwt,
         IPasswordHasher passwordHasher,
-        IOptions<JwtOptions> options)
+        IOptions<JwtOptions> options,
+        IPermissionCalculator permCalc,
+        ILockoutStore lockout,
+        ILogger<AuthService> logger)
     {
         _db = db;
         _jwt = jwt;
         _passwordHasher = passwordHasher;
         _options = options.Value;
+        _permCalc = permCalc;
+        _lockout = lockout;
+        _logger = logger;
     }
 
     public async Task<TokenResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
+        var lockoutKey = request.Username.ToLowerInvariant();
+
+        // 1. 先查锁定(不查库、不校验密码)
+        if (await _lockout.IsLockedAsync(lockoutKey, ct))
+        {
+            var remaining = await _lockout.GetRemainingLockoutAsync(lockoutKey, ct);
+            _logger.LogWarning("登录被拒(账号锁定):Username={Username}, 剩余={Remaining}", request.Username, remaining);
+            throw new AccountLockedException(remaining);
+        }
+
+        // 2. 查用户
         var user = await _db.Users
             .Include(u => u.Roles).ThenInclude(r => r.Permissions)
             .FirstOrDefaultAsync(u => u.Username == request.Username, ct);
 
         if (user is null || !user.IsActive || !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
+            // 失败:记录 + 计数(不泄露用户是否存在)
+            await _lockout.RecordFailureAsync(lockoutKey, ct);
+            _logger.LogWarning("登录失败:Username={Username}", request.Username);
             throw new UnauthorizedException("用户名或密码错误");
         }
+
+        // 3. 成功:重置计数 + 日志
+        await _lockout.ResetAsync(lockoutKey, ct);
+        _logger.LogInformation("登录成功:UserId={UserId}, Username={Username}", user.Id, user.Username);
 
         return await IssueTokensAsync(user, ct);
     }
@@ -59,6 +88,8 @@ public class AuthService : IAuthService
         // 轮换：吊销旧 token
         stored.IsRevoked = true;
         stored.UpdatedAt = DateTime.UtcNow;
+        _logger.LogInformation("Refresh token 轮换吊销:UserId={UserId}, Token={TokenMask}",
+            stored.User.Id, MaskToken(stored.Token));
 
         return await IssueTokensAsync(stored.User, ct);
     }
@@ -75,6 +106,8 @@ public class AuthService : IAuthService
             rt.UpdatedAt = DateTime.UtcNow;
         }
 
+        _logger.LogInformation("登出吊销 refresh token:UserId={UserId}, 数量={Count}", userId, tokens.Count);
+
         await _db.SaveChangesAsync(ct);
     }
 
@@ -87,9 +120,7 @@ public class AuthService : IAuthService
         if (user is null) return null;
 
         var roleCodes = user.Roles.Select(r => r.Code).ToList();
-        var permCodes = roleCodes.Contains("admin")
-            ? new List<string> { "*" }
-            : user.Roles.SelectMany(r => r.Permissions).Select(p => p.Code).Distinct().ToList();
+        var permCodes = _permCalc.GetEffective(user);
 
         return new CurrentUser
         {
@@ -97,7 +128,7 @@ public class AuthService : IAuthService
             Username = user.Username,
             DisplayName = user.DisplayName,
             Roles = roleCodes,
-            Permissions = permCodes,
+            Permissions = permCodes.ToList(),
         };
     }
 
@@ -123,4 +154,8 @@ public class AuthService : IAuthService
             ExpiresIn = _options.AccessTokenMinutes * 60,
         };
     }
+
+    /// <summary>掩码 token,只保留前 8 字符用于日志识别。</summary>
+    private static string MaskToken(string token) =>
+        token.Length <= 8 ? "****" : $"{token[..8]}****";
 }

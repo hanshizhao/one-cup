@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
 using OneCup.Api.Services;
@@ -27,6 +28,7 @@ public class AuthController : ControllerBase
     /// <summary>用户名密码登录。</summary>
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-login")]
     [ProducesResponseType(typeof(TokenResponse), Status200OK)]
     [ProducesResponseType(typeof(object), Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
@@ -38,6 +40,7 @@ public class AuthController : ControllerBase
     /// <summary>用刷新令牌换新的访问令牌。</summary>
     [HttpPost("refresh")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-login")]
     [ProducesResponseType(typeof(TokenResponse), Status200OK)]
     [ProducesResponseType(typeof(object), Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request, CancellationToken ct)

@@ -7,6 +7,9 @@ public class JwtOptions
 {
     public const string SectionName = "Jwt";
 
+    /// <summary>未配置时 appsettings 的占位符。启动校验拒绝该值。</summary>
+    public const string PlaceholderSecret = "REPLACE_VIA_USER_SECRETS";
+
     public string Issuer { get; set; } = string.Empty;
 
     public string Audience { get; set; } = string.Empty;

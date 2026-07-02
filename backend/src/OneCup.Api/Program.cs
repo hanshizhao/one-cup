@@ -1,12 +1,18 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OneCup.Api.Authorization;
 using OneCup.Api.Services;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
+using OneCup.Application.Services;
+using OneCup.Application.Validators;
 using OneCup.Domain.Exceptions;
+using OneCup.Infrastructure.Interfaces;
+using OneCup.Infrastructure.Lockout;
 using OneCup.Infrastructure.Persistence;
 using OneCup.Infrastructure.Services;
 using System.Security.Claims;
@@ -48,6 +54,9 @@ builder.Services.AddCors(options =>
 // ── 认证授权 (JWT) ─────────────────────────────────────────────
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 
+builder.Services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
+builder.Services.AddOptions<JwtOptions>().ValidateOnStart();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -77,8 +86,14 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<CurrentUserService>();
 builder.Services.AddHttpContextAccessor();
 
+// ── 登录失败锁定 (内存方案) ──────────────────────────────────
+builder.Services.AddMemoryCache();
+builder.Services.Configure<LockoutOptions>(builder.Configuration.GetSection(LockoutOptions.SectionName));
+builder.Services.AddSingleton<ILockoutStore, MemoryLockoutStore>();
+
 // ── 授权策略 (基于 JWT perm_codes claim) ───────────────────────
 // admin 角色的 perm_codes 含通配 "*",由 WildcardAuthorizationHandler 放行所有策略。
+builder.Services.AddSingleton<IPermissionCalculator, PermissionCalculator>();
 builder.Services.AddSingleton<IAuthorizationHandler, WildcardAuthorizationHandler>();
 builder.Services.AddAuthorization(options =>
 {
@@ -86,6 +101,44 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("perm_codes", "system:user:manage"));
     options.AddPolicy("role-manage", policy =>
         policy.RequireClaim("perm_codes", "system:role:manage"));
+});
+
+// 权限拒绝审计日志:装饰默认 handler,在 403 时记 Warning
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, AuthorizationAuditHandler>();
+
+// ── 限流 ──
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // 登录/刷新:按 IP 固定窗口,10 次/分钟(分区,每 IP 独立桶)
+    options.AddPolicy("auth-login", ctx =>
+    {
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            });
+    });
+
+    // 部署注意:限流按 RemoteIpAddress 分区。若部署在反向代理(nginx/ALB)后,
+    // 必须配置 UseForwardedHeaders,否则所有客户端共享代理 IP,限流失效。
+    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(ctx =>
+    {
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 120,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            });
+    });
 });
 
 var app = builder.Build();
@@ -98,28 +151,47 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 全局异常处理:认证异常 → 401, 领域异常 → 400, 其他 → 500
+// 全局异常处理:认证异常→401, 领域异常→400, 其他→500;生产环境不回显内部细节
 app.UseExceptionHandler(appBuilder =>
 {
     appBuilder.Run(async context =>
     {
         var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+        var logger = context.RequestServices.GetService<ILogger<Program>>();
         context.Response.ContentType = "application/json";
 
-        context.Response.StatusCode = exception switch
+        // 标准错误结构
+        var (statusCode, code, message, retryAfter) = exception switch
         {
-            UnauthorizedException => StatusCodes.Status401Unauthorized,
-            DomainException => StatusCodes.Status400BadRequest,
-            _ => StatusCodes.Status500InternalServerError,
+            AccountLockedException ex => (StatusCodes.Status401Unauthorized, "ACCOUNT_LOCKED", (string?)ex.Message, ex.RetryAfter),
+            UnauthorizedException => (StatusCodes.Status401Unauthorized, "UNAUTHORIZED", exception?.Message, (TimeSpan?)null),
+            DomainException => (StatusCodes.Status400BadRequest, "DOMAIN_ERROR", exception?.Message, (TimeSpan?)null),
+            _ => (StatusCodes.Status500InternalServerError, "INTERNAL_ERROR", (string?)null, (TimeSpan?)null),
         };
 
-        var response = new
+        // 500 始终记完整堆栈;其他警告级
+        if (statusCode >= 500)
         {
-            message = exception?.Message ?? "An unexpected error occurred.",
-        };
+            logger?.LogError(exception, "未处理异常:{Type}", exception?.GetType().Name);
+        }
+        else
+        {
+            logger?.LogWarning("业务异常:{Code} {Message}", code, exception?.Message);
+        }
+
+        // 生产环境 500 不回显 message
+        var exposedMessage = statusCode >= 500 && !app.Environment.IsDevelopment()
+            ? "服务器内部错误"
+            : message ?? "服务器内部错误";
+
+        context.Response.StatusCode = statusCode;
+        var response = retryAfter is null
+            ? (object)new { code, message = exposedMessage }
+            : new { code, message = exposedMessage, retryAfter = (int)Math.Ceiling(retryAfter.Value.TotalSeconds) };
         await context.Response.WriteAsJsonAsync(response);
     });
 });
