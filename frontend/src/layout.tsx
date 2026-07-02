@@ -13,7 +13,6 @@ import NProgress from 'nprogress';
 import Navbar from './components/NavBar';
 import Footer from './components/Footer';
 import useRoute, { IRoute } from '@/routes';
-import { isArray } from './utils/is';
 import useLocale from './utils/useLocale';
 import getUrlParams from './utils/getUrlParams';
 import lazyload from './utils/lazyload';
@@ -26,7 +25,7 @@ const SubMenu = Menu.SubMenu;
 const Sider = Layout.Sider;
 const Content = Layout.Content;
 
-function getIconFromKey(key) {
+function getIconFromKey(key: string) {
   switch (key) {
     case 'system':
       return <IconSettings className={styles.icon} />;
@@ -35,17 +34,21 @@ function getIconFromKey(key) {
   }
 }
 
-function getFlattenRoutes(routes) {
+function getFlattenRoutes(routes: IRoute[]) {
   const mod = import.meta.glob('./pages/**/[a-z[]*.tsx');
-  const res = [];
-  function travel(_routes) {
+  const res: IRoute[] = [];
+  function travel(_routes: IRoute[]) {
     _routes.forEach((route) => {
       const visibleChildren = (route.children || []).filter(
         (child) => !child.ignore
       );
       if (route.key && (!route.children || !visibleChildren.length)) {
         try {
-          route.component = lazyload(mod[`./pages/${route.key}/index.tsx`]);
+          route.component = lazyload(
+            mod[`./pages/${route.key}/index.tsx`] as () => Promise<{
+              default: React.ComponentType<any>;
+            }>
+          );
           res.push(route);
         } catch (e) {
           console.log(route.key);
@@ -53,7 +56,7 @@ function getFlattenRoutes(routes) {
         }
       }
 
-      if (isArray(route.children) && route.children.length) {
+      if (route.children && route.children.length) {
         travel(route.children);
       }
     });
@@ -76,7 +79,7 @@ function PageLayout() {
   const paths = (currentComponent || defaultRoute).split('/');
   const defaultOpenKeys = paths.slice(0, paths.length - 1);
 
-  const [breadcrumb, setBreadCrumb] = useState([]);
+  const [breadcrumb, setBreadCrumb] = useState<React.ReactNode[]>([]);
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [selectedKeys, setSelectedKeys] =
     useState<string[]>(defaultSelectedKeys);
@@ -96,8 +99,11 @@ function PageLayout() {
 
   const flattenRoutes = useMemo(() => getFlattenRoutes(routes) || [], [routes]);
 
-  function onClickMenuItem(key) {
+  function onClickMenuItem(key: string) {
     const currentRoute = flattenRoutes.find((r) => r.key === key);
+    if (!currentRoute) {
+      return;
+    }
     const component = currentRoute.component;
     const preload = component.preload();
     NProgress.start();
@@ -115,9 +121,13 @@ function PageLayout() {
   const paddingTop = showNavbar ? { paddingTop: navbarHeight } : {};
   const paddingStyle = { ...paddingLeft, ...paddingTop };
 
-  function renderRoutes(locale) {
+  function renderRoutes(locale: Record<string, string>) {
     routeMap.current.clear();
-    return function travel(_routes: IRoute[], level, parentNode = []) {
+    return function travel(
+      _routes: IRoute[],
+      level: number,
+      parentNode: string[] = []
+    ) {
       return _routes.map((route) => {
         const { breadcrumb = true, ignore } = route;
         const iconDom = getIconFromKey(route.key);

@@ -40,7 +40,7 @@ function Navbar({ show }: { show: boolean }) {
       });
   }
 
-  function onMenuItemClick(key) {
+  function onMenuItemClick(key: string) {
     if (key === 'logout') {
       logout();
     }
@@ -84,9 +84,9 @@ function Navbar({ show }: { show: boolean }) {
               position: 'br',
             }}
             trigger="hover"
-            onChange={(value) => {
-              setLang(value);
-              const nextLang = defaultLocale[value];
+            onChange={(value: string) => {
+              setLang?.(value);
+              const nextLang = defaultLocale[value as keyof typeof defaultLocale];
               Message.info(`${nextLang['message.lang.tips']}${value}`);
             }}
           />
@@ -101,7 +101,7 @@ function Navbar({ show }: { show: boolean }) {
           >
             <IconButton
               icon={theme !== 'dark' ? <IconMoonFill /> : <IconSunFill />}
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              onClick={() => setTheme?.(theme === 'light' ? 'dark' : 'light')}
             />
           </Tooltip>
         </li>

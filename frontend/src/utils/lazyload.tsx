@@ -4,10 +4,15 @@ import { Spin } from '@arco-design/web-react';
 import styles from '../style/layout.module.less';
 
 // https://github.com/gregberge/loadable-components/pull/226
-function load(fn, options) {
+function load(
+  fn: ((props?: any) => Promise<{ default: React.ComponentType<any> }>) & {
+    requireAsync?: () => Promise<void>;
+  },
+  options?: { fallback?: React.ReactNode }
+) {
   const Component = loadable(fn, options);
 
-  Component.preload = fn.requireAsync || fn;
+  Component.preload = (fn.requireAsync || fn) as () => Promise<void>;
 
   return Component;
 }
@@ -28,7 +33,7 @@ function LoadingComponent(props: {
   );
 }
 
-export default (loader) =>
+export default (loader: () => Promise<{ default: React.ComponentType<any> }>) =>
   load(loader, {
     fallback: LoadingComponent({
       pastDelay: true,

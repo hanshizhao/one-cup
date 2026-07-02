@@ -88,7 +88,7 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    changeTheme(theme);
+    changeTheme(theme || 'light');
   }, [theme]);
 
   const contextValue = {

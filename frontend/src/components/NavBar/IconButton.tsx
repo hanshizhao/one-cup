@@ -3,8 +3,14 @@ import { Button } from '@arco-design/web-react';
 import styles from './style/icon-button.module.less';
 import cs from 'classnames';
 
-function IconButton(props, ref) {
-  const { icon, className, ...rest } = props;
+type IconButtonProps = {
+  icon?: React.ReactNode;
+  className?: string;
+  onClick?: (e: Event) => void;
+};
+
+function IconButton(props: IconButtonProps, ref: React.Ref<HTMLButtonElement>) {
+  const { icon, className, onClick } = props;
 
   return (
     <Button
@@ -13,7 +19,7 @@ function IconButton(props, ref) {
       shape="circle"
       type="secondary"
       className={cs(styles['icon-button'], className)}
-      {...rest}
+      onClick={onClick}
     />
   );
 }

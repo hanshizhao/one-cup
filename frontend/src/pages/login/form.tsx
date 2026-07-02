@@ -16,8 +16,13 @@ import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import styles from './style/index.module.less';
 
+type LoginParams = {
+  userName: string;
+  password: string;
+};
+
 export default function LoginForm() {
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<FormInstance>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [loginParams, setLoginParams, removeLoginParams] =
@@ -27,7 +32,7 @@ export default function LoginForm() {
 
   const [rememberPassword, setRememberPassword] = useState(!!loginParams);
 
-  function afterLoginSuccess(params) {
+  function afterLoginSuccess(params: LoginParams) {
     // 记住密码
     if (rememberPassword) {
       setLoginParams(JSON.stringify(params));
@@ -38,7 +43,7 @@ export default function LoginForm() {
     window.location.href = '/';
   }
 
-  function login(params) {
+  function login(params: LoginParams) {
     setErrorMessage('');
     setLoading(true);
     loginApi(params.userName, params.password)
@@ -56,7 +61,7 @@ export default function LoginForm() {
   }
 
   function onSubmitClick() {
-    formRef.current.validate().then((values) => {
+    formRef.current?.validate().then((values) => {
       login(values);
     });
   }
@@ -65,7 +70,7 @@ export default function LoginForm() {
   useEffect(() => {
     const rememberPassword = !!loginParams;
     setRememberPassword(rememberPassword);
-    if (formRef.current && rememberPassword) {
+    if (formRef.current && rememberPassword && loginParams) {
       const parseParams = JSON.parse(loginParams);
       formRef.current.setFieldsValue(parseParams);
     }

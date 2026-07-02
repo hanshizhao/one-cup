@@ -431,16 +431,16 @@ export default function NumberingManagement() {
                 placeholder={t['numbering.rules.allStatus']}
                 style={{ width: 130 }}
                 allowClear
-                value={filterIsActive}
+                value={filterIsActive === undefined ? undefined : String(filterIsActive)}
                 onChange={(v) => {
-                  setFilterIsActive(v);
+                  setFilterIsActive(v === undefined ? undefined : v === 'true');
                   setRulePagination((p) => ({ ...p, current: 1 }));
                 }}
               >
-                <Select.Option value={true}>
+                <Select.Option value="true">
                   {t['numbering.rules.active']}
                 </Select.Option>
-                <Select.Option value={false}>
+                <Select.Option value="false">
                   {t['numbering.rules.inactive']}
                 </Select.Option>
               </Select>
@@ -502,8 +502,11 @@ export default function NumberingManagement() {
             <RangePicker
               style={{ width: 260 }}
               value={logFilter.dateRange as never}
-              onChange={(_, dateStrings) =>
-                setLogFilter((f) => ({ ...f, dateRange: dateStrings }))
+              onChange={(dateStrings) =>
+                setLogFilter((f) => ({
+                  ...f,
+                  dateRange: dateStrings,
+                }))
               }
             />
             <Button
@@ -593,7 +596,9 @@ export default function NumberingManagement() {
         <Form
           form={editForm}
           layout="vertical"
-          onValuesChange={(_, all) => setFormValues(all)}
+          onValuesChange={(_, all) =>
+            setFormValues(all as CreateNumberingRuleRequest)
+          }
         >
           <FormItem
             label={t['numbering.form.targetType']}

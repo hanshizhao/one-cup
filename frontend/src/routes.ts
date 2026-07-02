@@ -1,4 +1,4 @@
-import auth, { AuthParams } from '@/utils/authentication';
+import auth, { AuthParams, UserPermission } from '@/utils/authentication';
 import { useEffect, useMemo, useState } from 'react';
 
 export type IRoute = AuthParams & {
@@ -9,6 +9,10 @@ export type IRoute = AuthParams & {
   children?: IRoute[];
   // 当前路由是否渲染菜单项，为 true 的话不会在菜单中显示，但可通过路由地址访问。
   ignore?: boolean;
+  // 动态加载的页面组件（layout 中通过 lazyload 注入）
+  component?: any;
+  // 路由路径
+  path?: string;
 };
 
 export const routes: IRoute[] = [
@@ -45,8 +49,8 @@ export const routes: IRoute[] = [
   },
 ];
 
-const useRoute = (userPermission): [IRoute[], string] => {
-  const filterRoute = (routes: IRoute[], arr = []): IRoute[] => {
+const useRoute = (userPermission: UserPermission): [IRoute[], string] => {
+  const filterRoute = (routes: IRoute[], arr: IRoute[] = []): IRoute[] => {
     if (!routes.length) {
       return [];
     }

@@ -1,6 +1,6 @@
 // https://github.com/feross/clipboard-copy/blob/master/index.js
 
-export default function clipboard(text) {
+export default function clipboard(text: string) {
   if (navigator.clipboard) {
     return navigator.clipboard.writeText(text).catch(function (err) {
       throw err !== undefined
@@ -18,9 +18,9 @@ export default function clipboard(text) {
 
   const selection = window.getSelection();
   const range = window.document.createRange();
-  selection.removeAllRanges();
+  selection?.removeAllRanges();
   range.selectNode(span);
-  selection.addRange(range);
+  selection?.addRange(range);
 
   let success = false;
   try {
@@ -30,7 +30,7 @@ export default function clipboard(text) {
     console.log('error', err);
   }
 
-  selection.removeAllRanges();
+  selection?.removeAllRanges();
   window.document.body.removeChild(span);
 
   return success
