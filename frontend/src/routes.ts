@@ -34,6 +34,13 @@ export const routes: IRoute[] = [
         name: 'menu.system.permission',
         key: 'system/permission',
       },
+      {
+        name: 'menu.system.numbering',
+        key: 'system/numbering',
+        requiredPermissions: [
+          { resource: 'system:numbering', actions: ['view'] },
+        ],
+      },
     ],
   },
 ];

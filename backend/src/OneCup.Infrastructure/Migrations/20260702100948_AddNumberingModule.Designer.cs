@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OneCup.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using OneCup.Infrastructure.Persistence;
 namespace OneCup.Infrastructure.Migrations
 {
     [DbContext(typeof(OneCupDbContext))]
-    partial class OneCupDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702100948_AddNumberingModule")]
+    partial class AddNumberingModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

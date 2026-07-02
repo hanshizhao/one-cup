@@ -78,6 +78,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<INumberingClock, NumberingClock>();
+builder.Services.AddScoped<INumberingService, NumberingService>();
+builder.Services.AddScoped<INumberingRuleService, NumberingRuleService>();
 
 // ── 依赖注入:认证相关服务 ─────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -101,6 +104,10 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("perm_codes", "system:user:manage"));
     options.AddPolicy("role-manage", policy =>
         policy.RequireClaim("perm_codes", "system:role:manage"));
+    options.AddPolicy("numbering-view", policy =>
+        policy.RequireClaim("perm_codes", "system:numbering:view"));
+    options.AddPolicy("numbering-manage", policy =>
+        policy.RequireClaim("perm_codes", "system:numbering:manage"));
 });
 
 // 权限拒绝审计日志:装饰默认 handler,在 403 时记 Warning
