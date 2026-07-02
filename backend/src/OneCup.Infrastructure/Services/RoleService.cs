@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OneCup.Application.Common;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
 using OneCup.Domain.Entities;
@@ -109,7 +110,7 @@ public class RoleService : IRoleService
             ?? throw new DomainException("角色不存在");
 
         // admin 角色不可删除
-        if (role.Code == "admin")
+        if (role.Code == SystemConstants.AdminRoleCode)
         {
             throw new DomainException("系统内置管理员角色不可删除");
         }

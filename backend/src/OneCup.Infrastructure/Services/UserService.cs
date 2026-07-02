@@ -116,13 +116,13 @@ public class UserService : IUserService
             ?? throw new DomainException("用户不存在");
 
         // admin 保护：不能禁用 admin 用户
-        if (!request.IsActive && user.Id == SeedData.AdminUserId)
+        if (!request.IsActive && user.Id == SystemConstants.AdminUserId)
         {
             throw new DomainException("不能禁用系统管理员账号");
         }
 
         // admin 保护：如果用户当前有 admin 角色，保留它（不能被移除）
-        var hasAdminRole = user.Roles.Any(r => r.Code == "admin");
+        var hasAdminRole = user.Roles.Any(r => r.Code == SystemConstants.AdminRoleCode);
 
         var roles = await _db.Roles
             .Where(r => request.RoleIds.Contains(r.Id))
@@ -131,8 +131,8 @@ public class UserService : IUserService
         // admin 保护：如果用户原来是 admin，确保 admin 角色仍在列表中
         if (hasAdminRole)
         {
-            var adminRole = await _db.Roles.FirstAsync(r => r.Code == "admin", ct);
-            if (!roles.Any(r => r.Code == "admin"))
+            var adminRole = await _db.Roles.FirstAsync(r => r.Code == SystemConstants.AdminRoleCode, ct);
+            if (!roles.Any(r => r.Code == SystemConstants.AdminRoleCode))
             {
                 roles.Add(adminRole);
             }
@@ -163,7 +163,7 @@ public class UserService : IUserService
             ?? throw new DomainException("用户不存在");
 
         // admin 保护：不能禁用 admin 用户
-        if (!request.IsActive && user.Id == SeedData.AdminUserId)
+        if (!request.IsActive && user.Id == SystemConstants.AdminUserId)
         {
             throw new DomainException("不能禁用系统管理员账号");
         }
