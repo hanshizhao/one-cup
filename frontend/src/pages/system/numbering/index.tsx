@@ -208,18 +208,22 @@ export default function NumberingManagement() {
         await createNumberingRule(values);
         Message.success(t['numbering.rules.create.success']);
       } else {
-        // 编辑模式下若规则启用则仅可改备注（关键字段已置灰，这里照常提交被锁定的值）
-        await updateNumberingRule(editingId!, {
-          name: values.name,
-          prefix: values.prefix,
-          targetType: values.targetType,
-          includeCategory: values.includeCategory,
-          dateSegment: values.dateSegment,
-          seqLength: values.seqLength,
-          separator: values.separator,
-          resetPeriod: values.resetPeriod,
-          remark: values.remark,
-        });
+        // When editing an active rule, only remark is editable (other fields are disabled in UI).
+        // Send only { remark } to avoid the backend's key-field-presence rejection.
+        const payload = (editMode === 'edit' && editingIsActive)
+          ? { remark: values.remark }
+          : {
+              name: values.name,
+              prefix: values.prefix,
+              targetType: values.targetType,
+              includeCategory: values.includeCategory,
+              dateSegment: values.dateSegment,
+              seqLength: values.seqLength,
+              separator: values.separator,
+              resetPeriod: values.resetPeriod,
+              remark: values.remark,
+            };
+        await updateNumberingRule(editingId!, payload);
         Message.success(t['numbering.rules.update.success']);
       }
       setEditVisible(false);
