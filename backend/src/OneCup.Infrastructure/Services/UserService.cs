@@ -115,10 +115,13 @@ public class UserService : IUserService
             .FirstOrDefaultAsync(u => u.Id == id, ct)
             ?? throw new DomainException("用户不存在");
 
-        // admin 保护：不能移除 admin 角色关联中唯一的 admin 角色
-        // （即如果当前用户是 admin，不能把 admin 角色从 roleIds 里去掉）
-        // 这里简化处理：admin 用户的 Roles 操作不做限制（admin 角色本身有通配权限）
-        // 但禁止把 admin 用户设为非 admin 角色——如果用户当前有 admin 角色，保留它
+        // admin 保护：不能禁用 admin 用户
+        if (!request.IsActive && user.Id == SeedData.AdminUserId)
+        {
+            throw new DomainException("不能禁用系统管理员账号");
+        }
+
+        // admin 保护：如果用户当前有 admin 角色，保留它（不能被移除）
         var hasAdminRole = user.Roles.Any(r => r.Code == "admin");
 
         var roles = await _db.Roles
