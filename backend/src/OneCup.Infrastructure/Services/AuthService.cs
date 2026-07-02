@@ -18,17 +18,20 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _jwt;
     private readonly IPasswordHasher _passwordHasher;
     private readonly JwtOptions _options;
+    private readonly IPermissionCalculator _permCalc;
 
     public AuthService(
         OneCupDbContext db,
         IJwtTokenService jwt,
         IPasswordHasher passwordHasher,
-        IOptions<JwtOptions> options)
+        IOptions<JwtOptions> options,
+        IPermissionCalculator permCalc)
     {
         _db = db;
         _jwt = jwt;
         _passwordHasher = passwordHasher;
         _options = options.Value;
+        _permCalc = permCalc;
     }
 
     public async Task<TokenResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
@@ -87,9 +90,7 @@ public class AuthService : IAuthService
         if (user is null) return null;
 
         var roleCodes = user.Roles.Select(r => r.Code).ToList();
-        var permCodes = roleCodes.Contains("admin")
-            ? new List<string> { "*" }
-            : user.Roles.SelectMany(r => r.Permissions).Select(p => p.Code).Distinct().ToList();
+        var permCodes = _permCalc.GetEffective(user);
 
         return new CurrentUser
         {
@@ -97,7 +98,7 @@ public class AuthService : IAuthService
             Username = user.Username,
             DisplayName = user.DisplayName,
             Roles = roleCodes,
-            Permissions = permCodes,
+            Permissions = permCodes.ToList(),
         };
     }
 

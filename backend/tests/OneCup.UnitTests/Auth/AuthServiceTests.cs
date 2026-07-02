@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
+using OneCup.Application.Services;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
 using OneCup.Infrastructure.Persistence;
@@ -115,7 +116,8 @@ public class AuthServiceTests
     {
         passwordHasher ??= new FakePasswordHasher();
         jwt ??= new FakeJwtTokenService();
-        return new AuthService(db, jwt, passwordHasher, Microsoft.Extensions.Options.Options.Create(_options));
+        var permCalc = new PermissionCalculator();
+        return new AuthService(db, jwt, passwordHasher, Microsoft.Extensions.Options.Options.Create(_options), permCalc);
     }
 
     // ════════════════════════════════════════════════════════════════

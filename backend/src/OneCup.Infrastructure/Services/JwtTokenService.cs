@@ -16,19 +16,18 @@ namespace OneCup.Infrastructure.Services;
 public class JwtTokenService : IJwtTokenService
 {
     private readonly JwtOptions _options;
+    private readonly IPermissionCalculator _permCalc;
 
-    public JwtTokenService(IOptions<JwtOptions> options)
+    public JwtTokenService(IOptions<JwtOptions> options, IPermissionCalculator permCalc)
     {
         _options = options.Value;
+        _permCalc = permCalc;
     }
 
     public string GenerateAccessToken(User user)
     {
         var roleCodes = user.Roles.Select(r => r.Code).ToList();
-        // admin 角色通配为 *，其他角色聚合权限编码
-        var permCodes = roleCodes.Contains("admin")
-            ? new List<string> { "*" }
-            : user.Roles.SelectMany(r => r.Permissions).Select(p => p.Code).Distinct().ToList();
+        var permCodes = _permCalc.GetEffective(user);
 
         var claims = new List<Claim>
         {

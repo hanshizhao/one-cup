@@ -7,6 +7,7 @@ using OneCup.Api.Authorization;
 using OneCup.Api.Services;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
+using OneCup.Application.Services;
 using OneCup.Application.Validators;
 using OneCup.Domain.Exceptions;
 using OneCup.Infrastructure.Persistence;
@@ -84,6 +85,7 @@ builder.Services.AddHttpContextAccessor();
 
 // ── 授权策略 (基于 JWT perm_codes claim) ───────────────────────
 // admin 角色的 perm_codes 含通配 "*",由 WildcardAuthorizationHandler 放行所有策略。
+builder.Services.AddSingleton<IPermissionCalculator, PermissionCalculator>();
 builder.Services.AddSingleton<IAuthorizationHandler, WildcardAuthorizationHandler>();
 builder.Services.AddAuthorization(options =>
 {
