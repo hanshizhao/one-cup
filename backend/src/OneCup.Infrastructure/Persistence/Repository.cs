@@ -48,6 +48,12 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     public void Remove(T entity) => _dbSet.Remove(entity);
 
     /// <summary>
+    /// 逃生舱:返回实体的可查询 IQueryable,供 Specification 无法表达的查询使用(左连接、聚合投影等)。
+    /// 返回 Set 的 AsQueryable()。
+    /// </summary>
+    public IQueryable<T> Query() => _context.Set<T>().AsQueryable();
+
+    /// <summary>
     /// 将 Specification 翻译为 EF Core IQueryable:应用 Criteria / Includes / OrderBy / 分页。
     /// </summary>
     private IQueryable<T> ApplySpecification(ISpecification<T>? spec)
