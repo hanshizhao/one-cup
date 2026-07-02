@@ -24,6 +24,8 @@ internal static class SeedData
     public static readonly Guid PermProductRead = Guid.Parse("00000000-0000-0000-0000-000000000111");
     public static readonly Guid PermSystemUserManage = Guid.Parse("00000000-0000-0000-0000-000000000112");
     public static readonly Guid PermSystemRoleManage = Guid.Parse("00000000-0000-0000-0000-000000000113");
+    public static readonly Guid PermSystemNumberingView = Guid.Parse("00000000-0000-0000-0000-000000000114");
+    public static readonly Guid PermSystemNumberingManage = Guid.Parse("00000000-0000-0000-0000-000000000115");
 
     /// <summary>
     /// admin 密码 Admin@123 的 BCrypt 哈希（workFactor 12，由 Task 4 Step 3 预计算）。
