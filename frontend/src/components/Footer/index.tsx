@@ -8,7 +8,7 @@ function Footer(props: FooterProps = {}) {
   const { className, ...restProps } = props;
   return (
     <Layout.Footer className={cs(styles.footer, className)} {...restProps}>
-      Arco Design Pro
+      OneCup 印染厂面料开发管理系统
     </Layout.Footer>
   );
 }
