@@ -85,7 +85,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 全局异常处理:领域异常 → 400,其他 → 500
+// 全局异常处理:认证异常 → 401, 领域异常 → 400, 其他 → 500
 app.UseExceptionHandler(appBuilder =>
 {
     appBuilder.Run(async context =>
@@ -95,6 +95,7 @@ app.UseExceptionHandler(appBuilder =>
 
         context.Response.StatusCode = exception switch
         {
+            UnauthorizedException => StatusCodes.Status401Unauthorized,
             DomainException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError,
         };

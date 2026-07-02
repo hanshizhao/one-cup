@@ -39,7 +39,7 @@ public class AuthService : IAuthService
 
         if (user is null || !user.IsActive || !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
-            throw new DomainException("用户名或密码错误");
+            throw new UnauthorizedException("用户名或密码错误");
         }
 
         return await IssueTokensAsync(user, ct);
@@ -53,7 +53,7 @@ public class AuthService : IAuthService
 
         if (stored is null || stored.IsRevoked || stored.ExpiresAt <= DateTime.UtcNow)
         {
-            throw new DomainException("刷新令牌无效或已过期");
+            throw new UnauthorizedException("刷新令牌无效或已过期");
         }
 
         // 轮换：吊销旧 token
