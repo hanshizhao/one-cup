@@ -12,7 +12,7 @@ using OneCup.Infrastructure.Persistence;
 namespace OneCup.Infrastructure.Migrations
 {
     [DbContext(typeof(OneCupDbContext))]
-    [Migration("20260701163336_InitialCreate")]
+    [Migration("20260702000624_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -69,91 +69,91 @@ namespace OneCup.Infrastructure.Migrations
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000101"),
                             Code = "fabric:read",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 126, DateTimeKind.Utc).AddTicks(8697),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "查看面料开发"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000102"),
                             Code = "fabric:write",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(691),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "录入/编辑面料开发"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000103"),
                             Code = "material:read",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(693),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "查看原料物料"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000104"),
                             Code = "material:write",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(694),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "维护原料物料"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000105"),
                             Code = "equipment:read",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(695),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "查看设备"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000106"),
                             Code = "equipment:write",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(702),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "维护设备"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000107"),
                             Code = "customer:read",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(703),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "查看客户"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000108"),
                             Code = "customer:write",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(704),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "维护客户"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000109"),
                             Code = "color:read",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(706),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "查看颜色对色"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000110"),
                             Code = "color:write",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(707),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "维护颜色对色"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000111"),
                             Code = "product:read",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(708),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "查看产品"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000112"),
                             Code = "system:user:manage",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(709),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "管理用户"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000113"),
                             Code = "system:role:manage",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(710),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "管理角色与权限"
                         });
                 });
@@ -248,7 +248,7 @@ namespace OneCup.Infrastructure.Migrations
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000002"),
                             Code = "admin",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(6910),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "系统超级管理员，拥有全部权限",
                             Name = "管理员"
                         },
@@ -256,7 +256,7 @@ namespace OneCup.Infrastructure.Migrations
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000003"),
                             Code = "developer",
-                            CreatedAt = new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(7637),
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "面料开发相关权限",
                             Name = "开发员"
                         });

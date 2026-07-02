@@ -8,6 +8,9 @@ namespace OneCup.Infrastructure.Persistence;
 /// </summary>
 public class OneCupDbContext : DbContext
 {
+    // 种子数据的确定性时间戳（避免 HasData 用动态 DateTime 触发 PendingModelChangesWarning）
+    private static readonly DateTime SeedTimestamp = new(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc);
+
     public OneCupDbContext(DbContextOptions<OneCupDbContext> options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
@@ -27,6 +30,38 @@ public class OneCupDbContext : DbContext
     }
 
     /// <summary>
+    /// 在 SaveChanges 时自动填充审计字段：新增实体设 CreatedAt，修改实体设 UpdatedAt。
+    /// </summary>
+    public override int SaveChanges()
+    {
+        SetAuditFields();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        SetAuditFields();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void SetAuditFields()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.CreatedAt = now;
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAt = now;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
     /// 种子数据：1 admin 账号、2 角色、13 权限及其关联。
     /// Guid 均为确定性常量（HasData 要求）。
     /// </summary>
@@ -34,25 +69,25 @@ public class OneCupDbContext : DbContext
     {
         // ── 权限 ──
         modelBuilder.Entity<Permission>().HasData(
-            new Permission { Id = SeedData.PermFabricRead, Code = "fabric:read", Name = "查看面料开发" },
-            new Permission { Id = SeedData.PermFabricWrite, Code = "fabric:write", Name = "录入/编辑面料开发" },
-            new Permission { Id = SeedData.PermMaterialRead, Code = "material:read", Name = "查看原料物料" },
-            new Permission { Id = SeedData.PermMaterialWrite, Code = "material:write", Name = "维护原料物料" },
-            new Permission { Id = SeedData.PermEquipmentRead, Code = "equipment:read", Name = "查看设备" },
-            new Permission { Id = SeedData.PermEquipmentWrite, Code = "equipment:write", Name = "维护设备" },
-            new Permission { Id = SeedData.PermCustomerRead, Code = "customer:read", Name = "查看客户" },
-            new Permission { Id = SeedData.PermCustomerWrite, Code = "customer:write", Name = "维护客户" },
-            new Permission { Id = SeedData.PermColorRead, Code = "color:read", Name = "查看颜色对色" },
-            new Permission { Id = SeedData.PermColorWrite, Code = "color:write", Name = "维护颜色对色" },
-            new Permission { Id = SeedData.PermProductRead, Code = "product:read", Name = "查看产品" },
-            new Permission { Id = SeedData.PermSystemUserManage, Code = "system:user:manage", Name = "管理用户" },
-            new Permission { Id = SeedData.PermSystemRoleManage, Code = "system:role:manage", Name = "管理角色与权限" }
+            new Permission { Id = SeedData.PermFabricRead, Code = "fabric:read", Name = "查看面料开发", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermFabricWrite, Code = "fabric:write", Name = "录入/编辑面料开发", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermMaterialRead, Code = "material:read", Name = "查看原料物料", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermMaterialWrite, Code = "material:write", Name = "维护原料物料", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermEquipmentRead, Code = "equipment:read", Name = "查看设备", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermEquipmentWrite, Code = "equipment:write", Name = "维护设备", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermCustomerRead, Code = "customer:read", Name = "查看客户", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermCustomerWrite, Code = "customer:write", Name = "维护客户", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermColorRead, Code = "color:read", Name = "查看颜色对色", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermColorWrite, Code = "color:write", Name = "维护颜色对色", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermProductRead, Code = "product:read", Name = "查看产品", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermSystemUserManage, Code = "system:user:manage", Name = "管理用户", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermSystemRoleManage, Code = "system:role:manage", Name = "管理角色与权限", CreatedAt = SeedTimestamp }
         );
 
         // ── 角色 ──
         modelBuilder.Entity<Role>().HasData(
-            new Role { Id = SeedData.AdminRoleId, Name = "管理员", Code = "admin", Description = "系统超级管理员，拥有全部权限" },
-            new Role { Id = SeedData.DeveloperRoleId, Name = "开发员", Code = "developer", Description = "面料开发相关权限" }
+            new Role { Id = SeedData.AdminRoleId, Name = "管理员", Code = "admin", Description = "系统超级管理员，拥有全部权限", CreatedAt = SeedTimestamp },
+            new Role { Id = SeedData.DeveloperRoleId, Name = "开发员", Code = "developer", Description = "面料开发相关权限", CreatedAt = SeedTimestamp }
         );
 
         // ── 用户 ──
@@ -64,7 +99,7 @@ public class OneCupDbContext : DbContext
                 PasswordHash = SeedData.AdminPasswordHash,
                 DisplayName = "管理员",
                 IsActive = true,
-                CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
+                CreatedAt = SeedTimestamp,
             }
         );
 

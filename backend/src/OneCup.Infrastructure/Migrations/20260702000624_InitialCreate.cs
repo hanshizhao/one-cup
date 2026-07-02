@@ -139,19 +139,19 @@ namespace OneCup.Infrastructure.Migrations
                 columns: new[] { "id", "code", "created_at", "description", "name", "updated_at" },
                 values: new object[,]
                 {
-                    { new Guid("00000000-0000-0000-0000-000000000101"), "fabric:read", new DateTime(2026, 7, 1, 16, 33, 36, 126, DateTimeKind.Utc).AddTicks(8697), null, "查看面料开发", null },
-                    { new Guid("00000000-0000-0000-0000-000000000102"), "fabric:write", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(691), null, "录入/编辑面料开发", null },
-                    { new Guid("00000000-0000-0000-0000-000000000103"), "material:read", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(693), null, "查看原料物料", null },
-                    { new Guid("00000000-0000-0000-0000-000000000104"), "material:write", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(694), null, "维护原料物料", null },
-                    { new Guid("00000000-0000-0000-0000-000000000105"), "equipment:read", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(695), null, "查看设备", null },
-                    { new Guid("00000000-0000-0000-0000-000000000106"), "equipment:write", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(702), null, "维护设备", null },
-                    { new Guid("00000000-0000-0000-0000-000000000107"), "customer:read", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(703), null, "查看客户", null },
-                    { new Guid("00000000-0000-0000-0000-000000000108"), "customer:write", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(704), null, "维护客户", null },
-                    { new Guid("00000000-0000-0000-0000-000000000109"), "color:read", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(706), null, "查看颜色对色", null },
-                    { new Guid("00000000-0000-0000-0000-000000000110"), "color:write", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(707), null, "维护颜色对色", null },
-                    { new Guid("00000000-0000-0000-0000-000000000111"), "product:read", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(708), null, "查看产品", null },
-                    { new Guid("00000000-0000-0000-0000-000000000112"), "system:user:manage", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(709), null, "管理用户", null },
-                    { new Guid("00000000-0000-0000-0000-000000000113"), "system:role:manage", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(710), null, "管理角色与权限", null }
+                    { new Guid("00000000-0000-0000-0000-000000000101"), "fabric:read", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "查看面料开发", null },
+                    { new Guid("00000000-0000-0000-0000-000000000102"), "fabric:write", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "录入/编辑面料开发", null },
+                    { new Guid("00000000-0000-0000-0000-000000000103"), "material:read", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "查看原料物料", null },
+                    { new Guid("00000000-0000-0000-0000-000000000104"), "material:write", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "维护原料物料", null },
+                    { new Guid("00000000-0000-0000-0000-000000000105"), "equipment:read", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "查看设备", null },
+                    { new Guid("00000000-0000-0000-0000-000000000106"), "equipment:write", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "维护设备", null },
+                    { new Guid("00000000-0000-0000-0000-000000000107"), "customer:read", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "查看客户", null },
+                    { new Guid("00000000-0000-0000-0000-000000000108"), "customer:write", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "维护客户", null },
+                    { new Guid("00000000-0000-0000-0000-000000000109"), "color:read", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "查看颜色对色", null },
+                    { new Guid("00000000-0000-0000-0000-000000000110"), "color:write", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "维护颜色对色", null },
+                    { new Guid("00000000-0000-0000-0000-000000000111"), "product:read", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "查看产品", null },
+                    { new Guid("00000000-0000-0000-0000-000000000112"), "system:user:manage", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "管理用户", null },
+                    { new Guid("00000000-0000-0000-0000-000000000113"), "system:role:manage", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, "管理角色与权限", null }
                 });
 
             migrationBuilder.InsertData(
@@ -159,8 +159,8 @@ namespace OneCup.Infrastructure.Migrations
                 columns: new[] { "id", "code", "created_at", "description", "name", "updated_at" },
                 values: new object[,]
                 {
-                    { new Guid("00000000-0000-0000-0000-000000000002"), "admin", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(6910), "系统超级管理员，拥有全部权限", "管理员", null },
-                    { new Guid("00000000-0000-0000-0000-000000000003"), "developer", new DateTime(2026, 7, 1, 16, 33, 36, 127, DateTimeKind.Utc).AddTicks(7637), "面料开发相关权限", "开发员", null }
+                    { new Guid("00000000-0000-0000-0000-000000000002"), "admin", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), "系统超级管理员，拥有全部权限", "管理员", null },
+                    { new Guid("00000000-0000-0000-0000-000000000003"), "developer", new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), "面料开发相关权限", "开发员", null }
                 });
 
             migrationBuilder.InsertData(
