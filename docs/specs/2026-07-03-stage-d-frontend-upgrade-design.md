@@ -45,7 +45,7 @@
 |------|------|
 | 组织方式 | **单分支串行**(5 项按依赖顺序,每项 tsc+build 验证,一个 PR 合并) |
 | 升级顺序 | Vite5 → React18 → RTK → TS5strict → RR6(+ axios 附带) |
-| RR6 路由声明 | **useRoutes 数据驱动**(保留 routes.ts 静态数组 + useRoute 权限过滤) |
+| RR6 路由声明 | **Data Router**(createBrowserRouter + RouterProvider + authLoader + element 权限包装) |
 | 懒加载 | **保留 @loadable/component**(与 RR6 兼容,保留 preload) |
 | axios | **升到 1.x**(API 兼容,修已知问题) |
 | TS strict 隔离 | **顺手修复 numbering 页类型错误**(让全项目 strict 通过,不豁免) |
@@ -58,13 +58,15 @@
 ```
 1. Vite 5 + plugin-react 4       ← 打地基,优先验证 Arco vite 插件兼容性(最大未知风险)
 2. React 18(createRoot)          ← 依赖 plugin-react 4
-3. Redux Toolkit                  ← store 重写,为 TS strict 提供类型铺垫
+3. Redux Toolkit                  ← store 重写,为 TS strict 提供类型铺垫;authLoader 依赖它(dispatch)
 4. TypeScript 5 + strict          ← RTK 已有类型,补全剩余隐式 any + 修 numbering 类型错误
-5. react-router 6(useRoutes)     ← 相对独立,改动最集中,最后做
+5. react-router 6(Data Router)   ← 依赖 RTK(authLoader dispatch userInfo);改动最集中,最后做
 + 附带: axios 1.x(随 React18 步骤)、webpack 遗留 devDeps 清理(随 Vite5 步骤)
 ```
 
 每步完成跑 `npx tsc --noEmit` + `npm run build` 验证(前端无测试框架,以类型检查 + 构建为质量门)。
+
+> 注意顺序:RR6(Data Router)现在依赖 RTK(authLoader 要 dispatch userInfo),所以必须在 RTK 之后。这维持了原"Vite→React→RTK→TS→RR6"的顺序,无需调整。
 
 ---
 
@@ -116,19 +118,41 @@
   - `utils/useStorage.ts`:参数类型
 - **修复 numbering 页预存类型错误**(决策 A):`pages/system/numbering/index.tsx` 的 boolean 赋值、Dayjs 类型不匹配、Partial 缺字段等(阶段 E 发现的预存问题),让全项目 strict 通过
 
-### 3.5 react-router 6(useRoutes 数据驱动)
+### 3.5 react-router 6(Data Router)
 
-**改动:**
-- `package.json`:`react-router`/`react-router-dom` ^6
-- `routes.ts`:保留静态 routes 数组 + `useRoute` 权限过滤 hook;**新增**一个把 `IRoute[]` 转为 RR6 route 对象的适配函数(加 `element` 字段,children 递归)
-- `layout.tsx`:
-  - `import { Switch, Route, Redirect, useHistory }` → `import { useRoutes, useNavigate, Navigate }`
-  - `useHistory()` → `useNavigate()`;`history.push(path)` → `navigate(path)`
-  - 路由块:`<Switch><Route component>` → `useRoutes(routeObjects)`(数据驱动渲染);`<Redirect>` → route 对象的 `element: <Navigate to replace>`;移除 `exact`(RR6 默认精确);`path="*"` 404 兜底保留
-  - 嵌套路由用 `<Outlet />`
-- `main.tsx`:`BrowserRouter` 保留;`Switch/Route` 若有则改(RR6 在顶层用 `Routes` 或 `useRoutes`)
-- 保留 `@loadable/component` + preload 逻辑(lazyload.tsx 不动);`<Route element>` 需确保 loadable 组件正常渲染(RR6 不强制 Suspense,但 loadable 内部已处理)
-- `pages/login/form.tsx`:`<Link>`(RR6 API 略变,确认 import 来源)
+采用 RR6.4+ Data Router 范式:`createBrowserRouter` + `RouterProvider` + `loader`。比 useRoutes 更进一步——用 authLoader 顺手解决 main.tsx 的登录态硬跳转竞态问题(阶段 A 标记的隐患)。
+
+**架构:**
+```
+createBrowserRouter([
+  { path: '/', element: <RootLayout/>, errorElement: <RootError/>, loader: authLoader, children: [
+      { index: true, element: <Navigate to="system/user" replace/> },
+      { path: 'system/user', element: <RequirePermission req="system:user:manage"><UserPage/></RequirePermission> },
+      { path: 'system/role', element: <RequirePermission req="system:role:manage"><RolePage/></RequirePermission> },
+      { path: 'system/permission', element: <PermissionPage/> },
+      { path: 'system/numbering', element: <RequirePermission req="system:numbering:view"><NumberingPage/></RequirePermission> },
+  ]},
+  { path: '/login', element: <LoginPage/> },
+  { path: '*', element: <Forbidden403/> },
+])
+main.tsx: createRoot(root).render(<RouterProvider router={router}/>)
+```
+
+**核心组件:**
+- **`authLoader`**(`router.tsx`):路由解析时执行。校验登录态(`checkLogin`):未登录 → `redirect('/login')`;已登录 → `getCurrentUser()` + `transformPermissions()` → `dispatch(setUserInfo(...))` 到 RTK。返回 null(数据进 RTK,组件用 useAppSelector 读)。这取代 main.tsx 的 `useEffect` + `window.location` 硬跳转——渲染时数据已就绪,无闪烁/竞态。
+- **`<RequirePermission>`**(`components/RequirePermission`):包装业务路由 element。读 RTK userInfo.permissions,无权限渲染 `<Forbidden403/>`,有权限渲染 children。权限逻辑集中可见。
+- **`<RootLayout>`**(原 layout.tsx 重构):含 `<Outlet/>`(子路由出口)+ 侧边栏菜单(用现有 useRoute 过滤可见菜单)+ NavBar。不再含 `<Switch>/<Route>`(Data Router 接管路由渲染)。
+- **菜单过滤保留**:`routes.ts` 的静态 `routes` 数组 + `useRoute` hook 仍用于**菜单可见性过滤**(侧边栏渲染),与路由 element 的 `<RequirePermission>` 是两道独立防线(菜单隐藏 + 直访 URL 拦截)。
+
+**改动文件:**
+- 新增 `router.tsx`(createBrowserRouter + authLoader + 路由对象)
+- 新增 `components/RequirePermission/index.tsx`
+- `main.tsx`:`BrowserRouter` + 手写 Switch/Route → `RouterProvider router={router}`;删 fetchUserInfo useEffect + window.location 硬跳转(交给 authLoader)
+- `layout.tsx`:删 `<Switch>/<Route>/<Redirect>`;改为纯布局(菜单 + NavBar + `<Outlet/>`);`useHistory` → `useNavigate`;`history.push` → `navigate`;删除 `getFlattenRoutes` + `lazyload` glob(Data Router 用静态 element,不再需要动态 glob 扫描)——组件改为直接 import 或 React.lazy
+- `routes.ts`:保留 routes 数组 + useRoute(菜单过滤);删 getName(阶段 E 已删)
+- 懒加载:Data Router 下用 React.lazy + Suspense 或保留 @loadable;`getFlattenRoutes` 的动态 glob 删除后,页面组件改为 router.tsx 里静态 import(业务页少,无需懒加载)或按需 lazy
+
+**关于动态 glob 的取舍:** 当前 layout 用 `import.meta.glob` 扫描所有 pages 再 lazyload,这是为了 Arco 模板的动态菜单。Data Router 用静态路由对象,业务页只有 4 个,**直接 import 更简单清晰**,删除 glob + lazyload 机制(减少黑魔法)。若将来页多再上 React.lazy。
 
 **注意(勿误改):** `pages/system/numbering/index.tsx` 和 `user/index.tsx` 里的 `Switch` 是 **Arco 的 Switch 组件**(非 router Switch),迁移时不能动。
 
@@ -149,7 +173,7 @@
 最终(全部完成后):
 1. `tsc --noEmit` 零错误(strict 模式,含 numbering 页)
 2. `npm run build` 成功
-3. 路由用 RR6 API(useRoutes/useNavigate/Navigate),无 Switch/Redirect/useHistory/exact/component-prop
+3. 路由用 RR6 Data Router(createBrowserRouter/RouterProvider/authLoader),无 BrowserRouter/Switch/Route/Redirect/useHistory;权限经 `<RequirePermission>` 包装
 4. 状态管理用 RTK(createSlice/configureStore/typed hooks),无手写 reducer/裸字符串 action
 5. React18(createRoot),无 ReactDOM.render
 6. Vite5 + plugin-react4,构建正常
@@ -163,7 +187,8 @@
 | 风险 | 影响 | 缓解 |
 |------|------|------|
 | @arco-plugins/vite-react 与 Vite5 不兼容 | 阻塞 Vite5 升级(地基) | **Vite5 最先做**,尽早暴露;不兼容则换官方 svgr 插件 + less 主题注入 |
-| RR6 useRoutes 与现有 useRoute 权限过滤整合 | 中,路由渲染逻辑重写 | 保留数据驱动架构,加适配函数把 IRoute→RR6 route 对象;preload 逻辑保留 |
+| RR6 Data Router 与现有架构整合 | 中,路由入口/布局/登录态全部重构 | authLoader 取代 main.tsx useEffect(消除竞态);<RequirePermission> 包装 element;菜单过滤保留 useRoute;删动态 glob 改静态 import |
+| authLoader 依赖 RTK(dispatch) | 低 | RTK 在 RR6 之前完成;loader 内 dispatch userInfo 到 store |
 | TS strict 暴露大量隐式 any | 中,补全工作量大 | RTK 先做(自动类型铺垫);numbering 预存错误顺手修(决策A) |
 | React18 effect 双调(fetchUserInfo) | 低 | 暂不加 StrictMode;useRef 防重或后续评估 |
 | axios 1.x 拦截器行为微变 | 低 | API 兼容;升级后重点验证 token 刷新排队(request.ts) |
