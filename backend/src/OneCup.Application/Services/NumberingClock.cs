@@ -1,6 +1,6 @@
 using OneCup.Application.Interfaces;
 
-namespace OneCup.Infrastructure.Services;
+namespace OneCup.Application.Services;
 
 /// <summary>
 /// 编号时间提供者实现：返回北京时间（UTC+8）。

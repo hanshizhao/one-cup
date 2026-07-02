@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Enums;
 using OneCup.Domain.Exceptions;
+using OneCup.Application.Services;
 using OneCup.Infrastructure.Persistence;
 using OneCup.Infrastructure.Services;
 using Testcontainers.PostgreSql;
