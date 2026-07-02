@@ -30,7 +30,7 @@ const withSuspense = (node: React.ReactNode) => (
  * 转为前端期望的 Record<resource, actions[]> 格式。
  * admin 角色或 permCodes 含 "*" 返回 {"*": ["*"]}(由 authentication.ts 通配处理)。
  */
-function transformPermissions(
+export function transformPermissions(
   permCodes: string[],
   roles: string[]
 ): Record<string, string[]> {
