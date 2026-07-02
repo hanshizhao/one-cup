@@ -8,7 +8,9 @@ using OneCup.Infrastructure.Persistence;
 namespace OneCup.Infrastructure.Services;
 
 /// <summary>
-/// 编码生成服务实现。事务内行锁取号 + 唯一约束兜底重试。
+/// 编码生成服务实现。调用方事务内行锁取号 + 唯一约束兜底重试。
+/// GenerateAsync 不自管事务——必须在调用方已开启的事务内执行（fail-fast 守卫强制检查）。
+/// B+ 方案：业务对象保存失败时调用方回滚事务，计数器增量随之回滚，保证不跳号。
 /// </summary>
 public class NumberingService : INumberingService
 {
@@ -24,9 +26,12 @@ public class NumberingService : INumberingService
 
     public async Task<string> GenerateAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
     {
+        // fail-fast：必须在调用方事务内调用（FOR UPDATE 行锁依赖事务；B+ 不跳号回滚保证依赖事务）
+        if (_db.Database.CurrentTransaction is null)
+            throw new DomainException("GenerateAsync 必须在调用方的事务内调用");
+
         for (int attempt = 0; attempt < MaxRetry; attempt++)
         {
-            var tx = await _db.Database.BeginTransactionAsync(ct);
             try
             {
                 var rule = await _db.NumberingRules
@@ -44,7 +49,7 @@ public class NumberingService : INumberingService
                 var bucketCategory = effectiveCategory ?? "";
                 var bucketPeriod = periodKey;
 
-                // 行锁取号
+                // 行锁取号（在调用方事务内加锁）
                 var bucket = await _db.NumberingCounters
                     .FromSqlRaw(
                         "SELECT * FROM numbering_counters WHERE rule_id={0} AND category_code={1} AND period_key={2} FOR UPDATE",
@@ -84,13 +89,13 @@ public class NumberingService : INumberingService
                 });
                 await _db.SaveChangesAsync(ct);
 
-                await tx.CommitAsync(ct);
-                return code;
+                return code;  // 由调用方提交事务
             }
             catch (Exception ex) when (IsUniqueConstraintViolation(ex))
             {
-                await tx.RollbackAsync(ct);
-                // 桶被别人建了，重试时 SELECT 会找到它
+                // 桶竞态：分离失败的实体，使变更跟踪器干净后重试（下次 SELECT 会找到对方已提交的桶）
+                foreach (var entry in _db.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
+                    entry.State = EntityState.Detached;
                 continue;
             }
         }

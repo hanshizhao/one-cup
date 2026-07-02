@@ -72,7 +72,13 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         {
             using var txDb = NewDbContext();
             var svc = new NumberingService(txDb, new NumberingClock());
-            codes.Add(await svc.GenerateAsync("fabric", "COT"));
+            string code;
+            using (var tx = await txDb.Database.BeginTransactionAsync())
+            {
+                code = await svc.GenerateAsync("fabric", "COT");
+                await tx.CommitAsync();
+            }
+            codes.Add(code);
         }
         Assert.Equal("FAB-COT-" + DateTime.UtcNow.AddHours(8).Year + "-0001", codes[0]);
         Assert.Equal(5, codes.Distinct().Count());
@@ -92,7 +98,13 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
             {
                 using var txDb = NewDbContext();
                 var svc = new NumberingService(txDb, new NumberingClock());
-                results[i].Add(await svc.GenerateAsync("fabric", "COT"));
+                string code;
+                using (var tx = await txDb.Database.BeginTransactionAsync())
+                {
+                    code = await svc.GenerateAsync("fabric", "COT");
+                    await tx.CommitAsync();
+                }
+                results[i].Add(code);
             }
         })).ToArray();
         await Task.WhenAll(tasksList);
@@ -107,7 +119,12 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
     {
         using var db = NewDbContext();
         var svc = new NumberingService(db, new NumberingClock());
-        var code1 = await svc.GenerateAsync("fabric", "CHE");
+        string code1;
+        using (var tx = await db.Database.BeginTransactionAsync())
+        {
+            code1 = await svc.GenerateAsync("fabric", "CHE");
+            await tx.CommitAsync();
+        }
         Assert.EndsWith("-0001", code1);
     }
 
@@ -116,9 +133,14 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
     {
         using var db = NewDbContext();
         var svc = new NumberingService(db, new NumberingClock());
-        var cot1 = await svc.GenerateAsync("fabric", "COT");
-        var che1 = await svc.GenerateAsync("fabric", "CHE");
-        var cot2 = await svc.GenerateAsync("fabric", "COT");
+        string cot1, che1, cot2;
+        using (var tx = await db.Database.BeginTransactionAsync())
+        {
+            cot1 = await svc.GenerateAsync("fabric", "COT");
+            che1 = await svc.GenerateAsync("fabric", "CHE");
+            cot2 = await svc.GenerateAsync("fabric", "COT");
+            await tx.CommitAsync();
+        }
         Assert.EndsWith("-0001", cot1);
         Assert.EndsWith("-0001", che1);
         Assert.EndsWith("-0002", cot2);  // COT 独立计数
@@ -129,6 +151,8 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
     {
         using var db = NewDbContext();
         var svc = new NumberingService(db, new NumberingClock());
+        // fail-fast 守卫要求先开启事务（即便错误路径也会先检查 CurrentTransaction）
+        using var tx = await db.Database.BeginTransactionAsync();
         await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("nonexistent", null));
     }
 
@@ -137,6 +161,8 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
     {
         using var db = NewDbContext();
         var svc = new NumberingService(db, new NumberingClock());
+        // fail-fast 守卫要求先开启事务
+        using var tx = await db.Database.BeginTransactionAsync();
         await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("fabric", null));
     }
 
