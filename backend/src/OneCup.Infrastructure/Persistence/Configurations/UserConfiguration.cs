@@ -17,10 +17,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.DisplayName).HasColumnName("display_name").HasMaxLength(50).IsRequired();
         builder.Property(u => u.Email).HasColumnName("email").HasMaxLength(100);
         builder.Property(u => u.IsActive).HasColumnName("is_active").IsRequired();
+        builder.Property(u => u.IsDeleted).HasColumnName("is_deleted").IsRequired();
         builder.Property(u => u.CreatedAt).HasColumnName("created_at");
         builder.Property(u => u.UpdatedAt).HasColumnName("updated_at");
 
         builder.HasIndex(u => u.Username).IsUnique();
+
+        // 全局过滤器：常规查询自动排除已删除（username 唯一索引保持全局唯一，不改为过滤索引）
+        builder.HasQueryFilter(u => !u.IsDeleted);
 
         builder.HasMany(u => u.Roles)
             .WithMany(r => r.Users)

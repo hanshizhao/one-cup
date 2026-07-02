@@ -5,6 +5,7 @@ using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
 using OneCup.Application.Services;
+using OneCup.Application.Validators.Auth;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
 using OneCup.Infrastructure.Persistence;
@@ -120,7 +121,10 @@ public class AuthServiceTests
         lockout ??= new FakeLockoutStore();
         var permCalc = new PermissionCalculator();
         var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance;
-        return new AuthService(new Repository<User>(db), new Repository<RefreshToken>(db), new UnitOfWork(db), jwt, passwordHasher, Microsoft.Extensions.Options.Options.Create(_options), permCalc, lockout, logger);
+        return new AuthService(
+            new Repository<User>(db), new Repository<RefreshToken>(db), new UnitOfWork(db), jwt, passwordHasher,
+            Microsoft.Extensions.Options.Options.Create(_options), permCalc, lockout, logger,
+            new LoginRequestValidator(), new RefreshRequestValidator());
     }
 
     // ════════════════════════════════════════════════════════════════

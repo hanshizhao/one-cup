@@ -65,7 +65,7 @@ public class OneCupDbContext : DbContext
     }
 
     /// <summary>
-    /// 种子数据：1 admin 账号、2 角色、13 权限及其关联。
+    /// 种子数据：1 admin 账号、2 角色、16 权限及其关联。
     /// Guid 均为确定性常量（HasData 要求）。
     /// </summary>
     private void Seed(ModelBuilder modelBuilder)
@@ -83,6 +83,7 @@ public class OneCupDbContext : DbContext
             new Permission { Id = SeedData.PermColorRead, Code = "color:read", Name = "查看颜色对色", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermColorWrite, Code = "color:write", Name = "维护颜色对色", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermProductRead, Code = "product:read", Name = "查看产品", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermProductWrite, Code = "product:write", Name = "录入/编辑产品", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermSystemUserManage, Code = "system:user:manage", Name = "管理用户", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermSystemRoleManage, Code = "system:role:manage", Name = "管理角色与权限", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermSystemNumberingView, Code = "system:numbering:view", Name = "查看编号管理", CreatedAt = SeedTimestamp },

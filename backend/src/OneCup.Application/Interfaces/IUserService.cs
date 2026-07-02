@@ -16,4 +16,7 @@ public interface IUserService
     Task ResetPasswordAsync(Guid id, ResetPasswordRequest request, CancellationToken ct = default);
 
     Task UpdateStatusAsync(Guid id, UpdateStatusRequest request, CancellationToken ct = default);
+
+    /// <summary>软删除用户(admin 保护;同步吊销该用户未吊销的 refresh token)。</summary>
+    Task DeleteAsync(Guid id, CancellationToken ct = default);
 }

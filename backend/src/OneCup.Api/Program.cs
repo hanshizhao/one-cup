@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
@@ -36,6 +37,12 @@ builder.Services.AddControllers()
         // 枚举序列化为字符串,前后端一致
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
+
+// ── FluentValidation:注册 Application 层所有 Validator(手动校验模式) ──
+// 不使用 AspNetCore 自动拦截管道,改为在 Service 层手动 ValidateAsync → DomainException(→400)。
+// 这样 Application 层不依赖 AspNetCore,校验逻辑可单测。
+// 注:PasswordRules 为静态类,C# 禁止静态类作泛型实参(CS0718),故用 typeof().Assembly 等价注册。
+builder.Services.AddValidatorsFromAssembly(typeof(PasswordRules).Assembly);
 
 builder.Services.AddOpenApi();
 

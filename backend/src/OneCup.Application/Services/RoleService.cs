@@ -1,3 +1,4 @@
+using FluentValidation;
 using OneCup.Application.Common;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
@@ -17,12 +18,21 @@ public class RoleService : IRoleService
     private readonly IRepository<Role> _roles;
     private readonly IRepository<Permission> _permissions;
     private readonly IUnitOfWork _uow;
+    private readonly IValidator<CreateRoleRequest> _createValidator;
+    private readonly IValidator<UpdateRoleRequest> _updateValidator;
 
-    public RoleService(IRepository<Role> roles, IRepository<Permission> permissions, IUnitOfWork uow)
+    public RoleService(
+        IRepository<Role> roles,
+        IRepository<Permission> permissions,
+        IUnitOfWork uow,
+        IValidator<CreateRoleRequest> createValidator,
+        IValidator<UpdateRoleRequest> updateValidator)
     {
         _roles = roles;
         _permissions = permissions;
         _uow = uow;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
     }
 
     public async Task<List<RoleListItemDto>> GetListAsync(CancellationToken ct = default)
@@ -62,6 +72,8 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto> CreateAsync(CreateRoleRequest request, CancellationToken ct = default)
     {
+        await _createValidator.EnsureValidAsync(request, ct);
+
         // 编码唯一性校验
         if (await _roles.AnyAsync(new RoleByCodeSpec(request.Code), ct))
         {
@@ -83,6 +95,8 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto> UpdateAsync(Guid id, UpdateRoleRequest request, CancellationToken ct = default)
     {
+        await _updateValidator.EnsureValidAsync(request, ct);
+
         // 加载需修改的角色(含 Permissions),tracked via FirstOrDefaultAsync(无 AsNoTracking)。
         var role = await _roles.FirstOrDefaultAsync(new RoleWithPermissionsSpec(id), ct)
             ?? throw new DomainException("角色不存在");

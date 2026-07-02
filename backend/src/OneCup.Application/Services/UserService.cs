@@ -1,3 +1,4 @@
+using FluentValidation;
 using OneCup.Application.Common;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
@@ -16,15 +17,31 @@ public class UserService : IUserService
 {
     private readonly IRepository<User> _users;
     private readonly IRepository<Role> _roles;
+    private readonly IRepository<RefreshToken> _refreshTokens;
     private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IValidator<CreateUserRequest> _createValidator;
+    private readonly IValidator<UpdateUserRequest> _updateValidator;
+    private readonly IValidator<ResetPasswordRequest> _resetValidator;
 
-    public UserService(IRepository<User> users, IRepository<Role> roles, IUnitOfWork uow, IPasswordHasher passwordHasher)
+    public UserService(
+        IRepository<User> users,
+        IRepository<Role> roles,
+        IRepository<RefreshToken> refreshTokens,
+        IUnitOfWork uow,
+        IPasswordHasher passwordHasher,
+        IValidator<CreateUserRequest> createValidator,
+        IValidator<UpdateUserRequest> updateValidator,
+        IValidator<ResetPasswordRequest> resetValidator)
     {
         _users = users;
         _roles = roles;
+        _refreshTokens = refreshTokens;
         _uow = uow;
         _passwordHasher = passwordHasher;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
+        _resetValidator = resetValidator;
     }
 
     public async Task<PagedResult<UserListItemDto>> GetListAsync(int page, int pageSize, string? keyword, CancellationToken ct = default)
@@ -74,8 +91,11 @@ public class UserService : IUserService
 
     public async Task<UserDto> CreateAsync(CreateUserRequest request, CancellationToken ct = default)
     {
-        // 用户名唯一校验
-        if (await _users.AnyAsync(new UserByUsernameSpec(request.Username), ct))
+        await _createValidator.EnsureValidAsync(request, ct);
+
+        // 用户名唯一校验:必须绕过软删除过滤器,否则已删除用户占用的用户名会被误判为可用,
+        // 导致 AddAsync 走到全局唯一索引冲突 → DbUpdateException → 500(而非清晰 400)。
+        if (await _users.AnyIgnoringFiltersAsync(new UserByUsernameSpec(request.Username), ct))
         {
             throw new DomainException($"用户名「{request.Username}」已存在");
         }
@@ -107,6 +127,8 @@ public class UserService : IUserService
 
     public async Task<UserDto> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken ct = default)
     {
+        await _updateValidator.EnsureValidAsync(request, ct);
+
         var user = await _users.FirstOrDefaultAsync(new UserByIdWithRolesSpec(id), ct)
             ?? throw new DomainException("用户不存在");
 
@@ -151,6 +173,8 @@ public class UserService : IUserService
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordRequest request, CancellationToken ct = default)
     {
+        await _resetValidator.EnsureValidAsync(request, ct);
+
         var user = await _users.GetByIdAsync(id, ct)
             ?? throw new DomainException("用户不存在");
 
@@ -170,6 +194,34 @@ public class UserService : IUserService
         }
 
         user.IsActive = request.IsActive;
+        await _uow.SaveChangesAsync(ct);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        // GetByIdAsync 走 FindAsync(tracked,不受 QueryFilter 影响)。
+        // 注意:已软删除的用户也会被找到(幂等重删 → 重复设置 IsDeleted=true,返回 204)。
+        var user = await _users.GetByIdAsync(id, ct)
+            ?? throw new DomainException("用户不存在");
+
+        // admin 保护：不能删除系统内置管理员账号
+        if (user.Id == SystemConstants.AdminUserId)
+        {
+            throw new DomainException("不能删除系统管理员账号");
+        }
+
+        user.IsDeleted = true;
+
+        // 同步吊销该用户所有未吊销的 refresh token(ActiveRefreshTokensByUserSpec 已在 AuthSpecs 定义)。
+        // ListAsync 走 AsNoTracking 返回 detached 实体,修改后需逐个 Update 重新 Attach 为 Modified,
+        // 随 SaveChanges 持久化(与 AuthService.LogoutAsync 一致的处理方式)。
+        var activeTokens = await _refreshTokens.ListAsync(new ActiveRefreshTokensByUserSpec(id), ct);
+        foreach (var token in activeTokens)
+        {
+            token.IsRevoked = true;
+            _refreshTokens.Update(token);
+        }
+
         await _uow.SaveChangesAsync(ct);
     }
 }

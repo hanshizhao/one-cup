@@ -1,5 +1,7 @@
+using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OneCup.Application.Common;
 using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
@@ -26,6 +28,8 @@ public class AuthService : IAuthService
     private readonly IPermissionCalculator _permCalc;
     private readonly ILockoutStore _lockout;
     private readonly ILogger<AuthService> _logger;
+    private readonly IValidator<LoginRequest> _loginValidator;
+    private readonly IValidator<RefreshRequest> _refreshValidator;
 
     public AuthService(
         IRepository<User> users,
@@ -36,7 +40,9 @@ public class AuthService : IAuthService
         IOptions<JwtOptions> options,
         IPermissionCalculator permCalc,
         ILockoutStore lockout,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IValidator<LoginRequest> loginValidator,
+        IValidator<RefreshRequest> refreshValidator)
     {
         _users = users;
         _refreshTokens = refreshTokens;
@@ -47,10 +53,15 @@ public class AuthService : IAuthService
         _permCalc = permCalc;
         _lockout = lockout;
         _logger = logger;
+        _loginValidator = loginValidator;
+        _refreshValidator = refreshValidator;
     }
 
     public async Task<TokenResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
+        // 入参校验先行(在 lockout 查询之前),避免畸形用户名污染锁定计数。
+        await _loginValidator.EnsureValidAsync(request, ct);
+
         var lockoutKey = request.Username.ToLowerInvariant();
 
         // 1. 先查锁定(不查库、不校验密码)
@@ -81,6 +92,8 @@ public class AuthService : IAuthService
 
     public async Task<TokenResponse> RefreshAsync(RefreshRequest request, CancellationToken ct = default)
     {
+        await _refreshValidator.EnsureValidAsync(request, ct);
+
         // 加载刷新令牌(含 User→Roles→Permissions 三级 Include)。
         // tracked via FirstOrDefaultAsync(无 AsNoTracking),后续轮换(置 IsRevoked)随 SaveChanges 持久化。
         var stored = await _refreshTokens.FirstOrDefaultAsync(new RefreshTokenByTokenSpec(request.RefreshToken), ct);
