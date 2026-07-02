@@ -6,7 +6,6 @@ using OneCup.Domain.Enums;
 using OneCup.Domain.Exceptions;
 using OneCup.Application.Services;
 using OneCup.Infrastructure.Persistence;
-using OneCup.Infrastructure.Services;
 
 namespace OneCup.UnitTests.Numbering;
 
