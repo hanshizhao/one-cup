@@ -1,6 +1,6 @@
 import './style/global.less';
 import React, { useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { createStore } from 'redux';
 import { Provider } from 'react-redux';
 import { ConfigProvider } from '@arco-design/web-react';
@@ -140,4 +140,4 @@ function Index() {
   );
 }
 
-ReactDOM.render(<Index />, document.getElementById('root'));
+createRoot(document.getElementById('root')!).render(<Index />);
