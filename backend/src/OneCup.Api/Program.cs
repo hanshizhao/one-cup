@@ -158,25 +158,43 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 全局异常处理:认证异常 → 401, 领域异常 → 400, 其他 → 500
+// 全局异常处理:认证异常→401, 领域异常→400, 其他→500;生产环境不回显内部细节
 app.UseExceptionHandler(appBuilder =>
 {
     appBuilder.Run(async context =>
     {
         var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+        var logger = context.RequestServices.GetService<ILogger<Program>>();
         context.Response.ContentType = "application/json";
 
-        context.Response.StatusCode = exception switch
+        // 标准错误结构
+        var (statusCode, code, message, retryAfter) = exception switch
         {
-            UnauthorizedException => StatusCodes.Status401Unauthorized,
-            DomainException => StatusCodes.Status400BadRequest,
-            _ => StatusCodes.Status500InternalServerError,
+            AccountLockedException ex => (StatusCodes.Status401Unauthorized, "ACCOUNT_LOCKED", (string?)ex.Message, ex.RetryAfter),
+            UnauthorizedException => (StatusCodes.Status401Unauthorized, "UNAUTHORIZED", exception?.Message, (TimeSpan?)null),
+            DomainException => (StatusCodes.Status400BadRequest, "DOMAIN_ERROR", exception?.Message, (TimeSpan?)null),
+            _ => (StatusCodes.Status500InternalServerError, "INTERNAL_ERROR", (string?)null, (TimeSpan?)null),
         };
 
-        var response = new
+        // 500 始终记完整堆栈;其他警告级
+        if (statusCode >= 500)
         {
-            message = exception?.Message ?? "An unexpected error occurred.",
-        };
+            logger?.LogError(exception, "未处理异常:{Type}", exception?.GetType().Name);
+        }
+        else
+        {
+            logger?.LogWarning("业务异常:{Code} {Message}", code, exception?.Message);
+        }
+
+        // 生产环境 500 不回显 message
+        var exposedMessage = statusCode >= 500 && !app.Environment.IsDevelopment()
+            ? "服务器内部错误"
+            : message ?? "服务器内部错误";
+
+        context.Response.StatusCode = statusCode;
+        var response = retryAfter is null
+            ? (object)new { code, message = exposedMessage }
+            : new { code, message = exposedMessage, retryAfter = (int)Math.Ceiling(retryAfter.Value.TotalSeconds) };
         await context.Response.WriteAsJsonAsync(response);
     });
 });
