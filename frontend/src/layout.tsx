@@ -35,6 +35,8 @@ const Content = Layout.Content;
 
 function getIconFromKey(key) {
   switch (key) {
+    case 'system':
+      return <IconSettings className={styles.icon} />;
     case 'dashboard':
       return <IconDashboard className={styles.icon} />;
     case 'list':

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OneCup.Api.Authorization;
 using OneCup.Api.Services;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
@@ -63,7 +65,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero,
         };
     });
-builder.Services.AddAuthorization();
+// ── 依赖注入:系统管理服务 ─────────────────────────────────────
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 // ── 依赖注入:认证相关服务 ─────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -71,6 +76,17 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<CurrentUserService>();
 builder.Services.AddHttpContextAccessor();
+
+// ── 授权策略 (基于 JWT perm_codes claim) ───────────────────────
+// admin 角色的 perm_codes 含通配 "*",由 WildcardAuthorizationHandler 放行所有策略。
+builder.Services.AddSingleton<IAuthorizationHandler, WildcardAuthorizationHandler>();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("user-manage", policy =>
+        policy.RequireClaim("perm_codes", "system:user:manage"));
+    options.AddPolicy("role-manage", policy =>
+        policy.RequireClaim("perm_codes", "system:role:manage"));
+});
 
 var app = builder.Build();
 

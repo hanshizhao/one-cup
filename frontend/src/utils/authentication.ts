@@ -46,6 +46,10 @@ const auth = (params: Auth, userPermission: UserPermission) => {
 
 export default (params: AuthParams, userPermission: UserPermission) => {
   const { requiredPermissions, oneOfPerm } = params;
+  // admin 全局通配：如果用户权限含 {'*': ['*']}，直接放行所有路由
+  if (userPermission['*']?.includes('*')) {
+    return true;
+  }
   if (Array.isArray(requiredPermissions) && requiredPermissions.length) {
     let count = 0;
     for (const rp of requiredPermissions) {
