@@ -198,8 +198,8 @@ public class UserService : IUserService
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        // GetByIdAsync 走 FindAsync(tracked,不受 QueryFilter 影响),能找到未删除的用户;
-        // 已删除的用户再次删除按"不存在"处理(抛 DomainException)。
+        // GetByIdAsync 走 FindAsync(tracked,不受 QueryFilter 影响)。
+        // 注意:已软删除的用户也会被找到(幂等重删 → 重复设置 IsDeleted=true,返回 204)。
         var user = await _users.GetByIdAsync(id, ct)
             ?? throw new DomainException("用户不存在");
 
