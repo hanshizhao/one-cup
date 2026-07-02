@@ -42,8 +42,11 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             // ── 1. 移除真实 DbContext 注册,换 InMemory ──
-            services.RemoveAll<DbContextOptions<OneCupDbContext>>();
-            services.RemoveAll<OneCupDbContext>();
+            // 直接 AddDbContext(UseInMemory) 在已注册 Npgsql 的容器上会触发
+            // "Only a single database provider can be registered":因为 Npgsql 在 DI 中
+            // 还注册了 provider 级单例(IDatabaseProvider 等),与 InMemory 冲突。
+            // 解决:把所有 EF Core / DbContext 相关描述符连根拔起,再干净地注册 InMemory。
+            RemoveDbContextRegistrations(services);
 
             services.AddDbContext<OneCupDbContext>(opt => opt.UseInMemoryDatabase(DatabaseName));
 
@@ -56,6 +59,37 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
     }
 
     /// <summary>
+    /// 清除容器中所有与 OneCupDbContext / EF Core provider 相关的注册描述符。
+    /// AddDbContext 除了注册 DbContext/DbContextOptions,还会通过 provider 扩展
+    /// 注册 IDatabaseProvider 等单例;两个 provider 共存会触发启动期异常,
+    /// 故需按 ServiceType/ImplementationType 字符串全量过滤后重建。
+    /// </summary>
+    private static void RemoveDbContextRegistrations(IServiceCollection services)
+    {
+        for (var i = services.Count - 1; i >= 0; i--)
+        {
+            var d = services[i];
+            var serviceType = d.ServiceType?.FullName;
+            var implType = d.ImplementationType?.FullName
+                           ?? d.ImplementationInstance?.GetType().FullName;
+
+            // 命中 DbContext 本体、DbContextOptions(泛型/非泛型)、provider 扩展单例。
+            if (serviceType is null) continue;
+            var hit = serviceType == typeof(OneCupDbContext).FullName
+                      || serviceType == "Microsoft.EntityFrameworkCore.DbContextOptions`1"
+                      || serviceType == "Microsoft.EntityFrameworkCore.DbContextOptions"
+                      || serviceType == "Microsoft.EntityFrameworkCore.DbContextOptions`1[[OneCup.Infrastructure.Persistence.OneCupDbContext, OneCup.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                      || serviceType.StartsWith("Microsoft.EntityFrameworkCore.", StringComparison.Ordinal)
+                      || serviceType.StartsWith("Npgsql.EntityFrameworkCore.PostgreSQL.", StringComparison.Ordinal)
+                      || serviceType.StartsWith("Microsoft.Data.Sqlite.", StringComparison.Ordinal)
+                      || (implType is not null
+                          && (implType.StartsWith("Microsoft.EntityFrameworkCore.", StringComparison.Ordinal)
+                              || implType.StartsWith("Npgsql.EntityFrameworkCore.PostgreSQL.", StringComparison.Ordinal)));
+            if (hit) services.RemoveAt(i);
+        }
+    }
+
+    /// <summary>
     /// 在 InMemory 数据库中种子 admin + developer 用户(含角色/权限),并确保导航属性可被 Include 加载。
     /// 在每个测试类构造时显式调用。
     /// 注意:不调用 EnsureCreated —— InMemory 上的 HasData(OnModelCreating)对多对多跳表导航属性
@@ -65,6 +99,15 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<OneCupDbContext>();
+
+        // 幂等:IClassFixture 下多个测试共享同一 factory(同一 InMemory 库),
+        // 构造函数会多次调用 SeedAsync,首次之后直接返回,避免主键冲突。
+        // 注:不调用 EnsureCreated —— HasData 种子仅在 EnsureCreated/Migrate 时写入,
+        // 此处完全采用手动种子(与单元测试一致),InMemory 库在首次写入时惰性创建。
+        if (await db.Users.AnyAsync(u => u.Id == AdminUserId || u.Id == DeveloperUserId))
+        {
+            return;
+        }
 
         var now = DateTime.UtcNow;
 
