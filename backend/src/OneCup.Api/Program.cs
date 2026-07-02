@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -102,6 +103,42 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("perm_codes", "system:role:manage"));
 });
 
+// ── 限流 ──
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // 登录/刷新:按 IP 固定窗口,10 次/分钟
+    options.AddFixedWindowLimiter("auth-login", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0;
+    });
+
+    // 全局兜底:按 IP,120 次/分钟
+    options.AddFixedWindowLimiter("global", opt =>
+    {
+        opt.PermitLimit = 120;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+
+    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(ctx =>
+    {
+        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 120,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            });
+    });
+});
+
 var app = builder.Build();
 
 // ── 中间件管道 ───────────────────────────────────────────────
@@ -112,6 +149,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
