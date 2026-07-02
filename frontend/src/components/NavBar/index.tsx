@@ -15,8 +15,7 @@ import {
   IconPoweroff,
   IconLoading,
 } from '@arco-design/web-react/icon';
-import { useSelector } from 'react-redux';
-import { GlobalState } from '@/store';
+import { useAppSelector } from '@/store';
 import { GlobalContext } from '@/context';
 import useLocale from '@/utils/useLocale';
 import Logo from '@/assets/logo.svg';
@@ -28,7 +27,7 @@ import { removeTokens } from '@/utils/token';
 
 function Navbar({ show }: { show: boolean }) {
   const t = useLocale();
-  const { userInfo, userLoading } = useSelector((state: GlobalState) => state);
+  const { userInfo, userLoading } = useAppSelector((state) => state.userInfo);
 
   const { setLang, lang, theme, setTheme } = useContext(GlobalContext);
 

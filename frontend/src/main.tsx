@@ -1,14 +1,13 @@
 import './style/global.less';
 import React, { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createStore } from 'redux';
 import { Provider } from 'react-redux';
 import { ConfigProvider } from '@arco-design/web-react';
 import zhCN from '@arco-design/web-react/es/locale/zh-CN';
 import enUS from '@arco-design/web-react/es/locale/en-US';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import { getCurrentUser } from '@/api/auth';
-import rootReducer from './store';
+import { store, setUserInfo } from './store';
 import PageLayout from './layout';
 import { GlobalContext } from './context';
 import Login from './pages/login';
@@ -16,7 +15,7 @@ import checkLogin from './utils/checkLogin';
 import changeTheme from './utils/changeTheme';
 import useStorage from './utils/useStorage';
 
-const store = createStore(rootReducer);
+
 
 /**
  * 把后端的 permCodes (["fabric:read", ...] 或 ["*"])
@@ -64,31 +63,19 @@ function Index() {
   }
 
   function fetchUserInfo() {
-    store.dispatch({
-      type: 'update-userInfo',
-      payload: { userLoading: true },
-    });
+    store.dispatch(setUserInfo({ userLoading: true }));
     getCurrentUser()
       .then((user) => {
         // 后端 permissions 是 ["fabric:read", ...] 或 ["*"]
         // 前端 store 期望 Record<resource, actions[]>
         const permissions = transformPermissions(user.permissions, user.roles);
-        store.dispatch({
-          type: 'update-userInfo',
-          payload: {
-            userInfo: {
-              name: user.displayName,
-              permissions,
-            },
-            userLoading: false,
-          },
-        });
+        store.dispatch(setUserInfo({
+          userInfo: { name: user.displayName, permissions },
+          userLoading: false,
+        }));
       })
       .catch(() => {
-        store.dispatch({
-          type: 'update-userInfo',
-          payload: { userLoading: false },
-        });
+        store.dispatch(setUserInfo({ userLoading: false }));
       });
   }
 

@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { GlobalState } from '@/store';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/store';
 import authentication, { AuthParams } from '@/utils/authentication';
 
 type PermissionWrapperProps = AuthParams & {
@@ -11,7 +10,7 @@ const PermissionWrapper = (
   props: React.PropsWithChildren<PermissionWrapperProps>
 ) => {
   const { backup, requiredPermissions, oneOfPerm } = props;
-  const userInfo = useSelector((state: GlobalState) => state.userInfo);
+  const userInfo = useAppSelector((state) => state.userInfo.userInfo);
 
   const hasPermission = useMemo(() => {
     return authentication(
