@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OneCup.Application.Common;
 using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
@@ -56,20 +57,10 @@ public class AuthService : IAuthService
         _refreshValidator = refreshValidator;
     }
 
-    /// <summary>手动校验请求 DTO,失败抛 DomainException(全局映射 400)。</summary>
-    private static async Task ValidateAsync<T>(IValidator<T> validator, T request, CancellationToken ct)
-    {
-        var result = await validator.ValidateAsync(request, ct);
-        if (!result.IsValid)
-        {
-            throw new DomainException(string.Join("; ", result.Errors.Select(e => e.ErrorMessage)));
-        }
-    }
-
     public async Task<TokenResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
         // 入参校验先行(在 lockout 查询之前),避免畸形用户名污染锁定计数。
-        await ValidateAsync(_loginValidator, request, ct);
+        await _loginValidator.EnsureValidAsync(request, ct);
 
         var lockoutKey = request.Username.ToLowerInvariant();
 
@@ -101,7 +92,7 @@ public class AuthService : IAuthService
 
     public async Task<TokenResponse> RefreshAsync(RefreshRequest request, CancellationToken ct = default)
     {
-        await ValidateAsync(_refreshValidator, request, ct);
+        await _refreshValidator.EnsureValidAsync(request, ct);
 
         // 加载刷新令牌(含 User→Roles→Permissions 三级 Include)。
         // tracked via FirstOrDefaultAsync(无 AsNoTracking),后续轮换(置 IsRevoked)随 SaveChanges 持久化。

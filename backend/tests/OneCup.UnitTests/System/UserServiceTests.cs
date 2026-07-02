@@ -86,7 +86,13 @@ public class UserServiceTests
     {
         var (db, svc) = Setup(MakeUser("dup", "重复用户"));
         await Assert.ThrowsAsync<DomainException>(() =>
-            svc.CreateAsync(new CreateUserRequest { Username = "dup", DisplayName = "x", Password = "p" }));
+            svc.CreateAsync(new CreateUserRequest
+            {
+                Username = "dup",
+                DisplayName = "重复用户",
+                Password = "Password1",
+                RoleIds = [SeedData.DeveloperRoleId],
+            }));
     }
 
     [Fact]
@@ -120,7 +126,7 @@ public class UserServiceTests
             {
                 DisplayName = "管理员",
                 IsActive = false,
-                RoleIds = [],
+                RoleIds = [SeedData.AdminRoleId],
             }));
     }
 }

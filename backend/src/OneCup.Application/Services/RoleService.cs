@@ -35,16 +35,6 @@ public class RoleService : IRoleService
         _updateValidator = updateValidator;
     }
 
-    /// <summary>手动校验请求 DTO,失败抛 DomainException(全局映射 400)。</summary>
-    private static async Task ValidateAsync<T>(IValidator<T> validator, T request, CancellationToken ct)
-    {
-        var result = await validator.ValidateAsync(request, ct);
-        if (!result.IsValid)
-        {
-            throw new DomainException(string.Join("; ", result.Errors.Select(e => e.ErrorMessage)));
-        }
-    }
-
     public async Task<List<RoleListItemDto>> GetListAsync(CancellationToken ct = default)
     {
         // 一次性加载角色及其 Permissions 与 Users 集合;
@@ -82,7 +72,7 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto> CreateAsync(CreateRoleRequest request, CancellationToken ct = default)
     {
-        await ValidateAsync(_createValidator, request, ct);
+        await _createValidator.EnsureValidAsync(request, ct);
 
         // 编码唯一性校验
         if (await _roles.AnyAsync(new RoleByCodeSpec(request.Code), ct))
@@ -105,7 +95,7 @@ public class RoleService : IRoleService
 
     public async Task<RoleDto> UpdateAsync(Guid id, UpdateRoleRequest request, CancellationToken ct = default)
     {
-        await ValidateAsync(_updateValidator, request, ct);
+        await _updateValidator.EnsureValidAsync(request, ct);
 
         // 加载需修改的角色(含 Permissions),tracked via FirstOrDefaultAsync(无 AsNoTracking)。
         var role = await _roles.FirstOrDefaultAsync(new RoleWithPermissionsSpec(id), ct)

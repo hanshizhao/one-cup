@@ -41,16 +41,6 @@ public class UserService : IUserService
         _resetValidator = resetValidator;
     }
 
-    /// <summary>手动校验请求 DTO,失败抛 DomainException(全局映射 400)。</summary>
-    private static async Task ValidateAsync<T>(IValidator<T> validator, T request, CancellationToken ct)
-    {
-        var result = await validator.ValidateAsync(request, ct);
-        if (!result.IsValid)
-        {
-            throw new DomainException(string.Join("; ", result.Errors.Select(e => e.ErrorMessage)));
-        }
-    }
-
     public async Task<PagedResult<UserListItemDto>> GetListAsync(int page, int pageSize, string? keyword, CancellationToken ct = default)
     {
         // 关键:总数用仅含过滤条件的 UserFilterSpec 统计,绝不能用带分页的 UserPagedSpec,
@@ -98,7 +88,7 @@ public class UserService : IUserService
 
     public async Task<UserDto> CreateAsync(CreateUserRequest request, CancellationToken ct = default)
     {
-        await ValidateAsync(_createValidator, request, ct);
+        await _createValidator.EnsureValidAsync(request, ct);
 
         // 用户名唯一校验
         if (await _users.AnyAsync(new UserByUsernameSpec(request.Username), ct))
@@ -133,7 +123,7 @@ public class UserService : IUserService
 
     public async Task<UserDto> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken ct = default)
     {
-        await ValidateAsync(_updateValidator, request, ct);
+        await _updateValidator.EnsureValidAsync(request, ct);
 
         var user = await _users.FirstOrDefaultAsync(new UserByIdWithRolesSpec(id), ct)
             ?? throw new DomainException("用户不存在");
@@ -179,7 +169,7 @@ public class UserService : IUserService
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordRequest request, CancellationToken ct = default)
     {
-        await ValidateAsync(_resetValidator, request, ct);
+        await _resetValidator.EnsureValidAsync(request, ct);
 
         var user = await _users.GetByIdAsync(id, ct)
             ?? throw new DomainException("用户不存在");
