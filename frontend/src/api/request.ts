@@ -103,7 +103,6 @@ request.interceptors.response.use(
 
 function redirectToLogin() {
   removeTokens();
-  localStorage.setItem('userStatus', 'logout');
   if (window.location.pathname !== '/login') {
     window.location.href = '/login';
   }
