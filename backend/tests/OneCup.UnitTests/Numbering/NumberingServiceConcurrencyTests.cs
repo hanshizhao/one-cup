@@ -9,29 +9,54 @@ using Testcontainers.PostgreSql;
 namespace OneCup.UnitTests.Numbering;
 
 /// <summary>
-/// 并发取号测试。必须用真实 PostgreSQL（Testcontainers）——InMemory 不支持 FOR UPDATE 行锁。
-/// 运行需要本机可访问 Docker。
+/// 并发取号测试。必须用真实 PostgreSQL——InMemory 不支持 FOR UPDATE 行锁，会给虚假安全感。
+///
+/// 双模式连接：
+/// 1. 若设了环境变量 NUMBERING_TEST_PG，用它作为连接串（连已运行的 PG，如云上开发库）。
+///    强烈建议指向独立测试库（如 onecup_numbering_test），避免污染开发数据。
+///    每个测试类实例会先 DROP+CREATE 该库的表（EnsureDeleted + EnsureCreated），保证干净。
+/// 2. 否则回退 Testcontainers（需要本机 Docker）。
 /// </summary>
 public class NumberingServiceConcurrencyTests : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _pg = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
-        .WithDatabase("numbering_test")
-        .WithUsername("test")
-        .WithPassword("test")
-        .Build();
-
     private OneCupDbContext _db = null!;
     private NumberingService _svc = null!;
     private Guid _ruleId;
+    private string _connectionString = null!;
+    private PostgreSqlContainer? _pg;
 
     public async Task InitializeAsync()
     {
-        await _pg.StartAsync();
+        var envConn = Environment.GetEnvironmentVariable("NUMBERING_TEST_PG");
+        // 也支持从文件读连接串（避开 shell 对含特殊字符密码的转义问题）
+        var connFile = Environment.GetEnvironmentVariable("NUMBERING_TEST_PG_FILE");
+        if (!string.IsNullOrEmpty(connFile) && File.Exists(connFile))
+            envConn = File.ReadAllText(connFile).Trim();
+        if (!string.IsNullOrEmpty(envConn))
+        {
+            // 模式1：连已运行的 PG（云上/本地）。先 DROP 再 CREATE schema，保证每个测试类干净。
+            _connectionString = envConn;
+        }
+        else
+        {
+            // 模式2：Testcontainers 起独立容器（需 Docker）
+            _pg = new PostgreSqlBuilder()
+                .WithImage("postgres:17-alpine")
+                .WithDatabase("numbering_test")
+                .WithUsername("test")
+                .WithPassword("test")
+                .Build();
+            await _pg.StartAsync();
+            _connectionString = _pg.GetConnectionString();
+        }
+
         var options = new DbContextOptionsBuilder<OneCupDbContext>()
-            .UseNpgsql(_pg.GetConnectionString())
+            .UseNpgsql(_connectionString)
             .Options;
         _db = new OneCupDbContext(options);
+
+        // 模式1下：重建 schema（DROP 所有表再建）。Testcontainers 是全新容器无需此步，但执行也无害。
+        await _db.Database.EnsureDeletedAsync();
         await _db.Database.EnsureCreatedAsync();
 
         var rule = new NumberingRule
@@ -53,12 +78,16 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         _svc = new NumberingService(_db, new NumberingClock());
     }
 
-    public async Task DisposeAsync() => await _pg.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        // 模式1下可选清理（保留库，留 schema 供下次重建）。Testcontainers 容器释放。
+        if (_pg is not null) await _pg.DisposeAsync();
+    }
 
     private OneCupDbContext NewDbContext()
     {
         var options = new DbContextOptionsBuilder<OneCupDbContext>()
-            .UseNpgsql(_pg.GetConnectionString())
+            .UseNpgsql(_connectionString)
             .Options;
         return new OneCupDbContext(options);
     }
