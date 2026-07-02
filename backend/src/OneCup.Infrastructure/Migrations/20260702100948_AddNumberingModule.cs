@@ -71,7 +71,7 @@ namespace OneCup.Infrastructure.Migrations
                     period_key = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
                     seq_value = table.Column<int>(type: "integer", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {

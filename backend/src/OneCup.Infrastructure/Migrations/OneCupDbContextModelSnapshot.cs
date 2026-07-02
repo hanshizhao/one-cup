@@ -112,7 +112,8 @@ namespace OneCup.Infrastructure.Migrations
                         .HasColumnName("target_type");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id");
 

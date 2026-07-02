@@ -12,7 +12,7 @@ using OneCup.Infrastructure.Persistence;
 namespace OneCup.Infrastructure.Migrations
 {
     [DbContext(typeof(OneCupDbContext))]
-    [Migration("20260702100144_AddNumberingModule")]
+    [Migration("20260702100948_AddNumberingModule")]
     partial class AddNumberingModule
     {
         /// <inheritdoc />
@@ -115,7 +115,8 @@ namespace OneCup.Infrastructure.Migrations
                         .HasColumnName("target_type");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id");
 

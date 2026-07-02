@@ -19,6 +19,7 @@ public class NumberingLogConfiguration : IEntityTypeConfiguration<NumberingLog>
         builder.Property(l => l.PeriodKey).HasColumnName("period_key").HasMaxLength(16);
         builder.Property(l => l.SeqValue).HasColumnName("seq_value").IsRequired();
         builder.Property(l => l.CreatedAt).HasColumnName("created_at");
+        builder.Property(l => l.UpdatedAt).HasColumnName("updated_at");
 
         builder.HasOne(l => l.Rule)
             .WithMany()
