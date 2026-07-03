@@ -14,7 +14,6 @@ const UserPage = lazy(() => import('@/pages/system/user'));
 const RolePage = lazy(() => import('@/pages/system/role'));
 const PermissionPage = lazy(() => import('@/pages/system/permission'));
 const NumberingPage = lazy(() => import('@/pages/system/numbering'));
-const NumberingDictPage = lazy(() => import('@/pages/system/numbering/dict'));
 
 const PageFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
@@ -111,14 +110,6 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RequirePermission resource="system:numbering" actions={['view']}>
             <NumberingPage />
-          </RequirePermission>
-        ),
-      },
-      {
-        path: 'system/numbering/dict',
-        element: withSuspense(
-          <RequirePermission resource="system:numbering" actions={['view']}>
-            <NumberingDictPage />
           </RequirePermission>
         ),
       },

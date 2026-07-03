@@ -1,6 +1,7 @@
 export default {
   'numbering.title': 'Numbering',
   'numbering.tab.rules': 'Rules',
+  'numbering.tab.dict': 'Dictionary',
   'numbering.tab.logs': 'Logs',
   // rule list columns
   'numbering.rules.name': 'Name',

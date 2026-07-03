@@ -36,6 +36,7 @@ import {
   getActiveCategories,
   TargetType,
 } from '@/api/numberingDictionary';
+import NumberingDictionary from './dict';
 import locale from './locale';
 
 const FormItem = Form.Item;
@@ -495,6 +496,11 @@ export default function NumberingManagement() {
                 setRulePagination((p) => ({ ...p, current, pageSize })),
             }}
           />
+        </Tabs.TabPane>
+
+        {/* ───────────── 业务字典 Tab ───────────── */}
+        <Tabs.TabPane key="dict" title={t['numbering.tab.dict']}>
+          <NumberingDictionary />
         </Tabs.TabPane>
 
         {/* ───────────── 生成日志 Tab ───────────── */}

@@ -1,6 +1,7 @@
 export default {
   'numbering.title': '编号管理',
   'numbering.tab.rules': '规则配置',
+  'numbering.tab.dict': '业务字典',
   'numbering.tab.logs': '生成日志',
   // 规则列表列
   'numbering.rules.name': '规则名称',
