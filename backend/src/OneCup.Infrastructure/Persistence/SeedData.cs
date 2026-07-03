@@ -32,4 +32,12 @@ internal static class SeedData
     /// admin 密码 Admin@123 的 BCrypt 哈希（workFactor 12，由 Task 4 Step 3 预计算）。
     /// </summary>
     public const string AdminPasswordHash = "$2a$12$Q.gT.FJroDeCmWFH6dHJcOdjxPIQgST/nEYCECypvJsLxj5wDQoSi";
+
+    // 业务类型字典种子 Guid：第 4 段从 201 开始递增
+    public static readonly Guid TargetTypeFabric = Guid.Parse("00000000-0000-0000-0000-000000000201");
+    public static readonly Guid TargetTypeMaterial = Guid.Parse("00000000-0000-0000-0000-000000000202");
+    public static readonly Guid TargetTypeEquipment = Guid.Parse("00000000-0000-0000-0000-000000000203");
+    public static readonly Guid TargetTypeCustomer = Guid.Parse("00000000-0000-0000-0000-000000000204");
+    public static readonly Guid TargetTypeColor = Guid.Parse("00000000-0000-0000-0000-000000000205");
+    public static readonly Guid TargetTypeProduct = Guid.Parse("00000000-0000-0000-0000-000000000206");
 }
