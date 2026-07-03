@@ -87,6 +87,7 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<INumberingClock, NumberingClock>();
 builder.Services.AddScoped<INumberingService, NumberingService>();
 builder.Services.AddScoped<INumberingRuleService, NumberingRuleService>();
+builder.Services.AddScoped<INumberingDictionaryService, NumberingDictionaryService>();
 
 // ── 依赖注入:认证相关服务 ─────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
