@@ -70,7 +70,8 @@ public sealed class AuditLogQueueConsumer : BackgroundService
     }
 
     /// <summary>批量写库：分桶后各自 AddRange + 一次 SaveChanges。失败丢批记日志。</summary>
-    private async Task WriteBatchAsync(List<AuditLogEntry> batch, CancellationToken ct)
+    /// <remarks>internal 供单测直接验证分桶 + 持久化（避免 InMemory 下构造 IDbContextFactory 与异步时序的 flaky）。</remarks>
+    internal async Task WriteBatchAsync(List<AuditLogEntry> batch, CancellationToken ct)
     {
         var ops = batch.Where(e => e.Operation is not null).Select(e => e.Operation!).ToList();
         var logins = batch.Where(e => e.Login is not null).Select(e => e.Login!).ToList();
