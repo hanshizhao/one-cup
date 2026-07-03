@@ -38,8 +38,23 @@ public class NumberingService : INumberingService
                     .FirstOrDefaultAsync(r => r.TargetType == targetType && r.IsActive, ct)
                     ?? throw new DomainException($"未找到 {targetType} 的启用编码规则");
 
+                // ── 字典强校验（Task 6）──
+                var typeExists = await _db.NumberingTargetTypes
+                    .AnyAsync(t => t.Code == targetType && t.IsActive, ct);
+                if (!typeExists)
+                    throw new DomainException($"业务类型 {targetType} 不存在或已停用");
+
                 if (rule.IncludeCategory && string.IsNullOrEmpty(categoryCode))
                     throw new DomainException("规则要求品类码但未提供");
+
+                if (rule.IncludeCategory && !string.IsNullOrEmpty(categoryCode))
+                {
+                    var catExists = await _db.NumberingCategories
+                        .AnyAsync(c => c.TargetTypeCode == targetType
+                                    && c.Code == categoryCode && c.IsActive, ct);
+                    if (!catExists)
+                        throw new DomainException($"分类码 {categoryCode} 不存在或已停用");
+                }
 
                 // 宽容：规则不要分类码但传了，忽略
                 var effectiveCategory = rule.IncludeCategory ? categoryCode : null;
@@ -110,6 +125,21 @@ public class NumberingService : INumberingService
         var rule = await _db.NumberingRules
             .FirstOrDefaultAsync(r => r.TargetType == targetType && r.IsActive, ct);
         if (rule is null) return null;
+
+        // ── 字典强校验（Task 6）──
+        var typeExists = await _db.NumberingTargetTypes
+            .AnyAsync(t => t.Code == targetType && t.IsActive, ct);
+        if (!typeExists)
+            throw new DomainException($"业务类型 {targetType} 不存在或已停用");
+
+        if (rule.IncludeCategory && !string.IsNullOrEmpty(categoryCode))
+        {
+            var catExists = await _db.NumberingCategories
+                .AnyAsync(c => c.TargetTypeCode == targetType
+                            && c.Code == categoryCode && c.IsActive, ct);
+            if (!catExists)
+                throw new DomainException($"分类码 {categoryCode} 不存在或已停用");
+        }
 
         var effectiveCategory = rule.IncludeCategory ? categoryCode : null;
 
