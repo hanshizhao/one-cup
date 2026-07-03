@@ -35,7 +35,7 @@ public class OperationLogListItemDto
     public Guid? UserId { get; init; }
     public string Username { get; init; } = "";
     public string Module { get; init; } = "";
-    public string Action { get; init; }
+    public string Action { get; init; } = "";
     public string? TargetType { get; init; }
     public string? TargetId { get; init; }
     public string? TargetName { get; init; }

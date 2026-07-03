@@ -55,6 +55,17 @@ public sealed class OperationLogActionFilter : IAsyncActionFilter
         var ua = http.Request.Headers.UserAgent.ToString();
         if (ua.Length > 256) ua = ua[..256];
 
+        // 优先从 IActionResult 读取状态码（Action Filter 阶段 Response.StatusCode 可能尚未落定）
+        var resultStatus = executedContext.Result switch
+        {
+            NotFoundResult => 404,
+            NoContentResult => 204,
+            ObjectResult o => o.StatusCode ?? 200,
+            StatusCodeResult s => s.StatusCode,
+            _ => (int?)null,
+        };
+        var effectiveStatus = resultStatus ?? status;
+
         var log = new OperationLog
         {
             UserId = _current.UserId,
@@ -64,7 +75,7 @@ public sealed class OperationLogActionFilter : IAsyncActionFilter
             TargetType = targetType,
             HttpMethod = method,
             RequestPath = http.Request.Path.Value ?? "",
-            StatusCode = status,
+            StatusCode = effectiveStatus,
             IpAddress = ip,
             UserAgent = ua,
             RequestPayload = payload,
@@ -90,7 +101,7 @@ public sealed class OperationLogActionFilter : IAsyncActionFilter
         }
         else
         {
-            log.Result = status >= 400 ? OperationResult.Failed : OperationResult.Success;
+            log.Result = effectiveStatus >= 400 ? OperationResult.Failed : OperationResult.Success;
         }
 
         // 捕获目标 Id：优先路由 {id}，其次 CreatedAtAction 的路由值

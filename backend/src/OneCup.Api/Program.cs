@@ -104,7 +104,7 @@ builder.Services.AddHttpContextAccessor();
 // ── 审计日志 ───────────────────────────────────────────────
 builder.Services.Configure<AuditLogOptions>(builder.Configuration.GetSection(AuditLogOptions.SectionName));
 var auditOpts = builder.Configuration.GetSection(AuditLogOptions.SectionName).Get<AuditLogOptions>() ?? new AuditLogOptions();
-// 全局操作日志 Filter（Scoped:依赖 Scoped 的 CurrentUserService）
+// 全局操作日志 Filter（Scoped:依赖 Singleton 的 CurrentUserService）
 builder.Services.AddScoped<OperationLogActionFilter>();
 // 有界队列 + Writer（单例,全局唯一）
 builder.Services.AddSingleton(new AuditLogChannel(auditOpts.QueueCapacity));
