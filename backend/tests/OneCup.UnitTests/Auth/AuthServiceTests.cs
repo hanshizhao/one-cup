@@ -114,16 +114,18 @@ public class AuthServiceTests
         OneCupDbContext db,
         FakePasswordHasher? passwordHasher = null,
         FakeJwtTokenService? jwt = null,
-        ILockoutStore? lockout = null)
+        ILockoutStore? lockout = null,
+        IAuditLogWriter? auditWriter = null)
     {
         passwordHasher ??= new FakePasswordHasher();
         jwt ??= new FakeJwtTokenService();
         lockout ??= new FakeLockoutStore();
+        auditWriter ??= new NoopAuditLogWriter();
         var permCalc = new PermissionCalculator();
         var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance;
         return new AuthService(
             new Repository<User>(db), new Repository<RefreshToken>(db), new UnitOfWork(db), jwt, passwordHasher,
-            Microsoft.Extensions.Options.Options.Create(_options), permCalc, lockout, logger,
+            Microsoft.Extensions.Options.Options.Create(_options), permCalc, lockout, logger, auditWriter,
             new LoginRequestValidator(), new RefreshRequestValidator());
     }
 
@@ -501,5 +503,15 @@ public class AuthServiceTests
         public Task RecordFailureAsync(string key, CancellationToken ct = default) { FailureCount++; return Task.CompletedTask; }
         public Task ResetAsync(string key, CancellationToken ct = default) { WasReset = true; return Task.CompletedTask; }
         public Task<TimeSpan?> GetRemainingLockoutAsync(string key, CancellationToken ct = default) => Task.FromResult(Remaining);
+    }
+
+    /// <summary>
+    /// 空操作审计日志写入器：现 AuthServiceTests 不断言登录日志内容，
+    /// 仅满足构造函数依赖。需断言登录日志采集时，注入 LoginLogSpyWriter 替代。
+    /// </summary>
+    private sealed class NoopAuditLogWriter : IAuditLogWriter
+    {
+        public void Enqueue(OperationLog log) { }
+        public void Enqueue(LoginLog log) { }
     }
 }

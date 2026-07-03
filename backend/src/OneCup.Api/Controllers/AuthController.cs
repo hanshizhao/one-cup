@@ -33,7 +33,8 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(object), Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
-        var result = await _authService.LoginAsync(request, ct);
+        var (ip, ua) = GetClientContext();
+        var result = await _authService.LoginAsync(request, ip, ua, ct);
         return Ok(result);
     }
 
@@ -45,7 +46,8 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(object), Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request, CancellationToken ct)
     {
-        var result = await _authService.RefreshAsync(request, ct);
+        var (ip, ua) = GetClientContext();
+        var result = await _authService.RefreshAsync(request, ip, ua, ct);
         return Ok(result);
     }
 
@@ -56,7 +58,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Logout(CancellationToken ct)
     {
         if (_current.UserId is null) return Unauthorized();
-        await _authService.LogoutAsync(_current.UserId.Value, ct);
+        var (ip, ua) = GetClientContext();
+        await _authService.LogoutAsync(_current.UserId.Value, ip, ua, ct);
         return NoContent();
     }
 
@@ -70,5 +73,16 @@ public class AuthController : ControllerBase
         if (_current.UserId is null) return Unauthorized();
         var user = await _authService.GetCurrentUserAsync(_current.UserId.Value, ct);
         return user is null ? Unauthorized() : Ok(user);
+    }
+
+    /// <summary>
+    /// 从 HttpContext 提取客户端 IP 与 User-Agent，供登录日志采集。
+    /// 提取逻辑集中于此，Application 层只接收纯字符串。
+    /// </summary>
+    private (string? ip, string? ua) GetClientContext()
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = HttpContext.Request.Headers.UserAgent.ToString();
+        return (string.IsNullOrEmpty(ip) ? null : ip, string.IsNullOrEmpty(ua) ? null : ua);
     }
 }

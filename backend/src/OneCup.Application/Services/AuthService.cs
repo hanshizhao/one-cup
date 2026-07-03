@@ -7,6 +7,7 @@ using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
 using OneCup.Application.Specifications;
 using OneCup.Domain.Entities;
+using OneCup.Domain.Enums;
 using OneCup.Domain.Exceptions;
 
 namespace OneCup.Application.Services;
@@ -28,6 +29,7 @@ public class AuthService : IAuthService
     private readonly IPermissionCalculator _permCalc;
     private readonly ILockoutStore _lockout;
     private readonly ILogger<AuthService> _logger;
+    private readonly IAuditLogWriter _auditWriter;
     private readonly IValidator<LoginRequest> _loginValidator;
     private readonly IValidator<RefreshRequest> _refreshValidator;
 
@@ -41,6 +43,7 @@ public class AuthService : IAuthService
         IPermissionCalculator permCalc,
         ILockoutStore lockout,
         ILogger<AuthService> logger,
+        IAuditLogWriter auditWriter,
         IValidator<LoginRequest> loginValidator,
         IValidator<RefreshRequest> refreshValidator)
     {
@@ -53,11 +56,12 @@ public class AuthService : IAuthService
         _permCalc = permCalc;
         _lockout = lockout;
         _logger = logger;
+        _auditWriter = auditWriter;
         _loginValidator = loginValidator;
         _refreshValidator = refreshValidator;
     }
 
-    public async Task<TokenResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
+    public async Task<TokenResponse> LoginAsync(LoginRequest request, string? ipAddress = null, string? userAgent = null, CancellationToken ct = default)
     {
         // 入参校验先行(在 lockout 查询之前),避免畸形用户名污染锁定计数。
         await _loginValidator.EnsureValidAsync(request, ct);
@@ -69,6 +73,16 @@ public class AuthService : IAuthService
         {
             var remaining = await _lockout.GetRemainingLockoutAsync(lockoutKey, ct);
             _logger.LogWarning("登录被拒(账号锁定):Username={Username}, 剩余={Remaining}", request.Username, remaining);
+            _auditWriter.Enqueue(new LoginLog
+            {
+                Username = request.Username,
+                EventType = LoginEventType.Login,
+                Result = OperationResult.Failed,
+                FailureReason = "AccountLocked",
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+                Message = remaining is null ? null : $"剩余锁定 {remaining}",
+            });
             throw new AccountLockedException(remaining);
         }
 
@@ -80,17 +94,37 @@ public class AuthService : IAuthService
             // 失败:记录 + 计数(不泄露用户是否存在)
             await _lockout.RecordFailureAsync(lockoutKey, ct);
             _logger.LogWarning("登录失败:Username={Username}", request.Username);
+            _auditWriter.Enqueue(new LoginLog
+            {
+                // user 为 null(账号不存在) → UserNotFound；否则账号存在但密码错/停用 → InvalidCredentials
+                UserId = user?.Id,
+                Username = request.Username,
+                EventType = LoginEventType.Login,
+                Result = OperationResult.Failed,
+                FailureReason = user is null ? "UserNotFound" : "InvalidCredentials",
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+            });
             throw new UnauthorizedException("用户名或密码错误");
         }
 
         // 3. 成功:重置计数 + 日志
         await _lockout.ResetAsync(lockoutKey, ct);
         _logger.LogInformation("登录成功:UserId={UserId}, Username={Username}", user.Id, user.Username);
+        _auditWriter.Enqueue(new LoginLog
+        {
+            UserId = user.Id,
+            Username = request.Username,
+            EventType = LoginEventType.Login,
+            Result = OperationResult.Success,
+            IpAddress = ipAddress,
+            UserAgent = userAgent,
+        });
 
         return await IssueTokensAsync(user, ct);
     }
 
-    public async Task<TokenResponse> RefreshAsync(RefreshRequest request, CancellationToken ct = default)
+    public async Task<TokenResponse> RefreshAsync(RefreshRequest request, string? ipAddress = null, string? userAgent = null, CancellationToken ct = default)
     {
         await _refreshValidator.EnsureValidAsync(request, ct);
 
@@ -100,6 +134,16 @@ public class AuthService : IAuthService
 
         if (stored is null || stored.IsRevoked || stored.ExpiresAt <= DateTime.UtcNow)
         {
+            _auditWriter.Enqueue(new LoginLog
+            {
+                UserId = stored?.User.Id,
+                Username = stored?.User.Username ?? string.Empty,
+                EventType = LoginEventType.Refresh,
+                Result = OperationResult.Failed,
+                FailureReason = "InvalidRefreshToken",
+                IpAddress = ipAddress,
+                UserAgent = userAgent,
+            });
             throw new UnauthorizedException("刷新令牌无效或已过期");
         }
 
@@ -108,14 +152,23 @@ public class AuthService : IAuthService
         stored.UpdatedAt = DateTime.UtcNow;
         _logger.LogInformation("Refresh token 轮换吊销:UserId={UserId}, Token={TokenMask}",
             stored.User.Id, MaskToken(stored.Token));
+        _auditWriter.Enqueue(new LoginLog
+        {
+            UserId = stored.User.Id,
+            Username = stored.User.Username,
+            EventType = LoginEventType.Refresh,
+            Result = OperationResult.Success,
+            IpAddress = ipAddress,
+            UserAgent = userAgent,
+        });
 
         return await IssueTokensAsync(stored.User, ct);
     }
 
-    public async Task LogoutAsync(Guid userId, CancellationToken ct = default)
+    public async Task LogoutAsync(Guid userId, string? ipAddress = null, string? userAgent = null, CancellationToken ct = default)
     {
         // 加载该用户所有未吊销的刷新令牌。
-        // ListAsync 走 AsNoTracking 返回 detached 实体,修改后需逐个 Update 重新 Attach 为 Modified,
+        // ListAsync 走 AsNoTracking 返回 detached 实体,修改后需逐个 UPDATE 重新 Attach 为 Modified,
         // 随 SaveChanges 持久化(与原 _db 的 tracked 行为等价)。
         var tokens = await _refreshTokens.ListAsync(new ActiveRefreshTokensByUserSpec(userId), ct);
 
@@ -127,6 +180,16 @@ public class AuthService : IAuthService
         }
 
         _logger.LogInformation("登出吊销 refresh token:UserId={UserId}, 数量={Count}", userId, tokens.Count);
+        // Logout 仅知 userId（无用户名上下文），Username 留空，由消费者按需关联。
+        _auditWriter.Enqueue(new LoginLog
+        {
+            UserId = userId,
+            Username = "",
+            EventType = LoginEventType.Logout,
+            Result = OperationResult.Success,
+            IpAddress = ipAddress,
+            UserAgent = userAgent,
+        });
 
         await _uow.SaveChangesAsync(ct);
     }
