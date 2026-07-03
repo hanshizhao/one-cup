@@ -29,5 +29,33 @@
 **反模式**：把同模块的子视图拆成侧边栏多级 SubMenu——菜单层级变深、信息触达
 变慢，且与 Arco 设计规范冲突。
 
+---
+
+## 前端：列表查询页标准（Query Table Page）
+
+源自 Arco Design Pro 官方 `search-table` 最佳实践页源码。所有"表格 + 查询筛选"
+的列表页**必须**遵守。完整规范见 `docs/frontend-standards.md`，代码模板见
+`docs/specs/templates/`。
+
+**核心原则：单个 Card 包整页；查询区用 Form + Grid 三列；查询/重置按钮放表单
+外侧兄弟 div；新建列表页必须从模板复制，不从零手写布局。**
+
+速查决策表：
+
+| 问题 | 标准答案 |
+| --- | --- |
+| 整页容器 | 单个 `<Card>`，禁止裸 div / 再加 padding / 第二个 Card |
+| 查询字段布局 | `Form` + `Row gutter={24}` + `Col span={8}`（一行 3 字段） |
+| 查询/重置按钮 | 表单**外侧**兄弟 flex div，竖直 border 分隔，不放最后一个 Col |
+| 查询触发方式 | 仅按钮触发（`getFieldsValue`），禁止字段 onChange 自动查询 |
+| 表格工具栏 | flex `space-between` + 左右两个 `<Space>` |
+
+**反模式**：用 `<Space wrap>` + 硬编码宽度排字段；按钮塞最后一个 Col；字段
+onChange 自动查询；重置按钮叫"刷新"；新建按钮用 `<span/>` hack；页面自己加
+`padding`（layout 已有，会双重 padding）。
+
+**新建列表页**：复制 `docs/specs/templates/query-table-page.template.tsx` 改名，
+按 `【替换点】` 注释改字段/列/接口，**不要从零手写布局**。
+
 > 当需要查阅某个具体 Arco 组件的 API / 用法时，加载 `arco-design` 技能
 > （`$arco-design` 或按 description 自动触发）。
