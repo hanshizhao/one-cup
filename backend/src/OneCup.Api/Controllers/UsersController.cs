@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OneCup.Api.Filters;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
 
@@ -34,6 +35,7 @@ public class UsersController : ControllerBase
         return user is null ? NotFound() : Ok(user);
     }
 
+    [Audit(Module = "User", Action = "Create", TargetType = "User")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken ct)
     {
@@ -41,6 +43,7 @@ public class UsersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
     }
 
+    [Audit(Module = "User", Action = "Update", TargetType = "User")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequest request, CancellationToken ct)
     {
@@ -48,6 +51,7 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
+    [Audit(Module = "User", Action = "ResetPassword", TargetType = "User")]
     [HttpPut("{id:guid}/password")]
     public async Task<IActionResult> ResetPassword(Guid id, [FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
@@ -55,6 +59,7 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
+    [Audit(Module = "User", Action = "ChangeStatus", TargetType = "User")]
     [HttpPut("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateStatusRequest request, CancellationToken ct)
     {
@@ -63,6 +68,7 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>删除用户(软删除;admin 账号受保护;同步吊销其 refresh token)。</summary>
+    [Audit(Module = "User", Action = "Delete", TargetType = "User")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)

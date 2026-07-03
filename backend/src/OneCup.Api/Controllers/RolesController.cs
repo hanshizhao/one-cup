@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OneCup.Api.Filters;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
 
@@ -34,6 +35,7 @@ public class RolesController : ControllerBase
         return role is null ? NotFound() : Ok(role);
     }
 
+    [Audit(Module = "Role", Action = "Create", TargetType = "Role")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateRoleRequest request, CancellationToken ct)
     {
@@ -41,6 +43,7 @@ public class RolesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = role.Id }, role);
     }
 
+    [Audit(Module = "Role", Action = "Update", TargetType = "Role")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken ct)
     {
@@ -48,6 +51,7 @@ public class RolesController : ControllerBase
         return Ok(role);
     }
 
+    [Audit(Module = "Role", Action = "Delete", TargetType = "Role")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
