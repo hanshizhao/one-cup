@@ -10,6 +10,8 @@ import {
   Popconfirm,
   Message,
   Space,
+  Typography,
+  Card,
 } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
 import useLocale from '@/utils/useLocale';
@@ -23,7 +25,9 @@ import {
 } from '@/api/role';
 import { getPermissionList, PermissionItem } from '@/api/permission';
 import locale from './locale';
+import styles from './style/index.module.less';
 
+const { Title } = Typography;
 const FormItem = Form.Item;
 const TreeNode = Tree.Node;
 
@@ -166,15 +170,17 @@ export default function RoleManagement() {
   ];
 
   return (
-    <div>
-      <Button
-        type="primary"
-        icon={<IconPlus />}
-        style={{ marginBottom: 16 }}
-        onClick={openCreate}
-      >
-        {t['role.add']}
-      </Button>
+    <Card>
+      <Title heading={6}>{t['role.title']}</Title>
+
+      <div className={styles['button-group']}>
+        <Space>
+          <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+            {t['role.add']}
+          </Button>
+        </Space>
+        <Space />
+      </div>
 
       <Table rowKey="id" columns={columns} data={data} loading={loading} pagination={false} />
 
@@ -209,6 +215,6 @@ export default function RoleManagement() {
           )}
         </Form>
       </Drawer>
-    </div>
+    </Card>
   );
 }

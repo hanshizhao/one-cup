@@ -16,6 +16,8 @@ import {
   DatePicker,
   Alert,
   Typography,
+  Card,
+  Grid,
 } from '@arco-design/web-react';
 import { IconPlus, IconSearch, IconRefresh } from '@arco-design/web-react/icon';
 import useLocale from '@/utils/useLocale';
@@ -38,10 +40,12 @@ import {
 } from '@/api/numberingDictionary';
 import NumberingDictionary from './dict';
 import locale from './locale';
+import styles from './style/index.module.less';
 
 const FormItem = Form.Item;
+const { Row, Col } = Grid;
 const { RangePicker } = DatePicker;
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 // 日期段 / 重置周期选项（对应后端枚举字符串）
 const DATE_SEGMENT_OPTIONS = ['None', 'Year', 'YearMonth', 'YearMonthDay'];
@@ -62,6 +66,8 @@ const DEFAULT_FORM_VALUES: CreateNumberingRuleRequest = {
 
 export default function NumberingManagement() {
   const t = useLocale(locale);
+  const [ruleForm] = Form.useForm();
+  const [logForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState('rules');
 
   // ───────────────── 动态下拉：业务类型 ─────────────────
@@ -422,66 +428,78 @@ export default function NumberingManagement() {
   ];
 
   return (
-    <div>
+    <Card>
+      <Title heading={6}>编号管理</Title>
       <Tabs activeTab={activeTab} onChange={setActiveTab}>
         {/* ───────────── 规则配置 Tab ───────────── */}
         <Tabs.TabPane key="rules" title={t['numbering.tab.rules']}>
-          <Space
-            style={{
-              marginBottom: 16,
-              width: '100%',
-              justifyContent: 'space-between',
-            }}
-          >
+          <div className={styles['search-form-wrapper']}>
+            <Form
+              form={ruleForm}
+              className={styles['search-form']}
+              labelAlign="left"
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
+            >
+              <Row gutter={24}>
+                <Col span={8}>
+                  <FormItem label="关键词" field="keyword">
+                    <Input allowClear placeholder={t['numbering.rules.search']} />
+                  </FormItem>
+                </Col>
+                <Col span={8}>
+                  <FormItem label="业务类型" field="targetType">
+                    <Select allowClear placeholder={t['numbering.rules.allTargetType']}>
+                      {targetTypeOptions.map((tp) => (
+                        <Select.Option key={tp.code} value={tp.code}>
+                          {tp.nameZh}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </FormItem>
+                </Col>
+                <Col span={8}>
+                  <FormItem label="状态" field="isActive">
+                    <Select allowClear placeholder={t['numbering.rules.allStatus']}>
+                      <Select.Option value="true">{t['numbering.rules.active']}</Select.Option>
+                      <Select.Option value="false">{t['numbering.rules.inactive']}</Select.Option>
+                    </Select>
+                  </FormItem>
+                </Col>
+              </Row>
+            </Form>
+            <div className={styles['right-button']}>
+              <Button type="primary" icon={<IconSearch />} onClick={() => {
+                const v = ruleForm.getFieldsValue();
+                setKeyword(v.keyword || '');
+                setFilterTargetType(v.targetType);
+                setFilterIsActive(
+                  v.isActive === undefined ? undefined : v.isActive === 'true',
+                );
+                setRulePagination((p) => ({ ...p, current: 1 }));
+              }}>
+                查询
+              </Button>
+              <Button icon={<IconRefresh />} onClick={() => {
+                ruleForm.resetFields();
+                setKeyword('');
+                setFilterTargetType(undefined);
+                setFilterIsActive(undefined);
+                setRulePagination((p) => ({ ...p, current: 1 }));
+              }}>
+                重置
+              </Button>
+            </div>
+          </div>
+
+          <div className={styles['button-group']}>
             <Space>
-              <Input.Search
-                placeholder={t['numbering.rules.search']}
-                onSearch={(v) => {
-                  setKeyword(v);
-                  setRulePagination((p) => ({ ...p, current: 1 }));
-                }}
-                style={{ width: 240 }}
-                prefix={<IconSearch />}
-                allowClear
-              />
-              <Select
-                placeholder={t['numbering.rules.allTargetType']}
-                style={{ width: 150 }}
-                allowClear
-                value={filterTargetType}
-                onChange={(v) => {
-                  setFilterTargetType(v);
-                  setRulePagination((p) => ({ ...p, current: 1 }));
-                }}
-              >
-                {targetTypeOptions.map((tp) => (
-                  <Select.Option key={tp.code} value={tp.code}>
-                    {tp.nameZh}
-                  </Select.Option>
-                ))}
-              </Select>
-              <Select
-                placeholder={t['numbering.rules.allStatus']}
-                style={{ width: 130 }}
-                allowClear
-                value={filterIsActive === undefined ? undefined : String(filterIsActive)}
-                onChange={(v) => {
-                  setFilterIsActive(v === undefined ? undefined : v === 'true');
-                  setRulePagination((p) => ({ ...p, current: 1 }));
-                }}
-              >
-                <Select.Option value="true">
-                  {t['numbering.rules.active']}
-                </Select.Option>
-                <Select.Option value="false">
-                  {t['numbering.rules.inactive']}
-                </Select.Option>
-              </Select>
+              <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+                {t['numbering.rules.create']}
+              </Button>
             </Space>
-            <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
-              {t['numbering.rules.create']}
-            </Button>
-          </Space>
+            <Space />
+          </div>
 
           <Table
             rowKey="id"
@@ -505,62 +523,60 @@ export default function NumberingManagement() {
 
         {/* ───────────── 生成日志 Tab ───────────── */}
         <Tabs.TabPane key="logs" title={t['numbering.tab.logs']}>
-          <Space style={{ marginBottom: 16 }} wrap>
-            <Select
-              placeholder={t['numbering.rules.allTargetType']}
-              style={{ width: 150 }}
-              allowClear
-              value={logFilter.targetType}
-              onChange={(v) =>
-                setLogFilter((f) => ({ ...f, targetType: v }))
-              }
+          <div className={styles['search-form-wrapper']}>
+            <Form
+              form={logForm}
+              className={styles['search-form']}
+              labelAlign="left"
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
             >
-              {targetTypeOptions.map((tp) => (
-                <Select.Option key={tp.code} value={tp.code}>
-                  {tp.nameZh}
-                </Select.Option>
-              ))}
-            </Select>
-            <Input
-              placeholder={t['numbering.logs.category.placeholder']}
-              style={{ width: 160 }}
-              value={logFilter.categoryCode}
-              onChange={(v) =>
-                setLogFilter((f) => ({ ...f, categoryCode: v }))
-              }
-              allowClear
-            />
-            <Input
-              placeholder={t['numbering.logs.code.placeholder']}
-              style={{ width: 200 }}
-              value={logFilter.code}
-              onChange={(v) => setLogFilter((f) => ({ ...f, code: v }))}
-              allowClear
-            />
-            <RangePicker
-              style={{ width: 260 }}
-              value={logFilter.dateRange as never}
-              onChange={(dateStrings) =>
-                setLogFilter((f) => ({
-                  ...f,
-                  dateRange: dateStrings,
-                }))
-              }
-            />
-            <Button
-              type="primary"
-              icon={<IconSearch />}
-              onClick={() => {
+              <Row gutter={24}>
+                <Col span={8}>
+                  <FormItem label="业务类型" field="targetType">
+                    <Select allowClear placeholder={t['numbering.rules.allTargetType']}>
+                      {targetTypeOptions.map((tp) => (
+                        <Select.Option key={tp.code} value={tp.code}>
+                          {tp.nameZh}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </FormItem>
+                </Col>
+                <Col span={8}>
+                  <FormItem label="分类码" field="categoryCode">
+                    <Input allowClear placeholder={t['numbering.logs.category.placeholder']} />
+                  </FormItem>
+                </Col>
+                <Col span={8}>
+                  <FormItem label="编号" field="code">
+                    <Input allowClear placeholder={t['numbering.logs.code.placeholder']} />
+                  </FormItem>
+                </Col>
+                <Col span={8}>
+                  <FormItem label="时间" field="dateRange">
+                    <RangePicker style={{ width: '100%' }} />
+                  </FormItem>
+                </Col>
+              </Row>
+            </Form>
+            <div className={styles['right-button']}>
+              <Button type="primary" icon={<IconSearch />} onClick={() => {
+                const v = logForm.getFieldsValue();
+                setLogFilter({
+                  targetType: v.targetType,
+                  categoryCode: v.categoryCode || '',
+                  code: v.code || '',
+                  dateRange: (v.dateRange as string[]) || [],
+                });
                 setLogPagination((p) => ({ ...p, current: 1 }));
-                // 因依赖 logFilter 变化，直接触发拉取
+                // 日志 effect 的依赖刻意排除了 logFilter，故从 page 1 再次查询时需手动触发拉取
                 fetchLogs();
-              }}
-            >
-              {t['numbering.logs.search']}
-            </Button>
-            <Button
-              icon={<IconRefresh />}
-              onClick={() => {
+              }}>
+                {t['numbering.logs.search']}
+              </Button>
+              <Button icon={<IconRefresh />} onClick={() => {
+                logForm.resetFields();
                 setLogFilter({
                   targetType: undefined,
                   categoryCode: '',
@@ -568,11 +584,11 @@ export default function NumberingManagement() {
                   dateRange: [],
                 });
                 setLogPagination((p) => ({ ...p, current: 1 }));
-              }}
-            >
-              {t['numbering.logs.reset']}
-            </Button>
-          </Space>
+              }}>
+                {t['numbering.logs.reset']}
+              </Button>
+            </div>
+          </div>
 
           <Table
             rowKey="id"
@@ -726,6 +742,6 @@ export default function NumberingManagement() {
           </FormItem>
         </Form>
       </Drawer>
-    </div>
+    </Card>
   );
 }

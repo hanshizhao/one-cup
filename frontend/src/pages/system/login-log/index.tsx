@@ -1,14 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Table, Button, Space, Input, Select, DatePicker, Tag } from '@arco-design/web-react';
+import {
+  Table, Button, Space, Input, Select, DatePicker, Tag, Typography,
+  Card, Form, Grid,
+} from '@arco-design/web-react';
 import type { PaginationProps } from '@arco-design/web-react';
-import { IconRefresh } from '@arco-design/web-react/icon';
+import { IconRefresh, IconSearch } from '@arco-design/web-react/icon';
 import RequirePermission from '@/components/RequirePermission';
 import { getLoginLogs, type LoginLogItem, type LoginLogQuery } from '@/api/auditLog';
+import styles from './style/index.module.less';
 
+const { Title } = Typography;
+const { Row, Col } = Grid;
+const FormItem = Form.Item;
 const { RangePicker } = DatePicker;
 
 const EVENT_OPTIONS = [
-  { label: '全部', value: '' },
   { label: '登录', value: 'Login' },
   { label: '登出', value: 'Logout' },
   { label: '刷新', value: 'Refresh' },
@@ -16,7 +22,6 @@ const EVENT_OPTIONS = [
 ];
 
 const RESULT_OPTIONS = [
-  { label: '全部', value: '' },
   { label: '成功', value: 'Success' },
   { label: '失败', value: 'Failed' },
 ];
@@ -24,6 +29,7 @@ const RESULT_OPTIONS = [
 const EVENT_LABEL: Record<string, string> = { Login: '登录', Logout: '登出', Refresh: '刷新', Locked: '锁定' };
 
 export default function LoginLogPage() {
+  const [formInstance] = Form.useForm();
   const [data, setData] = useState<LoginLogItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -42,7 +48,27 @@ export default function LoginLogPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const onPageChange = (page: number, pageSize: number) => setQuery(q => ({ ...q, page, pageSize }));
+  // 标准 2.4：仅按钮触发查询
+  const handleSearch = () => {
+    const values = formInstance.getFieldsValue();
+    setQuery((q) => ({
+      ...q,
+      username: values.username || undefined,
+      eventType: values.eventType || undefined,
+      result: values.result || undefined,
+      startTime: values.timeRange?.[0] || undefined,
+      endTime: values.timeRange?.[1] || undefined,
+      page: 1,
+    }));
+  };
+
+  const handleReset = () => {
+    formInstance.resetFields();
+    setQuery({ page: 1, pageSize: 10 });
+  };
+
+  const onPageChange = (page: number, pageSize: number) =>
+    setQuery((q) => ({ ...q, page, pageSize }));
 
   const columns = [
     { title: '时间', dataIndex: 'createdAt', width: 170 },
@@ -61,38 +87,45 @@ export default function LoginLogPage() {
 
   return (
     <RequirePermission resource="system:audit" actions={['view']}>
-      <div style={{ padding: 16 }}>
-        <Space style={{ marginBottom: 16 }} wrap>
-          <Input
-            allowClear
-            placeholder="账号模糊查询"
-            style={{ width: 180 }}
-            onPressEnter={(e) => setQuery(q => ({ ...q, username: (e.target as HTMLInputElement).value || undefined, page: 1 }))}
-          />
-          <Select
-            placeholder="事件"
-            allowClear
-            style={{ width: 120 }}
-            options={EVENT_OPTIONS}
-            onChange={(v) => setQuery(q => ({ ...q, eventType: (v || undefined) as LoginLogQuery['eventType'], page: 1 }))}
-          />
-          <Select
-            placeholder="结果"
-            style={{ width: 120 }}
-            options={RESULT_OPTIONS}
-            onChange={(v) => setQuery(q => ({ ...q, result: (v || undefined) as LoginLogQuery['result'], page: 1 }))}
-          />
-          <RangePicker
-            showTime
-            onChange={(range) => setQuery(q => ({
-              ...q,
-              startTime: range?.[0] || undefined,
-              endTime: range?.[1] || undefined,
-              page: 1,
-            }))}
-          />
-          <Button icon={<IconRefresh />} onClick={fetchData}>刷新</Button>
-        </Space>
+      <Card>
+        <Title heading={6}>登录日志</Title>
+
+        <div className={styles['search-form-wrapper']}>
+          <Form
+            form={formInstance}
+            className={styles['search-form']}
+            labelAlign="left"
+            labelCol={{ span: 5 }}
+            wrapperCol={{ span: 19 }}
+          >
+            <Row gutter={24}>
+              <Col span={8}>
+                <FormItem label="账号" field="username">
+                  <Input allowClear placeholder="账号模糊查询" />
+                </FormItem>
+              </Col>
+              <Col span={8}>
+                <FormItem label="事件" field="eventType">
+                  <Select allowClear placeholder="选择事件" options={EVENT_OPTIONS} />
+                </FormItem>
+              </Col>
+              <Col span={8}>
+                <FormItem label="结果" field="result">
+                  <Select allowClear placeholder="选择结果" options={RESULT_OPTIONS} />
+                </FormItem>
+              </Col>
+              <Col span={8}>
+                <FormItem label="时间" field="timeRange">
+                  <RangePicker showTime style={{ width: '100%' }} />
+                </FormItem>
+              </Col>
+            </Row>
+          </Form>
+          <div className={styles['right-button']}>
+            <Button type="primary" icon={<IconSearch />} onClick={handleSearch}>查询</Button>
+            <Button icon={<IconRefresh />} onClick={handleReset}>重置</Button>
+          </div>
+        </div>
 
         <Table
           rowKey="id"
@@ -104,7 +137,7 @@ export default function LoginLogPage() {
             onChange: onPageChange, showTotal: true, sizeCanChange: true,
           } as PaginationProps}
         />
-      </div>
+      </Card>
     </RequirePermission>
   );
 }

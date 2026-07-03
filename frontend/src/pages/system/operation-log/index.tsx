@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Table, Button, Space, Input, Select, DatePicker, Drawer, Tag, Typography } from '@arco-design/web-react';
+import {
+  Table, Button, Space, Input, Select, DatePicker, Drawer, Tag, Typography,
+  Card, Form, Grid,
+} from '@arco-design/web-react';
 import type { PaginationProps } from '@arco-design/web-react';
-import { IconRefresh } from '@arco-design/web-react/icon';
+import { IconRefresh, IconSearch } from '@arco-design/web-react/icon';
 import RequirePermission from '@/components/RequirePermission';
 import {
   getOperationLogs,
@@ -10,9 +13,12 @@ import {
   type OperationLogDetail,
   type OperationLogQuery,
 } from '@/api/auditLog';
+import styles from './style/index.module.less';
 
+const { Title, Paragraph } = Typography;
+const { Row, Col } = Grid;
+const FormItem = Form.Item;
 const { RangePicker } = DatePicker;
-const { Paragraph } = Typography;
 
 const RESULT_OPTIONS = [
   { label: '全部', value: '' },
@@ -28,6 +34,7 @@ const MODULE_OPTIONS = [
 ];
 
 export default function OperationLogPage() {
+  const [formInstance] = Form.useForm();
   const [data, setData] = useState<OperationLogListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -48,7 +55,27 @@ export default function OperationLogPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const onPageChange = (page: number, pageSize: number) => setQuery(q => ({ ...q, page, pageSize }));
+  // 标准 2.4：仅按钮触发查询
+  const handleSearch = () => {
+    const values = formInstance.getFieldsValue();
+    setQuery((q) => ({
+      ...q,
+      keyword: values.keyword || undefined,
+      module: values.module || undefined,
+      result: values.result || undefined,
+      startTime: values.timeRange?.[0] || undefined,
+      endTime: values.timeRange?.[1] || undefined,
+      page: 1,
+    }));
+  };
+
+  const handleReset = () => {
+    formInstance.resetFields();
+    setQuery({ page: 1, pageSize: 10 });
+  };
+
+  const onPageChange = (page: number, pageSize: number) =>
+    setQuery((q) => ({ ...q, page, pageSize }));
 
   const openDetail = async (id: string) => {
     const d = await getOperationLog(id);
@@ -79,38 +106,52 @@ export default function OperationLogPage() {
 
   return (
     <RequirePermission resource="system:audit" actions={['view']}>
-      <div style={{ padding: 16 }}>
-        <Space style={{ marginBottom: 16 }} wrap>
-          <Input.Search
-            allowClear
-            placeholder="搜索 路径/目标/错误信息"
-            style={{ width: 260 }}
-            onSearch={(v) => setQuery(q => ({ ...q, keyword: v || undefined, page: 1 }))}
-          />
-          <Select
-            placeholder="模块"
-            allowClear
-            style={{ width: 140 }}
-            options={MODULE_OPTIONS}
-            onChange={(v) => setQuery(q => ({ ...q, module: v || undefined, page: 1 }))}
-          />
-          <Select
-            placeholder="结果"
-            style={{ width: 120 }}
-            options={RESULT_OPTIONS}
-            onChange={(v) => setQuery(q => ({ ...q, result: (v || undefined) as OperationLogQuery['result'], page: 1 }))}
-          />
-          <RangePicker
-            showTime
-            onChange={(range) => setQuery(q => ({
-              ...q,
-              startTime: range?.[0] || undefined,
-              endTime: range?.[1] || undefined,
-              page: 1,
-            }))}
-          />
-          <Button icon={<IconRefresh />} onClick={fetchData}>刷新</Button>
-        </Space>
+      <Card>
+        <Title heading={6}>操作日志</Title>
+
+        <div className={styles['search-form-wrapper']}>
+          <Form
+            form={formInstance}
+            className={styles['search-form']}
+            labelAlign="left"
+            labelCol={{ span: 5 }}
+            wrapperCol={{ span: 19 }}
+          >
+            <Row gutter={24}>
+              <Col span={8}>
+                <FormItem label="关键词" field="keyword">
+                  <Input allowClear placeholder="搜索 路径/目标/错误信息" />
+                </FormItem>
+              </Col>
+              <Col span={8}>
+                <FormItem label="模块" field="module">
+                  <Select allowClear placeholder="选择模块" options={MODULE_OPTIONS} />
+                </FormItem>
+              </Col>
+              <Col span={8}>
+                <FormItem label="结果" field="result">
+                  <Select allowClear placeholder="选择结果" options={RESULT_OPTIONS} />
+                </FormItem>
+              </Col>
+              <Col span={8}>
+                <FormItem label="时间" field="timeRange">
+                  <RangePicker showTime style={{ width: '100%' }} />
+                </FormItem>
+              </Col>
+            </Row>
+          </Form>
+          <div className={styles['right-button']}>
+            <Button type="primary" icon={<IconSearch />} onClick={handleSearch}>查询</Button>
+            <Button icon={<IconRefresh />} onClick={handleReset}>重置</Button>
+          </div>
+        </div>
+
+        <div className={styles['button-group']}>
+          <Space />
+          <Space>
+            <Button icon={<IconRefresh />} onClick={fetchData}>刷新</Button>
+          </Space>
+        </div>
 
         <Table
           rowKey="id"
@@ -167,7 +208,7 @@ export default function OperationLogPage() {
             </div>
           )}
         </Drawer>
-      </div>
+      </Card>
     </RequirePermission>
   );
 }
