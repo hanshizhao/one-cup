@@ -23,44 +23,37 @@ public class AuditLogQueueTests
         LoggerFactory.Create(b => { }).CreateLogger<T>();
 
     /// <summary>
-    /// 测试用 DbContext 工厂：每次 Create 返回一个新的 InMemory DbContext。
-    /// 模拟生产中"消费者通过 factory 创建短生命周期 DbContext"的用法（WriteBatchAsync
-    /// 用 await using 释放它）。InMemory 同名库天然共享状态，因此新实例仍能读到上次的写入。
+    /// 构造测试用 ServiceProvider（注册 InMemory DbContext），
+    /// 返回其 IServiceScopeFactory 供 Consumer 创建 scope 解析 DbContext。
+    /// 模拟生产中"单例 BackgroundService 通过 IServiceScopeFactory 创建 scope"的用法。
+    /// 用共享的内部 EF service provider，保证不同 scope 的 InMemory 同名库共享数据。
     /// </summary>
-    private sealed class TestDbFactory : IDbContextFactory<OneCupDbContext>
+    private static (IServiceScopeFactory scopeFactory, ServiceProvider root) BuildScopeFactory(string dbName)
     {
-        private readonly DbContextOptions<OneCupDbContext> _options;
-
-        public TestDbFactory(string dbName)
-        {
-            var sp = new ServiceCollection()
-                .AddEntityFrameworkInMemoryDatabase()
-                .BuildServiceProvider();
-            _options = new DbContextOptionsBuilder<OneCupDbContext>()
-                .UseInMemoryDatabase(dbName)
-                .UseInternalServiceProvider(sp)
-                .Options;
-        }
-
-        public OneCupDbContext CreateDbContext() => new(_options);
-
-        public Task<OneCupDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(new OneCupDbContext(_options));
+        var efServices = new ServiceCollection()
+            .AddEntityFrameworkInMemoryDatabase()
+            .BuildServiceProvider();
+        var services = new ServiceCollection();
+        services.AddDbContext<OneCupDbContext>(o =>
+            o.UseInMemoryDatabase(dbName).UseInternalServiceProvider(efServices));
+        var root = services.BuildServiceProvider();
+        return (root.GetRequiredService<IServiceScopeFactory>(), root);
     }
 
     /// <summary>
     /// 验证 WriteBatchAsync：一批混合 entry → 分桶 → 持久化到两张表。
-    /// 直测 internal 方法而非完整 Channel 异步管道，规避 InMemory 下构造
-    /// IDbContextFactory 的繁琐与消费者异步时序的 flaky（brief 退化方案）。
+    /// 直测 internal 方法而非完整 Channel 异步管道，规避消费者异步时序的 flaky（brief 退化方案）。
+    /// Consumer 通过 IServiceScopeFactory 创建 scope 解析 Scoped DbContext。
     /// </summary>
     [Fact]
     public async Task WriteBatchAsync_PartitionsAndPersistsToBothTables()
     {
         // Arrange：3 条操作日志 + 2 条登录日志混在一批
-        var factory = new TestDbFactory($"audit-batch-{Guid.NewGuid()}");
+        var dbName = $"audit-batch-{Guid.NewGuid()}";
+        var (scopeFactory, root) = BuildScopeFactory(dbName);
         var channel = new AuditLogChannel(Opts().QueueCapacity);
         var consumer = new AuditLogQueueConsumer(
-            channel, factory, Microsoft.Extensions.Options.Options.Create(Opts()), NoopLogger<AuditLogQueueConsumer>());
+            channel, scopeFactory, Microsoft.Extensions.Options.Options.Create(Opts()), NoopLogger<AuditLogQueueConsumer>());
 
         var batch = new List<AuditLogEntry>
         {
@@ -74,8 +67,9 @@ public class AuditLogQueueTests
         // Act：调 internal WriteBatchAsync，确定性完成（无异步时序）
         await consumer.WriteBatchAsync(batch, CancellationToken.None);
 
-        // Assert：分桶后 3 操作日志 + 2 登录日志各自落库
-        var db = factory.CreateDbContext();
+        // Assert：分桶后 3 操作日志 + 2 登录日志各自落库（新建 scope 读，InMemory 同名库共享状态）
+        using var verifyScope = scopeFactory.CreateScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<OneCupDbContext>();
         Assert.Equal(3, await db.OperationLogs.CountAsync());
         Assert.Equal(2, await db.LoginLogs.CountAsync());
 
@@ -86,6 +80,7 @@ public class AuditLogQueueTests
             l => l.Username == "b" && l.EventType == LoginEventType.Logout);
 
         channel.Dispose();
+        await root.DisposeAsync();
     }
 
     /// <summary>

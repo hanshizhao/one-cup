@@ -109,9 +109,8 @@ builder.Services.AddScoped<OperationLogActionFilter>();
 // 有界队列 + Writer（单例,全局唯一）
 builder.Services.AddSingleton(new AuditLogChannel(auditOpts.QueueCapacity));
 builder.Services.AddScoped<IAuditLogWriter, AuditLogWriter>();
-// DbContextFactory(供单例消费者/清理创建短生命周期 DbContext,复用已有 DbContext 配置)
-builder.Services.AddDbContextFactory<OneCup.Infrastructure.Persistence.OneCupDbContext>();
-// 后台服务:消费者 + 定时清理
+// 后台服务:消费者 + 定时清理(均通过 IServiceScopeFactory 创建 scope 解析 Scoped DbContext,
+// 避免单例 AddDbContextFactory 与 Scoped AddDbContext 的 lifetime 冲突)。
 builder.Services.AddHostedService<AuditLogQueueConsumer>();
 builder.Services.AddHostedService<AuditLogCleanupService>();
 // 查询服务

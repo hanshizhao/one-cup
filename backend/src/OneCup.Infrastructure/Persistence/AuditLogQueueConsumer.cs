@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,26 +13,27 @@ namespace OneCup.Infrastructure.Persistence;
 /// 写入失败丢弃该批并记日志，绝不阻塞队列或拖垮业务 DB。
 /// 应用关闭时随取消令牌退出，队列内剩余条目会丢失（与内存队列的取舍一致，见 spec §5.3）；
 /// 正常关停由 DropOldest + 批量消费保证多数日志已落库。
-/// 用 IDbContextFactory 创建短生命周期 DbContext，避免单例持有 Scoped DbContext。
+/// 通过 IServiceScopeFactory 每批创建独立 scope 解析 Scoped DbContext，
+/// 避免单例直接持有 Scoped DbContext（captive dependency 陷阱）。
 /// </summary>
 public sealed class AuditLogQueueConsumer : BackgroundService
 {
     private readonly AuditLogChannel _channel;
-    private readonly IDbContextFactory<OneCupDbContext> _dbFactory;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly AuditLogOptions _options;
     private readonly ILogger<AuditLogQueueConsumer> _logger;
 
-    /// <summary>累计丢弃的审计日志条目数（写库失败时累加）。轻量可观测性探针：运维可读此字段或看日志判断是否在丢数据。</summary>
+    /// <summary>累计丢弃的审计日志条目数（写库失败时累加）。轻量可观测性探针：运维可读此字段或看日志判断是否丢数据。</summary>
     internal static long DroppedCount;
 
     public AuditLogQueueConsumer(
         AuditLogChannel channel,
-        IDbContextFactory<OneCupDbContext> dbFactory,
+        IServiceScopeFactory scopeFactory,
         IOptions<AuditLogOptions> options,
         ILogger<AuditLogQueueConsumer> logger)
     {
         _channel = channel;
-        _dbFactory = dbFactory;
+        _scopeFactory = scopeFactory;
         _options = options.Value;
         _logger = logger;
     }
@@ -82,7 +84,8 @@ public sealed class AuditLogQueueConsumer : BackgroundService
 
         try
         {
-            await using var db = await _dbFactory.CreateDbContextAsync(ct);
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<OneCupDbContext>();
             if (ops.Count > 0) await db.OperationLogs.AddRangeAsync(ops, ct);
             if (logins.Count > 0) await db.LoginLogs.AddRangeAsync(logins, ct);
             await db.SaveChangesAsync(ct);

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,21 +12,22 @@ namespace OneCup.Infrastructure.Persistence;
 /// 审计日志定时清理：单实例 BackgroundService。
 /// 每天在 CleanupTime（本地时间，默认 03:00）执行一次，删除超过 RetentionDays 的日志。
 /// 用 ExecuteDeleteAsync（EF Core 7+ 原生批量删除）一条 SQL，不载入实体。
+/// 通过 IServiceScopeFactory 每次创建独立 scope 解析 Scoped DbContext，避免单例持有 Scoped 服务。
 /// </summary>
 public sealed class AuditLogCleanupService : BackgroundService
 {
-    private readonly IDbContextFactory<OneCupDbContext> _dbFactory;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly AuditLogOptions _options;
     private readonly ILogger<AuditLogCleanupService> _logger;
     private readonly TimeProvider _timeProvider;
 
     public AuditLogCleanupService(
-        IDbContextFactory<OneCupDbContext> dbFactory,
+        IServiceScopeFactory scopeFactory,
         IOptions<AuditLogOptions> options,
         ILogger<AuditLogCleanupService> logger,
         TimeProvider? timeProvider = null)
     {
-        _dbFactory = dbFactory;
+        _scopeFactory = scopeFactory;
         _options = options.Value;
         _logger = logger;
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -69,7 +71,8 @@ public sealed class AuditLogCleanupService : BackgroundService
         {
             var cutoff = DateTime.UtcNow.AddDays(-_options.RetentionDays);
 
-            await using var db = await _dbFactory.CreateDbContextAsync(ct);
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<OneCupDbContext>();
             var opsDeleted = await db.Set<OperationLog>().Where(x => x.CreatedAt < cutoff).ExecuteDeleteAsync(ct);
             var loginsDeleted = await db.Set<LoginLog>().Where(x => x.CreatedAt < cutoff).ExecuteDeleteAsync(ct);
 
