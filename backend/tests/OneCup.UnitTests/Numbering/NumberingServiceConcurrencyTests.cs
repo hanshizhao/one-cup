@@ -73,6 +73,20 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
             IsActive = true,
         };
         _db.NumberingRules.Add(rule);
+
+        // 字典分类数据（Task 6：引擎强校验依赖此字典）。
+        // 注意：业务类型（fabric/material/equipment/…）已由 OneCupDbContext.Seed() 的 HasData 种入，
+        // EnsureCreatedAsync 会应用该种子，因此这里【不再】Add fabric 类型——重复 Add 会违反
+        // 唯一索引 ux_numbering_target_types_code。此处只补充分类（HasData 不种分类），供存量测试使用。
+        _db.NumberingCategories.Add(new NumberingCategory
+        {
+            TargetTypeCode = "fabric", Code = "COT", NameZh = "棉", NameEn = "Cotton", IsActive = true,
+        });
+        _db.NumberingCategories.Add(new NumberingCategory
+        {
+            TargetTypeCode = "fabric", Code = "CHE", NameZh = "麻", NameEn = "Linen", IsActive = true,
+        });
+
         await _db.SaveChangesAsync();
         _ruleId = rule.Id;
 
@@ -215,5 +229,125 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         var svc = new NumberingService(db, new NumberingClock());
         var preview = await svc.PreviewAsync("nonexistent");
         Assert.Null(preview);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // 字典强校验（Task 6 新增）
+    // ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GenerateAsync_InvalidTargetType_Throws()
+    {
+        // 字典里没有 "ghost" 业务类型 → 应拒绝
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        using var tx = await txDb.Database.BeginTransactionAsync();
+        var ex = await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("ghost", null));
+        Assert.Contains("ghost", ex.Message);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_DisabledTargetType_Throws()
+    {
+        // 种入停用的业务类型 → 调用应拒绝
+        using var seedDb = NewDbContext();
+        seedDb.NumberingTargetTypes.Add(new NumberingTargetType
+        {
+            Code = "disabled", NameZh = "停用类型", NameEn = "Disabled", IsActive = false,
+        });
+        seedDb.NumberingRules.Add(new NumberingRule
+        {
+            TargetType = "disabled", Name = "停用规则", Prefix = "DIS",
+            IncludeCategory = false, DateSegment = DateSegment.None,
+            SeqLength = 4, Separator = "-", ResetPeriod = ResetPeriod.None, IsActive = true,
+        });
+        await seedDb.SaveChangesAsync();
+
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        using var tx = await txDb.Database.BeginTransactionAsync();
+        await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("disabled", null));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ValidTypeNoCategory_WithCategoryRule_Throws()
+    {
+        // 用 material 业务类型（HasData 已种入，无分类字典，且 InitializeAsync 未给其建规则）。
+        // 规则要求分类码，但传字典里不存在的分类码 → 应拒绝。
+        // 不用 fabric：InitializeAsync 已建一条 fabric 启用规则，再 Add 会违反部分唯一索引
+        // ux_numbering_rules_target_type_active（同类型仅一条启用规则）。
+        using var seedDb = NewDbContext();
+        seedDb.NumberingRules.Add(new NumberingRule
+        {
+            TargetType = "material", Name = "原料规则", Prefix = "MAT",
+            IncludeCategory = true, DateSegment = DateSegment.None,
+            SeqLength = 4, Separator = "-", ResetPeriod = ResetPeriod.None, IsActive = true,
+        });
+        await seedDb.SaveChangesAsync();
+
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        using var tx = await txDb.Database.BeginTransactionAsync();
+        // material 类型存在且启用，规则要求分类，但 "GHOST" 不在字典 → 应拒绝
+        await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("material", "GHOST"));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ValidTypeValidCategory_Succeeds()
+    {
+        // 字典已有 fabric + COT（InitializeAsync 种入）→ 正常取号
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        string code;
+        using (var tx = await txDb.Database.BeginTransactionAsync())
+        {
+            code = await svc.GenerateAsync("fabric", "COT");
+            await tx.CommitAsync();
+        }
+        Assert.Contains("COT", code);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_DisabledCategory_Throws()
+    {
+        // 种入 fabric 下停用的分类码 → 调用应拒绝
+        using var seedDb = NewDbContext();
+        seedDb.NumberingCategories.Add(new NumberingCategory
+        {
+            TargetTypeCode = "fabric", Code = "WOOL", NameZh = "羊毛", NameEn = "Wool", IsActive = false,
+        });
+        await seedDb.SaveChangesAsync();
+
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        using var tx = await txDb.Database.BeginTransactionAsync();
+        await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("fabric", "WOOL"));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_NoCategoryRule_IgnoresPassedCategory()
+    {
+        // 规则 IncludeCategory=false → 即使传了字典里没有的分类码也不校验（宽容忽略保持不变）。
+        // 用 equipment 业务类型（HasData 已种入，InitializeAsync 未给其建规则），避免与 fabric 启用规则
+        // 冲突部分唯一索引 ux_numbering_rules_target_type_active。
+        using var seedDb = NewDbContext();
+        seedDb.NumberingRules.Add(new NumberingRule
+        {
+            TargetType = "equipment", Name = "设备规则-无分类", Prefix = "EQP",
+            IncludeCategory = false, DateSegment = DateSegment.None,
+            SeqLength = 4, Separator = "-", ResetPeriod = ResetPeriod.None, IsActive = true,
+        });
+        await seedDb.SaveChangesAsync();
+
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        string code;
+        using (var tx = await txDb.Database.BeginTransactionAsync())
+        {
+            code = await svc.GenerateAsync("equipment", "ANYTHING");
+            await tx.CommitAsync();
+        }
+        Assert.StartsWith("EQP", code);
+        Assert.DoesNotContain("ANYTHING", code);
     }
 }

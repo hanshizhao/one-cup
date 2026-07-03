@@ -1,6 +1,7 @@
 export default {
   'numbering.title': 'Numbering',
   'numbering.tab.rules': 'Rules',
+  'numbering.tab.dict': 'Dictionary',
   'numbering.tab.logs': 'Logs',
   // rule list columns
   'numbering.rules.name': 'Name',
@@ -70,4 +71,7 @@ export default {
   'numbering.targetType.customer': 'Customer',
   'numbering.targetType.color': 'Color',
   'numbering.targetType.product': 'Product',
+  // dynamic dropdown
+  'numbering.form.preview.categoryHint': '(actual category depends on business object)',
+  'numbering.logs.categoryName': 'Category Name',
 } as const;

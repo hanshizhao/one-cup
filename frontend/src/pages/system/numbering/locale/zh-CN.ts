@@ -1,6 +1,7 @@
 export default {
   'numbering.title': '编号管理',
   'numbering.tab.rules': '规则配置',
+  'numbering.tab.dict': '业务字典',
   'numbering.tab.logs': '生成日志',
   // 规则列表列
   'numbering.rules.name': '规则名称',
@@ -70,4 +71,7 @@ export default {
   'numbering.targetType.customer': '客户',
   'numbering.targetType.color': '颜色',
   'numbering.targetType.product': '产品',
+  // 动态下拉
+  'numbering.form.preview.categoryHint': '（实际分类以业务对象为准）',
+  'numbering.logs.categoryName': '分类名称',
 } as const;

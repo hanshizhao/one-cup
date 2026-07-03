@@ -12,8 +12,8 @@ using OneCup.Infrastructure.Persistence;
 namespace OneCup.Infrastructure.Migrations
 {
     [DbContext(typeof(OneCupDbContext))]
-    [Migration("20260703050614_AddAuditLog")]
-    partial class AddAuditLog
+    [Migration("20260703020003_AddNumberingDictionary")]
+    partial class AddNumberingDictionary
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,73 +24,6 @@ namespace OneCup.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("OneCup.Domain.Entities.LoginLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("event_type");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("failure_reason");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("ip_address");
-
-                    b.Property<string>("Message")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("message");
-
-                    b.Property<string>("Result")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("result");
-
-                    b.Property<string>("UserAgent")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("user_agent");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("username");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("ix_login_logs_created_at");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_login_logs_user_id");
-
-                    b.HasIndex("Username")
-                        .HasDatabaseName("ix_login_logs_username");
-
-                    b.ToTable("login_logs", (string)null);
-                });
 
             modelBuilder.Entity("OneCup.Domain.Entities.NumberingCategory", b =>
                 {
@@ -451,121 +384,6 @@ namespace OneCup.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("OneCup.Domain.Entities.OperationLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("action");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("DurationMs")
-                        .HasColumnType("integer")
-                        .HasColumnName("duration_ms");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("text")
-                        .HasColumnName("error_message");
-
-                    b.Property<string>("HttpMethod")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)")
-                        .HasColumnName("http_method");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("ip_address");
-
-                    b.Property<string>("Module")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("module");
-
-                    b.Property<string>("RequestPath")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("request_path");
-
-                    b.Property<string>("RequestPayload")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("request_payload");
-
-                    b.Property<string>("Result")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("result");
-
-                    b.Property<string>("StackTrace")
-                        .HasColumnType("text")
-                        .HasColumnName("stack_trace");
-
-                    b.Property<int>("StatusCode")
-                        .HasColumnType("integer")
-                        .HasColumnName("status_code");
-
-                    b.Property<string>("TargetId")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("target_id");
-
-                    b.Property<string>("TargetName")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("target_name");
-
-                    b.Property<string>("TargetType")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("target_type");
-
-                    b.Property<string>("TraceId")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("trace_id");
-
-                    b.Property<string>("UserAgent")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("user_agent");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("username");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("ix_op_logs_created_at");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_op_logs_user_id");
-
-                    b.HasIndex("Module", "Action")
-                        .HasDatabaseName("ix_op_logs_module_action");
-
-                    b.ToTable("operation_logs", (string)null);
-                });
-
             modelBuilder.Entity("OneCup.Domain.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -717,13 +535,6 @@ namespace OneCup.Infrastructure.Migrations
                             Code = "system:numbering:manage",
                             CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "管理编号规则"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000117"),
-                            Code = "system:audit:view",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "查看审计日志"
                         });
                 });
 
@@ -946,11 +757,6 @@ namespace OneCup.Infrastructure.Migrations
                         {
                             role_id = new Guid("00000000-0000-0000-0000-000000000003"),
                             permission_id = new Guid("00000000-0000-0000-0000-000000000111")
-                        },
-                        new
-                        {
-                            role_id = new Guid("00000000-0000-0000-0000-000000000003"),
-                            permission_id = new Guid("00000000-0000-0000-0000-000000000117")
                         });
                 });
 

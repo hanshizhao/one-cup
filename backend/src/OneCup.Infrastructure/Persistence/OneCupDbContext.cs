@@ -20,6 +20,8 @@ public class OneCupDbContext : DbContext
     public DbSet<NumberingRule> NumberingRules => Set<NumberingRule>();
     public DbSet<NumberingCounter> NumberingCounters => Set<NumberingCounter>();
     public DbSet<NumberingLog> NumberingLogs => Set<NumberingLog>();
+    public DbSet<NumberingTargetType> NumberingTargetTypes => Set<NumberingTargetType>();
+    public DbSet<NumberingCategory> NumberingCategories => Set<NumberingCategory>();
     public DbSet<OperationLog> OperationLogs => Set<OperationLog>();
     public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
 
@@ -136,5 +138,15 @@ public class OneCupDbContext : DbContext
                 "role_permissions",
                 j => j.HasData(developerPerms.Select(p => new { role_id = SeedData.DeveloperRoleId, permission_id = p }).ToArray())
             );
+
+        // ── 编号业务类型字典（6 个默认类型，code 与 NumberTargetTypes 常量一致，保证存量数据无缝兼容）──
+        modelBuilder.Entity<NumberingTargetType>().HasData(
+            new NumberingTargetType { Id = SeedData.TargetTypeFabric, Code = "fabric", NameZh = "面料", NameEn = "Fabric", SortOrder = 1, IsActive = true, CreatedAt = SeedTimestamp },
+            new NumberingTargetType { Id = SeedData.TargetTypeMaterial, Code = "material", NameZh = "原料", NameEn = "Material", SortOrder = 2, IsActive = true, CreatedAt = SeedTimestamp },
+            new NumberingTargetType { Id = SeedData.TargetTypeEquipment, Code = "equipment", NameZh = "设备", NameEn = "Equipment", SortOrder = 3, IsActive = true, CreatedAt = SeedTimestamp },
+            new NumberingTargetType { Id = SeedData.TargetTypeCustomer, Code = "customer", NameZh = "客户", NameEn = "Customer", SortOrder = 4, IsActive = true, CreatedAt = SeedTimestamp },
+            new NumberingTargetType { Id = SeedData.TargetTypeColor, Code = "color", NameZh = "颜色", NameEn = "Color", SortOrder = 5, IsActive = true, CreatedAt = SeedTimestamp },
+            new NumberingTargetType { Id = SeedData.TargetTypeProduct, Code = "product", NameZh = "产品", NameEn = "Product", SortOrder = 6, IsActive = true, CreatedAt = SeedTimestamp }
+        );
     }
 }

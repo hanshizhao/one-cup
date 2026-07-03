@@ -31,21 +31,17 @@ import {
   NumberingLogItem,
   CreateNumberingRuleRequest,
 } from '@/api/numbering';
+import {
+  getAllActiveTargetTypes,
+  getActiveCategories,
+  TargetType,
+} from '@/api/numberingDictionary';
+import NumberingDictionary from './dict';
 import locale from './locale';
 
 const FormItem = Form.Item;
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
-
-// 业务类型选项（来自后端 NumberTargetTypes，仅作下拉提示，不强制）
-const TARGET_TYPE_OPTIONS = [
-  'fabric',
-  'material',
-  'equipment',
-  'customer',
-  'color',
-  'product',
-];
 
 // 日期段 / 重置周期选项（对应后端枚举字符串）
 const DATE_SEGMENT_OPTIONS = ['None', 'Year', 'YearMonth', 'YearMonthDay'];
@@ -67,6 +63,22 @@ const DEFAULT_FORM_VALUES: CreateNumberingRuleRequest = {
 export default function NumberingManagement() {
   const t = useLocale(locale);
   const [activeTab, setActiveTab] = useState('rules');
+
+  // ───────────────── 动态下拉：业务类型 ─────────────────
+  const [targetTypeOptions, setTargetTypeOptions] = useState<TargetType[]>([]);
+
+  useEffect(() => {
+    getAllActiveTargetTypes().then(setTargetTypeOptions).catch(() => {});
+  }, []);
+
+  // 日志列显示辅助：code → 中文名映射（兜底显示 code 本身，停用项也能显示）
+  const targetTypeNameMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    targetTypeOptions.forEach((it) => {
+      m[it.code] = it.nameZh;
+    });
+    return m;
+  }, [targetTypeOptions]);
 
   // ───────────────── 规则配置 Tab 状态 ─────────────────
   const [ruleData, setRuleData] = useState<NumberingRuleListItem[]>([]);
@@ -94,6 +106,27 @@ export default function NumberingManagement() {
   const [formValues, setFormValues] = useState<CreateNumberingRuleRequest>(
     DEFAULT_FORM_VALUES,
   );
+
+  // 动态下拉：分类（依赖表单 targetType）
+  const [categoryOptions, setCategoryOptions] = useState<
+    { code: string; nameZh: string }[]
+  >([]);
+
+  // 当表单 targetType 变化时拉取该类型的分类
+  useEffect(() => {
+    if (formValues.targetType) {
+      getActiveCategories(formValues.targetType)
+        .then((list) =>
+          setCategoryOptions(
+            list.map((c) => ({ code: c.code, nameZh: c.nameZh })),
+          ),
+        )
+        .catch(() => setCategoryOptions([]));
+    } else {
+      setCategoryOptions([]);
+    }
+  }, [formValues.targetType]);
+
   // 编辑模式下当前记录是否启用 → 锁定关键配置字段
   const [editingIsActive, setEditingIsActive] = useState(true);
 
@@ -144,7 +177,7 @@ export default function NumberingManagement() {
     const sep = v.separator ?? '';
     const segments: string[] = [];
     if (v.prefix) segments.push(v.prefix);
-    if (v.includeCategory) segments.push('CAT');
+    if (v.includeCategory) segments.push(categoryOptions[0]?.code || 'CAT');
     if (v.dateSegment && v.dateSegment !== 'None') {
       const now = new Date();
       const y = now.getFullYear();
@@ -159,7 +192,7 @@ export default function NumberingManagement() {
     const seqLen = Math.max(1, Math.min(8, v.seqLength || 4));
     segments.push(String(1).padStart(seqLen, '0')); // 示例流水号 1
     return segments.join(sep);
-  }, [formValues]);
+  }, [formValues, categoryOptions]);
 
   // ───────────────── 抽屉打开 ─────────────────
   function openCreate() {
@@ -356,7 +389,7 @@ export default function NumberingManagement() {
       title: t['numbering.logs.targetType'],
       dataIndex: 'targetType',
       width: 120,
-      render: (val: string) => t[`numbering.targetType.${val}`] || val,
+      render: (val: string) => targetTypeNameMap[val] || val,
     },
     {
       title: t['numbering.logs.category'],
@@ -421,9 +454,9 @@ export default function NumberingManagement() {
                   setRulePagination((p) => ({ ...p, current: 1 }));
                 }}
               >
-                {TARGET_TYPE_OPTIONS.map((tp) => (
-                  <Select.Option key={tp} value={tp}>
-                    {t[`numbering.targetType.${tp}`] || tp}
+                {targetTypeOptions.map((tp) => (
+                  <Select.Option key={tp.code} value={tp.code}>
+                    {tp.nameZh}
                   </Select.Option>
                 ))}
               </Select>
@@ -465,6 +498,11 @@ export default function NumberingManagement() {
           />
         </Tabs.TabPane>
 
+        {/* ───────────── 业务字典 Tab ───────────── */}
+        <Tabs.TabPane key="dict" title={t['numbering.tab.dict']}>
+          <NumberingDictionary />
+        </Tabs.TabPane>
+
         {/* ───────────── 生成日志 Tab ───────────── */}
         <Tabs.TabPane key="logs" title={t['numbering.tab.logs']}>
           <Space style={{ marginBottom: 16 }} wrap>
@@ -477,9 +515,9 @@ export default function NumberingManagement() {
                 setLogFilter((f) => ({ ...f, targetType: v }))
               }
             >
-              {TARGET_TYPE_OPTIONS.map((tp) => (
-                <Select.Option key={tp} value={tp}>
-                  {t[`numbering.targetType.${tp}`] || tp}
+              {targetTypeOptions.map((tp) => (
+                <Select.Option key={tp.code} value={tp.code}>
+                  {tp.nameZh}
                 </Select.Option>
               ))}
             </Select>
@@ -611,9 +649,9 @@ export default function NumberingManagement() {
               showSearch
               allowCreate
             >
-              {TARGET_TYPE_OPTIONS.map((tp) => (
-                <Select.Option key={tp} value={tp}>
-                  {t[`numbering.targetType.${tp}`] || tp}
+              {targetTypeOptions.map((tp) => (
+                <Select.Option key={tp.code} value={tp.code}>
+                  {tp.nameZh}
                 </Select.Option>
               ))}
             </Select>

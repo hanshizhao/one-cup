@@ -89,6 +89,65 @@ namespace OneCup.Infrastructure.Migrations
                     b.ToTable("login_logs", (string)null);
                 });
 
+            modelBuilder.Entity("OneCup.Domain.Entities.NumberingCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name_en");
+
+                    b.Property<string>("NameZh")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name_zh");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("TargetTypeCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("target_type_code");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetTypeCode")
+                        .HasDatabaseName("ix_numbering_categories_target_type");
+
+                    b.HasIndex("TargetTypeCode", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_numbering_categories_type_code");
+
+                    b.ToTable("numbering_categories", (string)null);
+                });
+
             modelBuilder.Entity("OneCup.Domain.Entities.NumberingCounter", b =>
                 {
                     b.Property<Guid>("Id")
@@ -275,6 +334,118 @@ namespace OneCup.Infrastructure.Migrations
                         .HasFilter("\"is_active\" = true");
 
                     b.ToTable("numbering_rules", (string)null);
+                });
+
+            modelBuilder.Entity("OneCup.Domain.Entities.NumberingTargetType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name_en");
+
+                    b.Property<string>("NameZh")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name_zh");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_numbering_target_types_code");
+
+                    b.ToTable("numbering_target_types", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000201"),
+                            Code = "fabric",
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            NameEn = "Fabric",
+                            NameZh = "面料",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000202"),
+                            Code = "material",
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            NameEn = "Material",
+                            NameZh = "原料",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000203"),
+                            Code = "equipment",
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            NameEn = "Equipment",
+                            NameZh = "设备",
+                            SortOrder = 3
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000204"),
+                            Code = "customer",
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            NameEn = "Customer",
+                            NameZh = "客户",
+                            SortOrder = 4
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000205"),
+                            Code = "color",
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            NameEn = "Color",
+                            NameZh = "颜色",
+                            SortOrder = 5
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000206"),
+                            Code = "product",
+                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            NameEn = "Product",
+                            NameZh = "产品",
+                            SortOrder = 6
+                        });
                 });
 
             modelBuilder.Entity("OneCup.Domain.Entities.OperationLog", b =>

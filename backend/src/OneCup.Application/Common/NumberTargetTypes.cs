@@ -1,8 +1,9 @@
 namespace OneCup.Application.Common;
 
 /// <summary>
-/// 已知业务对象类型清单。引擎不校验 target_type 合法性（见设计 6.1），
-/// 此常量类仅作拼写提示与前端下拉选项来源，不强制。
+/// 已知业务对象类型清单（初始值）。
+/// 【已降级】字典化改造后，业务类型由 numbering_target_types 表管理，引擎通过强校验消费字典。
+/// 本常量类仅保留供种子迁移引用初始 6 个类型，业务代码不应硬编码引用，改用字典查询。
 /// </summary>
 public static class NumberTargetTypes
 {
