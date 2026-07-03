@@ -20,6 +20,8 @@ public class OneCupDbContext : DbContext
     public DbSet<NumberingRule> NumberingRules => Set<NumberingRule>();
     public DbSet<NumberingCounter> NumberingCounters => Set<NumberingCounter>();
     public DbSet<NumberingLog> NumberingLogs => Set<NumberingLog>();
+    public DbSet<OperationLog> OperationLogs => Set<OperationLog>();
+    public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,7 +89,8 @@ public class OneCupDbContext : DbContext
             new Permission { Id = SeedData.PermSystemUserManage, Code = "system:user:manage", Name = "管理用户", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermSystemRoleManage, Code = "system:role:manage", Name = "管理角色与权限", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermSystemNumberingView, Code = "system:numbering:view", Name = "查看编号管理", CreatedAt = SeedTimestamp },
-            new Permission { Id = SeedData.PermSystemNumberingManage, Code = "system:numbering:manage", Name = "管理编号规则", CreatedAt = SeedTimestamp }
+            new Permission { Id = SeedData.PermSystemNumberingManage, Code = "system:numbering:manage", Name = "管理编号规则", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermSystemAuditView, Code = "system:audit:view", Name = "查看审计日志", CreatedAt = SeedTimestamp }
         );
 
         // ── 角色 ──
@@ -123,7 +126,8 @@ public class OneCupDbContext : DbContext
         var developerPerms = new[]
         {
             SeedData.PermFabricRead, SeedData.PermFabricWrite, SeedData.PermMaterialRead,
-            SeedData.PermEquipmentRead, SeedData.PermCustomerRead, SeedData.PermColorRead, SeedData.PermProductRead
+            SeedData.PermEquipmentRead, SeedData.PermCustomerRead, SeedData.PermColorRead, SeedData.PermProductRead,
+            SeedData.PermSystemAuditView
         };
         modelBuilder.Entity<Role>()
             .HasMany(r => r.Permissions)

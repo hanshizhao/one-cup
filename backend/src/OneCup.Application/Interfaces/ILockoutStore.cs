@@ -6,7 +6,12 @@ namespace OneCup.Application.Interfaces;
 public interface ILockoutStore
 {
     Task<bool> IsLockedAsync(string key, CancellationToken ct = default);
-    Task RecordFailureAsync(string key, CancellationToken ct = default);
+
+    /// <summary>
+    /// 记录一次失败尝试。返回 true 表示本次失败恰好使账号进入锁定状态（达到 MaxFailedAttempts 阈值）。
+    /// </summary>
+    Task<bool> RecordFailureAsync(string key, CancellationToken ct = default);
+
     Task ResetAsync(string key, CancellationToken ct = default);
     Task<TimeSpan?> GetRemainingLockoutAsync(string key, CancellationToken ct = default);
 }

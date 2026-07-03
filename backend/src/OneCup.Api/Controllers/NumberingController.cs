@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OneCup.Api.Filters;
 using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
 
@@ -44,6 +45,7 @@ public class NumberingController : ControllerBase
         return rule is null ? NotFound() : Ok(rule);
     }
 
+    [Audit(Module = "Numbering", Action = "Create", TargetType = "NumberingRule")]
     [HttpPost("rules")]
     [Authorize(Policy = "numbering-manage")]
     public async Task<IActionResult> CreateRule([FromBody] CreateNumberingRuleRequest request, CancellationToken ct)
@@ -52,6 +54,7 @@ public class NumberingController : ControllerBase
         return CreatedAtAction(nameof(GetRule), new { id = rule.Id }, rule);
     }
 
+    [Audit(Module = "Numbering", Action = "Update", TargetType = "NumberingRule")]
     [HttpPut("rules/{id:guid}")]
     [Authorize(Policy = "numbering-manage")]
     public async Task<IActionResult> UpdateRule(Guid id, [FromBody] UpdateNumberingRuleRequest request, CancellationToken ct)
@@ -60,6 +63,7 @@ public class NumberingController : ControllerBase
         return NoContent();
     }
 
+    [Audit(Module = "Numbering", Action = "ChangeStatus", TargetType = "NumberingRule")]
     [HttpPut("rules/{id:guid}/status")]
     [Authorize(Policy = "numbering-manage")]
     public async Task<IActionResult> UpdateRuleStatus(Guid id, [FromBody] UpdateRuleStatusRequest request, CancellationToken ct)

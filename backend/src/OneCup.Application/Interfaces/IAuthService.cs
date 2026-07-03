@@ -7,11 +7,13 @@ namespace OneCup.Application.Interfaces;
 /// </summary>
 public interface IAuthService
 {
-    Task<TokenResponse> LoginAsync(LoginRequest request, CancellationToken ct = default);
+    // ipAddress/userAgent 为纯字符串（可选），用于登录日志采集；
+    // 由 Api 层从 HttpContext 取值后传入，Application 层不依赖 AspNetCore。
+    Task<TokenResponse> LoginAsync(LoginRequest request, string? ipAddress = null, string? userAgent = null, CancellationToken ct = default);
 
-    Task<TokenResponse> RefreshAsync(RefreshRequest request, CancellationToken ct = default);
+    Task<TokenResponse> RefreshAsync(RefreshRequest request, string? ipAddress = null, string? userAgent = null, CancellationToken ct = default);
 
-    Task LogoutAsync(Guid userId, CancellationToken ct = default);
+    Task LogoutAsync(Guid userId, string? ipAddress = null, string? userAgent = null, CancellationToken ct = default);
 
     Task<CurrentUser?> GetCurrentUserAsync(Guid userId, CancellationToken ct = default);
 }

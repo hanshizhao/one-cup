@@ -43,6 +43,20 @@ export const routes: IRoute[] = [
           { resource: 'system:numbering', actions: ['view'] },
         ],
       },
+      {
+        name: 'menu.system.operationLog',
+        key: 'system/operation-log',
+        requiredPermissions: [
+          { resource: 'system:audit', actions: ['view'] },
+        ],
+      },
+      {
+        name: 'menu.system.loginLog',
+        key: 'system/login-log',
+        requiredPermissions: [
+          { resource: 'system:audit', actions: ['view'] },
+        ],
+      },
     ],
   },
 ];

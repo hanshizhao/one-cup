@@ -1,0 +1,101 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using OneCup.Application.Options;
+
+namespace OneCup.Infrastructure.Persistence;
+
+/// <summary>
+/// 审计日志消费者：单实例 BackgroundService。
+/// 循环从 Channel 读一批（最多 BatchSize 条或等 1 秒），分桶批量写入两张表。
+/// 写入失败丢弃该批并记日志，绝不阻塞队列或拖垮业务 DB。
+/// 应用关闭时随取消令牌退出，队列内剩余条目会丢失（与内存队列的取舍一致，见 spec §5.3）；
+/// 正常关停由 DropOldest + 批量消费保证多数日志已落库。
+/// 通过 IServiceScopeFactory 每批创建独立 scope 解析 Scoped DbContext，
+/// 避免单例直接持有 Scoped DbContext（captive dependency 陷阱）。
+/// </summary>
+public sealed class AuditLogQueueConsumer : BackgroundService
+{
+    private readonly AuditLogChannel _channel;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly AuditLogOptions _options;
+    private readonly ILogger<AuditLogQueueConsumer> _logger;
+
+    /// <summary>累计丢弃的审计日志条目数（写库失败时累加）。轻量可观测性探针：运维可读此字段或看日志判断是否丢数据。</summary>
+    internal static long DroppedCount;
+
+    public AuditLogQueueConsumer(
+        AuditLogChannel channel,
+        IServiceScopeFactory scopeFactory,
+        IOptions<AuditLogOptions> options,
+        ILogger<AuditLogQueueConsumer> logger)
+    {
+        _channel = channel;
+        _scopeFactory = scopeFactory;
+        _options = options.Value;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        // 阻塞等待第一条（直到有数据或取消令牌），再非阻塞地尽量读满剩余。
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var batch = await ReadBatchAsync(_options.BatchSize, stoppingToken);
+            if (batch.Count == 0) continue;
+
+            await WriteBatchAsync(batch, stoppingToken);
+        }
+    }
+
+    /// <summary>读一批条目：先等第一条（阻塞至有数据或取消），再非阻塞地尽量读满。</summary>
+    private async Task<List<AuditLogEntry>> ReadBatchAsync(int maxCount, CancellationToken ct)
+    {
+        var batch = new List<AuditLogEntry>(maxCount);
+
+        // 等第一条（可能阻塞到取消）
+        try
+        {
+            var first = await _channel.Reader.ReadAsync(ct);
+            batch.Add(first);
+        }
+        catch (OperationCanceledException)
+        {
+            return batch;
+        }
+
+        // 非阻塞地尽量读满剩余
+        while (batch.Count < maxCount && _channel.Reader.TryRead(out var item))
+        {
+            batch.Add(item);
+        }
+
+        return batch;
+    }
+
+    /// <summary>批量写库：分桶后各自 AddRange + 一次 SaveChanges。失败丢批记日志。</summary>
+    /// <remarks>internal 供单测直接验证分桶 + 持久化（避免 InMemory 下构造 IDbContextFactory 与异步时序的 flaky）。</remarks>
+    internal async Task WriteBatchAsync(List<AuditLogEntry> batch, CancellationToken ct)
+    {
+        var ops = batch.Where(e => e.Operation is not null).Select(e => e.Operation!).ToList();
+        var logins = batch.Where(e => e.Login is not null).Select(e => e.Login!).ToList();
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<OneCupDbContext>();
+            if (ops.Count > 0) await db.OperationLogs.AddRangeAsync(ops, ct);
+            if (logins.Count > 0) await db.LoginLogs.AddRangeAsync(logins, ct);
+            await db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // 写入失败：丢弃该批，避免无限重试堵死队列；日志系统不应拖垮业务
+            var dropped = Interlocked.Add(ref DroppedCount, batch.Count);
+            _logger.LogError(ex, "审计日志批量写入失败，丢弃 {Count} 条 (ops={Ops}, logins={Logins})，累计丢弃 {Dropped} 条",
+                batch.Count, ops.Count, logins.Count, dropped);
+        }
+    }
+}

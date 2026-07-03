@@ -1,11 +1,13 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OneCup.Api.Authorization;
+using OneCup.Api.Filters;
 using OneCup.Api.Services;
 using OneCup.Application.Interfaces;
 using OneCup.Application.Options;
@@ -31,7 +33,11 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // ── Controllers + JSON 约定 ──────────────────────────────────
-builder.Services.AddControllers()
+// 全局注册 OperationLogActionFilter:对所有 action 生效(未贴 [Audit] 的 GET 跳过)。
+builder.Services.AddControllers(o =>
+    {
+        o.Filters.AddService<OperationLogActionFilter>();
+    })
     .AddJsonOptions(options =>
     {
         // 枚举序列化为字符串,前后端一致
@@ -95,6 +101,21 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<CurrentUserService>();
 builder.Services.AddHttpContextAccessor();
 
+// ── 审计日志 ───────────────────────────────────────────────
+builder.Services.Configure<AuditLogOptions>(builder.Configuration.GetSection(AuditLogOptions.SectionName));
+var auditOpts = builder.Configuration.GetSection(AuditLogOptions.SectionName).Get<AuditLogOptions>() ?? new AuditLogOptions();
+// 全局操作日志 Filter（Scoped:依赖 Singleton 的 CurrentUserService）
+builder.Services.AddScoped<OperationLogActionFilter>();
+// 有界队列 + Writer（单例,全局唯一）
+builder.Services.AddSingleton(new AuditLogChannel(auditOpts.QueueCapacity));
+builder.Services.AddScoped<IAuditLogWriter, AuditLogWriter>();
+// 后台服务:消费者 + 定时清理(均通过 IServiceScopeFactory 创建 scope 解析 Scoped DbContext,
+// 避免单例 AddDbContextFactory 与 Scoped AddDbContext 的 lifetime 冲突)。
+builder.Services.AddHostedService<AuditLogQueueConsumer>();
+builder.Services.AddHostedService<AuditLogCleanupService>();
+// 查询服务
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
 // ── 登录失败锁定 (内存方案) ──────────────────────────────────
 builder.Services.AddMemoryCache();
 builder.Services.Configure<LockoutOptions>(builder.Configuration.GetSection(LockoutOptions.SectionName));
@@ -114,6 +135,8 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("perm_codes", "system:numbering:view"));
     options.AddPolicy("numbering-manage", policy =>
         policy.RequireClaim("perm_codes", "system:numbering:manage"));
+    options.AddPolicy("audit-view", policy =>
+        policy.RequireClaim("perm_codes", "system:audit:view"));
 });
 
 // 权限拒绝审计日志:装饰默认 handler,在 403 时记 Warning

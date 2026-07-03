@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\OneCup.Api\OneCup.Api.csproj" />
     <ProjectReference Include="..\..\src\OneCup.Application\OneCup.Application.csproj" />
     <ProjectReference Include="..\..\src\OneCup.Domain\OneCup.Domain.csproj" />
     <ProjectReference Include="..\..\src\OneCup.Infrastructure\OneCup.Infrastructure.csproj" />
