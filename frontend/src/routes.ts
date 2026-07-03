@@ -42,12 +42,22 @@ export const routes: IRoute[] = [
         requiredPermissions: [
           { resource: 'system:numbering', actions: ['view'] },
         ],
-      },
-      {
-        name: 'menu.system.numbering.dict',
-        key: 'system/numbering/dict',
-        requiredPermissions: [
-          { resource: 'system:numbering', actions: ['view'] },
+        children: [
+          {
+            name: 'menu.system.numbering.rules',
+            key: 'system/numbering/rules',
+            path: 'system/numbering',
+            requiredPermissions: [
+              { resource: 'system:numbering', actions: ['view'] },
+            ],
+          },
+          {
+            name: 'menu.system.numbering.dict',
+            key: 'system/numbering/dict',
+            requiredPermissions: [
+              { resource: 'system:numbering', actions: ['view'] },
+            ],
+          },
         ],
       },
     ],
