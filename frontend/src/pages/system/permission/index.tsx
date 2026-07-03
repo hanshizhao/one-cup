@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Table } from '@arco-design/web-react';
+import { Table, Typography, Card } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import { getPermissionList, PermissionItem } from '@/api/permission';
 import locale from './locale';
+
+const { Title } = Typography;
 
 export default function PermissionList() {
   const t = useLocale(locale);
@@ -24,12 +26,16 @@ export default function PermissionList() {
   ];
 
   return (
-    <Table
-      rowKey="id"
-      columns={columns}
-      data={data}
-      loading={loading}
-      pagination={false}
-    />
+    <Card>
+      <Title heading={6}>{t['permission.title']}</Title>
+
+      <Table
+        rowKey="id"
+        columns={columns}
+        data={data}
+        loading={loading}
+        pagination={false}
+      />
+    </Card>
   );
 }

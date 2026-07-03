@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Table, Button, Drawer, Form, Input, InputNumber, Switch,
-  Tag, Popconfirm, Message, Space, Alert, Typography,
+  Tag, Popconfirm, Message, Space, Alert, Typography, Card,
 } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
 import useLocale from '@/utils/useLocale';
@@ -12,7 +12,9 @@ import {
   CreateTargetTypeRequest, CreateCategoryRequest,
 } from '@/api/numberingDictionary';
 import locale from './locale';
+import styles from './style/index.module.less';
 
+const { Title } = Typography;
 const FormItem = Form.Item;
 
 export default function NumberingDictionaryPage() {
@@ -245,17 +247,21 @@ export default function NumberingDictionaryPage() {
   ];
 
   return (
-    <div>
+    <Card>
+      <Title heading={6}>{t['numbering.dict.title']}</Title>
+
       {/* ── 业务类型区 ── */}
       <div style={{ marginBottom: 8, fontWeight: 600 }}>
         {t['numbering.dict.type.title']}
       </div>
-      <Space style={{ marginBottom: 12, justifyContent: 'space-between', width: '100%' }}>
-        <span />
-        <Button type="primary" icon={<IconPlus />} onClick={openCreateType}>
-          {t['numbering.dict.type.create']}
-        </Button>
-      </Space>
+      <div className={styles['button-group']}>
+        <Space />
+        <Space>
+          <Button type="primary" icon={<IconPlus />} onClick={openCreateType}>
+            {t['numbering.dict.type.create']}
+          </Button>
+        </Space>
+      </div>
       <Table
         rowKey="id"
         columns={typeColumns}
@@ -284,12 +290,14 @@ export default function NumberingDictionaryPage() {
       </div>
       {selectedType ? (
         <>
-          <Space style={{ marginBottom: 12, justifyContent: 'space-between', width: '100%' }}>
-            <span />
-            <Button type="primary" icon={<IconPlus />} onClick={openCreateCategory}>
-              {t['numbering.dict.category.create']}
-            </Button>
-          </Space>
+          <div className={styles['button-group']}>
+            <Space />
+            <Space>
+              <Button type="primary" icon={<IconPlus />} onClick={openCreateCategory}>
+                {t['numbering.dict.category.create']}
+              </Button>
+            </Space>
+          </div>
           <Table
             rowKey="id"
             columns={categoryColumns}
@@ -405,6 +413,6 @@ export default function NumberingDictionaryPage() {
           </FormItem>
         </Form>
       </Drawer>
-    </div>
+    </Card>
   );
 }
