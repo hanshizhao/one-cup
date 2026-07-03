@@ -314,19 +314,19 @@ export default function NumberingDictionaryPage() {
         width={440}
         unmountOnExit
       >
-        {typeEditMode === 'create' && (
-          <FormItem
-            label={t['numbering.dict.form.code']}
-            field="code"
-            rules={[{ required: true, message: t['numbering.dict.form.required'] }]}
-          >
-            <Input placeholder={t['numbering.dict.form.code.placeholder']} />
-          </FormItem>
-        )}
-        {typeEditMode === 'edit' && (
-          <Alert type="info" content={t['numbering.dict.form.lockedHint']} style={{ marginBottom: 16 }} />
-        )}
         <Form form={typeForm} layout="vertical">
+          {typeEditMode === 'create' && (
+            <FormItem
+              label={t['numbering.dict.form.code']}
+              field="code"
+              rules={[{ required: true, message: t['numbering.dict.form.required'] }]}
+            >
+              <Input placeholder={t['numbering.dict.form.code.placeholder']} />
+            </FormItem>
+          )}
+          {typeEditMode === 'edit' && (
+            <Alert type="info" content={t['numbering.dict.form.lockedHint']} style={{ marginBottom: 16 }} />
+          )}
           {typeEditMode === 'edit' && (
             <FormItem label={t['numbering.dict.form.code']}>
               <Input disabled value={typeData.find((x) => x.id === editingTypeId)?.code} />
