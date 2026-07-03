@@ -21,23 +21,6 @@ description: "Arco Design React UI component library reference (@arco-design/web
 - **Form.Item uses `field` prop** (not `name` like Ant Design)
 - **Switch in Form** requires `triggerPropName="checked"`
 
-## 导航架构决策规则（Menu vs Tabs）
-
-源自 Arco Design 官方组件规范（arco.design/docs/spec/menu 、 /docs/spec/tabs）。
-
-**核心原则：菜单（侧边栏 Menu）保持扁平，子模块内部导航用 Tabs。**
-
-- **侧边栏 Menu 是系统级功能导航**，用于不同功能模块间切换。保持扁平层级——避免不必要的多级 SubMenu 嵌套。
-- **不要用侧边栏 Menu 组织子模块内容**。一个功能模块内部的子页面/子视图（如"规则配置 / 业务字典 / 生成日志"同属编号管理），应使用页面内 Tabs，而不是拆成侧边栏的 SubMenu 子项。
-- **Tabs 用于同层级、不同类别的内容**。当多个视图属于同一功能模块、层级相同、只是类别不同时，用 Tabs 组织。
-
-| 判断问题 | 答案 | 用什么 |
-|---------|------|--------|
-| 这些视图属于不同系统级模块吗？ | 是 → | 侧边栏菜单项（平级） |
-| 这些视图属于同一个功能模块吗？ | 是 → | 页面内 Tabs |
-
-**反模式**：把同模块的子视图拆成侧边栏多级 SubMenu——菜单层级变深、信息触达变慢，且与 Arco 设计规范冲突。
-
 ## Skill Index
 
 Load the relevant file below for full API reference, code examples, and best practices.
