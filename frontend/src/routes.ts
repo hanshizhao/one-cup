@@ -43,6 +43,13 @@ export const routes: IRoute[] = [
           { resource: 'system:numbering', actions: ['view'] },
         ],
       },
+      {
+        name: 'menu.system.numbering.dict',
+        key: 'system/numbering/dict',
+        requiredPermissions: [
+          { resource: 'system:numbering', actions: ['view'] },
+        ],
+      },
     ],
   },
 ];
