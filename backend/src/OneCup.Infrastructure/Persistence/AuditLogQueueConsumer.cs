@@ -10,7 +10,8 @@ namespace OneCup.Infrastructure.Persistence;
 /// 审计日志消费者：单实例 BackgroundService。
 /// 循环从 Channel 读一批（最多 BatchSize 条或等 1 秒），分桶批量写入两张表。
 /// 写入失败丢弃该批并记日志，绝不阻塞队列或拖垮业务 DB。
-/// 应用关闭时（ApplicationStopping）尽力消费完当前批。
+/// 应用关闭时随取消令牌退出，队列内剩余条目会丢失（与内存队列的取舍一致，见 spec §5.3）；
+/// 正常关停由 DropOldest + 批量消费保证多数日志已落库。
 /// 用 IDbContextFactory 创建短生命周期 DbContext，避免单例持有 Scoped DbContext。
 /// </summary>
 public sealed class AuditLogQueueConsumer : BackgroundService
@@ -19,6 +20,9 @@ public sealed class AuditLogQueueConsumer : BackgroundService
     private readonly IDbContextFactory<OneCupDbContext> _dbFactory;
     private readonly AuditLogOptions _options;
     private readonly ILogger<AuditLogQueueConsumer> _logger;
+
+    /// <summary>累计丢弃的审计日志条目数（写库失败时累加）。轻量可观测性探针：运维可读此字段或看日志判断是否在丢数据。</summary>
+    internal static long DroppedCount;
 
     public AuditLogQueueConsumer(
         AuditLogChannel channel,
@@ -86,8 +90,9 @@ public sealed class AuditLogQueueConsumer : BackgroundService
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // 写入失败：丢弃该批，避免无限重试堵死队列；日志系统不应拖垮业务
-            _logger.LogError(ex, "审计日志批量写入失败，丢弃 {Count} 条 (ops={Ops}, logins={Logins})",
-                batch.Count, ops.Count, logins.Count);
+            var dropped = Interlocked.Add(ref DroppedCount, batch.Count);
+            _logger.LogError(ex, "审计日志批量写入失败，丢弃 {Count} 条 (ops={Ops}, logins={Logins})，累计丢弃 {Dropped} 条",
+                batch.Count, ops.Count, logins.Count, dropped);
         }
     }
 }

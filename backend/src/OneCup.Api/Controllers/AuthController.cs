@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OneCup.Application.Dtos.Auth;
 using OneCup.Application.Interfaces;
+using OneCup.Api.Filters;
 using OneCup.Api.Services;
 using static Microsoft.AspNetCore.Http.StatusCodes;
 
@@ -29,6 +30,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("auth-login")]
+    [Audit(Module = "Auth", Action = "Login")]
     [ProducesResponseType(typeof(TokenResponse), Status200OK)]
     [ProducesResponseType(typeof(object), Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
@@ -42,6 +44,7 @@ public class AuthController : ControllerBase
     [HttpPost("refresh")]
     [AllowAnonymous]
     [EnableRateLimiting("auth-login")]
+    [Audit(Module = "Auth", Action = "Refresh")]
     [ProducesResponseType(typeof(TokenResponse), Status200OK)]
     [ProducesResponseType(typeof(object), Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request, CancellationToken ct)
@@ -54,6 +57,7 @@ public class AuthController : ControllerBase
     /// <summary>登出，吊销当前用户的刷新令牌。</summary>
     [HttpPost("logout")]
     [Authorize]
+    [Audit(Module = "Auth", Action = "Logout")]
     [ProducesResponseType(Status204NoContent)]
     public async Task<IActionResult> Logout(CancellationToken ct)
     {

@@ -20,6 +20,13 @@ const RESULT_OPTIONS = [
   { label: '失败', value: 'Failed' },
 ];
 
+const MODULE_OPTIONS = [
+  { label: '用户', value: 'User' },
+  { label: '角色', value: 'Role' },
+  { label: '编号', value: 'Numbering' },
+  { label: '认证', value: 'Auth' },
+];
+
 export default function OperationLogPage() {
   const [data, setData] = useState<OperationLogListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -84,6 +91,7 @@ export default function OperationLogPage() {
             placeholder="模块"
             allowClear
             style={{ width: 140 }}
+            options={MODULE_OPTIONS}
             onChange={(v) => setQuery(q => ({ ...q, module: v || undefined, page: 1 }))}
           />
           <Select
