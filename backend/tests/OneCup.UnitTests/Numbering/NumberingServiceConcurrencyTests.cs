@@ -73,6 +73,21 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
             IsActive = true,
         };
         _db.NumberingRules.Add(rule);
+
+        // 字典数据（Task 6：引擎强校验依赖此字典）
+        _db.NumberingTargetTypes.Add(new NumberingTargetType
+        {
+            Code = "fabric", NameZh = "面料", NameEn = "Fabric", IsActive = true,
+        });
+        _db.NumberingCategories.Add(new NumberingCategory
+        {
+            TargetTypeCode = "fabric", Code = "COT", NameZh = "棉", NameEn = "Cotton", IsActive = true,
+        });
+        _db.NumberingCategories.Add(new NumberingCategory
+        {
+            TargetTypeCode = "fabric", Code = "CHE", NameZh = "麻", NameEn = "Linen", IsActive = true,
+        });
+
         await _db.SaveChangesAsync();
         _ruleId = rule.Id;
 
@@ -215,5 +230,125 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         var svc = new NumberingService(db, new NumberingClock());
         var preview = await svc.PreviewAsync("nonexistent");
         Assert.Null(preview);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // 字典强校验（Task 6 新增）
+    // ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GenerateAsync_InvalidTargetType_Throws()
+    {
+        // 字典里没有 "ghost" 业务类型 → 应拒绝
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        using var tx = await txDb.Database.BeginTransactionAsync();
+        var ex = await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("ghost", null));
+        Assert.Contains("ghost", ex.Message);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_DisabledTargetType_Throws()
+    {
+        // 种入停用的业务类型 → 调用应拒绝
+        using var seedDb = NewDbContext();
+        seedDb.NumberingTargetTypes.Add(new NumberingTargetType
+        {
+            Code = "disabled", NameZh = "停用类型", NameEn = "Disabled", IsActive = false,
+        });
+        seedDb.NumberingRules.Add(new NumberingRule
+        {
+            TargetType = "disabled", Name = "停用规则", Prefix = "DIS",
+            IncludeCategory = false, DateSegment = DateSegment.None,
+            SeqLength = 4, Separator = "-", ResetPeriod = ResetPeriod.None, IsActive = true,
+        });
+        await seedDb.SaveChangesAsync();
+
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        using var tx = await txDb.Database.BeginTransactionAsync();
+        await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("disabled", null));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ValidTypeNoCategory_WithCategoryRule_Throws()
+    {
+        // 种入 fabric 类型（无分类字典），规则要求分类码 → 传字典里不存在的分类码应拒绝
+        using var seedDb = NewDbContext();
+        seedDb.NumberingTargetTypes.Add(new NumberingTargetType
+        {
+            Code = "fabric", NameZh = "面料", NameEn = "Fabric", IsActive = true,
+        });
+        // 注意：InitializeAsync 已种入 fabric/COT，这里再 Add 一个 fabric 规则（IncludeCategory=true）
+        seedDb.NumberingRules.Add(new NumberingRule
+        {
+            TargetType = "fabric", Name = "面料规则", Prefix = "FAB2",
+            IncludeCategory = true, DateSegment = DateSegment.None,
+            SeqLength = 4, Separator = "-", ResetPeriod = ResetPeriod.None, IsActive = true,
+        });
+        await seedDb.SaveChangesAsync();
+
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        using var tx = await txDb.Database.BeginTransactionAsync();
+        // 字典里有 COT/CHE，但传 "GHOST"（不存在）→ 应拒绝
+        await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("fabric", "GHOST"));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ValidTypeValidCategory_Succeeds()
+    {
+        // 字典已有 fabric + COT（InitializeAsync 种入）→ 正常取号
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        string code;
+        using (var tx = await txDb.Database.BeginTransactionAsync())
+        {
+            code = await svc.GenerateAsync("fabric", "COT");
+            await tx.CommitAsync();
+        }
+        Assert.Contains("COT", code);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_DisabledCategory_Throws()
+    {
+        // 种入 fabric 下停用的分类码 → 调用应拒绝
+        using var seedDb = NewDbContext();
+        seedDb.NumberingCategories.Add(new NumberingCategory
+        {
+            TargetTypeCode = "fabric", Code = "WOOL", NameZh = "羊毛", NameEn = "Wool", IsActive = false,
+        });
+        await seedDb.SaveChangesAsync();
+
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        using var tx = await txDb.Database.BeginTransactionAsync();
+        await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("fabric", "WOOL"));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_NoCategoryRule_IgnoresPassedCategory()
+    {
+        // 规则 IncludeCategory=false → 即使传了字典里没有的分类码也不校验（宽容忽略保持不变）
+        using var seedDb = NewDbContext();
+        seedDb.NumberingRules.Add(new NumberingRule
+        {
+            TargetType = "fabric", Name = "面料规则-无分类", Prefix = "FAB3",
+            IncludeCategory = false, DateSegment = DateSegment.None,
+            SeqLength = 4, Separator = "-", ResetPeriod = ResetPeriod.None, IsActive = true,
+        });
+        await seedDb.SaveChangesAsync();
+
+        using var txDb = NewDbContext();
+        var svc = new NumberingService(txDb, new NumberingClock());
+        string code;
+        using (var tx = await txDb.Database.BeginTransactionAsync())
+        {
+            code = await svc.GenerateAsync("fabric", "ANYTHING");
+            await tx.CommitAsync();
+        }
+        Assert.StartsWith("FAB3", code);
+        Assert.DoesNotContain("ANYTHING", code);
     }
 }
