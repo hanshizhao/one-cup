@@ -83,7 +83,6 @@ function Navbar({ show }: { show: boolean }) {
               autoAlignPopupMinWidth: true,
               position: 'br',
             }}
-            trigger="hover"
             onChange={(value: string) => {
               setLang?.(value);
               const nextLang = defaultLocale[value as keyof typeof defaultLocale];
