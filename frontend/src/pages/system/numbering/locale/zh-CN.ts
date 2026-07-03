@@ -70,4 +70,7 @@ export default {
   'numbering.targetType.customer': '客户',
   'numbering.targetType.color': '颜色',
   'numbering.targetType.product': '产品',
+  // 动态下拉
+  'numbering.form.preview.categoryHint': '（实际分类以业务对象为准）',
+  'numbering.logs.categoryName': '分类名称',
 } as const;

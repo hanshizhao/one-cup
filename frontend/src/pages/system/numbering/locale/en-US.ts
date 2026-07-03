@@ -70,4 +70,7 @@ export default {
   'numbering.targetType.customer': 'Customer',
   'numbering.targetType.color': 'Color',
   'numbering.targetType.product': 'Product',
+  // dynamic dropdown
+  'numbering.form.preview.categoryHint': '(actual category depends on business object)',
+  'numbering.logs.categoryName': 'Category Name',
 } as const;
