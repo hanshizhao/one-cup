@@ -258,6 +258,55 @@ public class AuthServiceTests
         Assert.True(store.WasReset);
     }
 
+    [Fact]
+    public async Task Login_failure_at_threshold_enqueues_locked_audit_event()
+    {
+        // 安排：store 报告本次失败触发了锁定阈值
+        var store = new FakeLockoutStore { LockTriggered = true };
+        var spy = new LoginLogSpyWriter();
+        var db = await CreateContextAsync(nameof(Login_failure_at_threshold_enqueues_locked_audit_event));
+        var sut = CreateAuthService(db,
+            passwordHasher: new FakePasswordHasher { VerifyResult = (_, _) => false }, // 密码错
+            lockout: store,
+            auditWriter: spy);
+
+        // 断言：失败同时抛 UnauthorizedException
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => sut.LoginAsync(new LoginRequest { Username = "admin", Password = "wrong" }, default));
+
+        // 失败日志与锁定日志都写入（语义不同，都该记）
+        var locked = spy.LoginLogs.SingleOrDefault(l => l.EventType == Domain.Enums.LoginEventType.Locked);
+        Assert.NotNull(locked);
+        Assert.Equal(Domain.Enums.OperationResult.Failed, locked!.Result);
+        Assert.Equal("LockoutTriggered", locked.FailureReason);
+        Assert.Equal(AdminUserId, locked.UserId); // 密码错场景，user 非 null
+
+        // 同时仍有一条 Login/Failed 日志
+        Assert.Contains(spy.LoginLogs, l => l.EventType == Domain.Enums.LoginEventType.Login
+                                            && l.Result == Domain.Enums.OperationResult.Failed);
+    }
+
+    [Fact]
+    public async Task Login_failure_below_threshold_does_not_enqueue_locked_audit_event()
+    {
+        // 安排：store 报告本次失败未触发锁定
+        var store = new FakeLockoutStore { LockTriggered = false };
+        var spy = new LoginLogSpyWriter();
+        var db = await CreateContextAsync(nameof(Login_failure_below_threshold_does_not_enqueue_locked_audit_event));
+        var sut = CreateAuthService(db,
+            passwordHasher: new FakePasswordHasher { VerifyResult = (_, _) => false },
+            lockout: store,
+            auditWriter: spy);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => sut.LoginAsync(new LoginRequest { Username = "admin", Password = "wrong" }, default));
+
+        // 未达阈值：只有 Login/Failed，无 Locked
+        Assert.DoesNotContain(spy.LoginLogs, l => l.EventType == Domain.Enums.LoginEventType.Locked);
+        Assert.Contains(spy.LoginLogs, l => l.EventType == Domain.Enums.LoginEventType.Login
+                                            && l.Result == Domain.Enums.OperationResult.Failed);
+    }
+
     // ════════════════════════════════════════════════════════════════
     // GetCurrentUserAsync
     // ════════════════════════════════════════════════════════════════
@@ -498,9 +547,11 @@ public class AuthServiceTests
         public TimeSpan? Remaining { get; set; }
         public int FailureCount { get; set; }
         public bool WasReset { get; set; }
+        /// <summary>RecordFailureAsync 的返回值：true 表示本次失败触发了锁定。</summary>
+        public bool LockTriggered { get; set; }
 
         public Task<bool> IsLockedAsync(string key, CancellationToken ct = default) => Task.FromResult(IsLockedResult);
-        public Task RecordFailureAsync(string key, CancellationToken ct = default) { FailureCount++; return Task.CompletedTask; }
+        public Task<bool> RecordFailureAsync(string key, CancellationToken ct = default) { FailureCount++; return Task.FromResult(LockTriggered); }
         public Task ResetAsync(string key, CancellationToken ct = default) { WasReset = true; return Task.CompletedTask; }
         public Task<TimeSpan?> GetRemainingLockoutAsync(string key, CancellationToken ct = default) => Task.FromResult(Remaining);
     }
@@ -513,5 +564,13 @@ public class AuthServiceTests
     {
         public void Enqueue(OperationLog log) { }
         public void Enqueue(LoginLog log) { }
+    }
+
+    /// <summary>采集 LoginLog 的 spy 写入器，用于断言登录审计事件。</summary>
+    private sealed class LoginLogSpyWriter : IAuditLogWriter
+    {
+        public List<LoginLog> LoginLogs { get; } = [];
+        public void Enqueue(OperationLog log) { }
+        public void Enqueue(LoginLog log) => LoginLogs.Add(log);
     }
 }

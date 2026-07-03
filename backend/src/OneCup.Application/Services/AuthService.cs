@@ -92,7 +92,7 @@ public class AuthService : IAuthService
         if (user is null || !user.IsActive || !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
             // 失败:记录 + 计数(不泄露用户是否存在)
-            await _lockout.RecordFailureAsync(lockoutKey, ct);
+            var nowLocked = await _lockout.RecordFailureAsync(lockoutKey, ct);
             _logger.LogWarning("登录失败:Username={Username}", request.Username);
             _auditWriter.Enqueue(new LoginLog
             {
@@ -105,6 +105,20 @@ public class AuthService : IAuthService
                 IpAddress = ipAddress,
                 UserAgent = userAgent,
             });
+            if (nowLocked)
+            {
+                _auditWriter.Enqueue(new LoginLog
+                {
+                    UserId = user?.Id,
+                    Username = request.Username,
+                    EventType = LoginEventType.Locked,
+                    Result = OperationResult.Failed,
+                    FailureReason = "LockoutTriggered",
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent,
+                    Message = $"连续失败达阈值，账号已锁定",
+                });
+            }
             throw new UnauthorizedException("用户名或密码错误");
         }
 

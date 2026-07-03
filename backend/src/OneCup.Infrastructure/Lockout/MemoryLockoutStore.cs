@@ -29,7 +29,7 @@ public class MemoryLockoutStore : ILockoutStore
         return Task.FromResult(false);
     }
 
-    public Task RecordFailureAsync(string key, CancellationToken ct = default)
+    public Task<bool> RecordFailureAsync(string key, CancellationToken ct = default)
     {
         var failKey = FailKey(key);
         var attempts = _cache.GetOrCreate(failKey, e =>
@@ -42,12 +42,13 @@ public class MemoryLockoutStore : ILockoutStore
         {
             var lockedUntil = DateTimeOffset.UtcNow.Add(_options.LockoutDuration);
             _cache.Set(LockKey(key), lockedUntil, _options.LockoutDuration);
+            return Task.FromResult(true);
         }
         else
         {
             _cache.Set(failKey, attempts, _options.LockoutDuration);
+            return Task.FromResult(false);
         }
-        return Task.CompletedTask;
     }
 
     public Task ResetAsync(string key, CancellationToken ct = default)
