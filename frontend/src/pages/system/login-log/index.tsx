@@ -127,11 +127,6 @@ export default function LoginLogPage() {
           </div>
         </div>
 
-        <div className={styles['button-group']}>
-          <Space />
-          <Space />
-        </div>
-
         <Table
           rowKey="id"
           loading={loading}
