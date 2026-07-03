@@ -34,24 +34,22 @@ public sealed class AuditLogQueueConsumer : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // 读批次的超时：1 秒内有数据就尽早处理，无数据就等 1 秒再循环（避免空转）。
-        var batchTimeout = TimeSpan.FromSeconds(1);
-
+        // 阻塞等待第一条（直到有数据或取消令牌），再非阻塞地尽量读满剩余。
         while (!stoppingToken.IsCancellationRequested)
         {
-            var batch = await ReadBatchAsync(_options.BatchSize, batchTimeout, stoppingToken);
+            var batch = await ReadBatchAsync(_options.BatchSize, stoppingToken);
             if (batch.Count == 0) continue;
 
             await WriteBatchAsync(batch, stoppingToken);
         }
     }
 
-    /// <summary>读一批条目：先等第一条（阻塞至有数据或超时），再非阻塞地尽量读满。</summary>
-    private async Task<List<AuditLogEntry>> ReadBatchAsync(int maxCount, TimeSpan timeout, CancellationToken ct)
+    /// <summary>读一批条目：先等第一条（阻塞至有数据或取消），再非阻塞地尽量读满。</summary>
+    private async Task<List<AuditLogEntry>> ReadBatchAsync(int maxCount, CancellationToken ct)
     {
         var batch = new List<AuditLogEntry>(maxCount);
 
-        // 等第一条（可能阻塞到超时）
+        // 等第一条（可能阻塞到取消）
         try
         {
             var first = await _channel.Reader.ReadAsync(ct);
