@@ -11,8 +11,12 @@ import {
   Popconfirm,
   Message,
   Space,
+  Typography,
+  Card,
+  Grid,
 } from '@arco-design/web-react';
-import { IconPlus, IconSearch } from '@arco-design/web-react/icon';
+import type { PaginationProps } from '@arco-design/web-react';
+import { IconPlus, IconSearch, IconRefresh } from '@arco-design/web-react/icon';
 import useLocale from '@/utils/useLocale';
 import {
   getUserList,
@@ -26,11 +30,15 @@ import {
 } from '@/api/user';
 import { getRoleList } from '@/api/role';
 import locale from './locale';
+import styles from './style/index.module.less';
 
+const { Title } = Typography;
+const { Row, Col } = Grid;
 const FormItem = Form.Item;
 
 export default function UserManagement() {
   const t = useLocale(locale);
+  const [searchForm] = Form.useForm();
   const [data, setData] = useState<UserListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -75,6 +83,19 @@ export default function UserManagement() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // 标准 2.4：仅按钮触发查询
+  const handleSearch = () => {
+    const values = searchForm.getFieldsValue();
+    setKeyword(values.keyword || '');
+    setPagination((p) => ({ ...p, current: 1 }));
+  };
+
+  const handleReset = () => {
+    searchForm.resetFields();
+    setKeyword('');
+    setPagination((p) => ({ ...p, current: 1 }));
+  };
 
   function openCreate() {
     setEditMode('create');
@@ -201,19 +222,39 @@ export default function UserManagement() {
   ];
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Input.Search
-          placeholder={t['user.search.placeholder']}
-          onSearch={(v) => { setKeyword(v); setPagination((p) => ({ ...p, current: 1 })); }}
-          style={{ width: 300 }}
-          prefix={<IconSearch />}
-          allowClear
-        />
-        <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
-          {t['user.add']}
-        </Button>
-      </Space>
+    <Card>
+      <Title heading={6}>{t['user.title']}</Title>
+
+      <div className={styles['search-form-wrapper']}>
+        <Form
+          form={searchForm}
+          className={styles['search-form']}
+          labelAlign="left"
+          labelCol={{ span: 5 }}
+          wrapperCol={{ span: 19 }}
+        >
+          <Row gutter={24}>
+            <Col span={8}>
+              <FormItem label={t['user.username']} field="keyword">
+                <Input allowClear placeholder={t['user.search.placeholder']} prefix={<IconSearch />} />
+              </FormItem>
+            </Col>
+          </Row>
+        </Form>
+        <div className={styles['right-button']}>
+          <Button type="primary" icon={<IconSearch />} onClick={handleSearch}>查询</Button>
+          <Button icon={<IconRefresh />} onClick={handleReset}>重置</Button>
+        </div>
+      </div>
+
+      <div className={styles['button-group']}>
+        <Space>
+          <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+            {t['user.add']}
+          </Button>
+        </Space>
+        <Space />
+      </div>
 
       <Table
         rowKey="id"
@@ -225,7 +266,7 @@ export default function UserManagement() {
           showTotal: true,
           sizeCanChange: true,
           onChange: (current, pageSize) => setPagination((p) => ({ ...p, current, pageSize })),
-        }}
+        } as PaginationProps}
       />
 
       {/* 新增/编辑抽屉 */}
@@ -329,6 +370,6 @@ export default function UserManagement() {
           </FormItem>
         </Form>
       </Drawer>
-    </div>
+    </Card>
   );
 }
