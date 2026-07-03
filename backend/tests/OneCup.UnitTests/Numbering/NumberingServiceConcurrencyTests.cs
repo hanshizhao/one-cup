@@ -74,11 +74,10 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         };
         _db.NumberingRules.Add(rule);
 
-        // 字典数据（Task 6：引擎强校验依赖此字典）
-        _db.NumberingTargetTypes.Add(new NumberingTargetType
-        {
-            Code = "fabric", NameZh = "面料", NameEn = "Fabric", IsActive = true,
-        });
+        // 字典分类数据（Task 6：引擎强校验依赖此字典）。
+        // 注意：业务类型（fabric/material/equipment/…）已由 OneCupDbContext.Seed() 的 HasData 种入，
+        // EnsureCreatedAsync 会应用该种子，因此这里【不再】Add fabric 类型——重复 Add 会违反
+        // 唯一索引 ux_numbering_target_types_code。此处只补充分类（HasData 不种分类），供存量测试使用。
         _db.NumberingCategories.Add(new NumberingCategory
         {
             TargetTypeCode = "fabric", Code = "COT", NameZh = "棉", NameEn = "Cotton", IsActive = true,
@@ -273,16 +272,14 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
     [Fact]
     public async Task GenerateAsync_ValidTypeNoCategory_WithCategoryRule_Throws()
     {
-        // 种入 fabric 类型（无分类字典），规则要求分类码 → 传字典里不存在的分类码应拒绝
+        // 用 material 业务类型（HasData 已种入，无分类字典，且 InitializeAsync 未给其建规则）。
+        // 规则要求分类码，但传字典里不存在的分类码 → 应拒绝。
+        // 不用 fabric：InitializeAsync 已建一条 fabric 启用规则，再 Add 会违反部分唯一索引
+        // ux_numbering_rules_target_type_active（同类型仅一条启用规则）。
         using var seedDb = NewDbContext();
-        seedDb.NumberingTargetTypes.Add(new NumberingTargetType
-        {
-            Code = "fabric", NameZh = "面料", NameEn = "Fabric", IsActive = true,
-        });
-        // 注意：InitializeAsync 已种入 fabric/COT，这里再 Add 一个 fabric 规则（IncludeCategory=true）
         seedDb.NumberingRules.Add(new NumberingRule
         {
-            TargetType = "fabric", Name = "面料规则", Prefix = "FAB2",
+            TargetType = "material", Name = "原料规则", Prefix = "MAT",
             IncludeCategory = true, DateSegment = DateSegment.None,
             SeqLength = 4, Separator = "-", ResetPeriod = ResetPeriod.None, IsActive = true,
         });
@@ -291,8 +288,8 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         using var txDb = NewDbContext();
         var svc = new NumberingService(txDb, new NumberingClock());
         using var tx = await txDb.Database.BeginTransactionAsync();
-        // 字典里有 COT/CHE，但传 "GHOST"（不存在）→ 应拒绝
-        await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("fabric", "GHOST"));
+        // material 类型存在且启用，规则要求分类，但 "GHOST" 不在字典 → 应拒绝
+        await Assert.ThrowsAsync<DomainException>(() => svc.GenerateAsync("material", "GHOST"));
     }
 
     [Fact]
@@ -330,11 +327,13 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
     [Fact]
     public async Task GenerateAsync_NoCategoryRule_IgnoresPassedCategory()
     {
-        // 规则 IncludeCategory=false → 即使传了字典里没有的分类码也不校验（宽容忽略保持不变）
+        // 规则 IncludeCategory=false → 即使传了字典里没有的分类码也不校验（宽容忽略保持不变）。
+        // 用 equipment 业务类型（HasData 已种入，InitializeAsync 未给其建规则），避免与 fabric 启用规则
+        // 冲突部分唯一索引 ux_numbering_rules_target_type_active。
         using var seedDb = NewDbContext();
         seedDb.NumberingRules.Add(new NumberingRule
         {
-            TargetType = "fabric", Name = "面料规则-无分类", Prefix = "FAB3",
+            TargetType = "equipment", Name = "设备规则-无分类", Prefix = "EQP",
             IncludeCategory = false, DateSegment = DateSegment.None,
             SeqLength = 4, Separator = "-", ResetPeriod = ResetPeriod.None, IsActive = true,
         });
@@ -345,10 +344,10 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         string code;
         using (var tx = await txDb.Database.BeginTransactionAsync())
         {
-            code = await svc.GenerateAsync("fabric", "ANYTHING");
+            code = await svc.GenerateAsync("equipment", "ANYTHING");
             await tx.CommitAsync();
         }
-        Assert.StartsWith("FAB3", code);
+        Assert.StartsWith("EQP", code);
         Assert.DoesNotContain("ANYTHING", code);
     }
 }
