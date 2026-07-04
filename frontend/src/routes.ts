@@ -25,6 +25,13 @@ export const routes: IRoute[] = [
           { resource: 'customer', actions: ['read'] },
         ],
       },
+      {
+        name: 'menu.business.material',
+        key: 'business/material',
+        requiredPermissions: [
+          { resource: 'material', actions: ['read'] },
+        ],
+      },
     ],
   },
   {
