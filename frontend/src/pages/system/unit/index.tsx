@@ -6,6 +6,7 @@ import {
 import type { PaginationProps } from '@arco-design/web-react';
 import { IconPlus, IconSearch, IconRefresh, IconSwap } from '@arco-design/web-react/icon';
 import useLocale from '@/utils/useLocale';
+import PermissionWrapper from '@/components/PermissionWrapper';
 import {
   getUnits, createUnit, updateUnit, updateUnitStatus,
   getAllActiveUnits, getUnitCategories, convertUnit,
@@ -224,17 +225,25 @@ export default function UnitManagementPage() {
       title: t['unit.col.operations'], dataIndex: 'operations', width: 160,
       render: (_: unknown, record: MeasurementUnit) => (
         <Space>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>
-            {t['unit.action.edit']}
-          </Button>
-          <Popconfirm
-            title={record.isActive ? t['unit.action.disableConfirm'] : t['unit.action.enableConfirm']}
-            onOk={() => handleToggleStatus(record)}
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:unit', actions: ['update'] }]}
           >
-            <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
-              {record.isActive ? t['unit.action.disable'] : t['unit.action.enable']}
+            <Button type="text" size="small" onClick={() => openEdit(record)}>
+              {t['unit.action.edit']}
             </Button>
-          </Popconfirm>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:unit', actions: ['update'] }]}
+          >
+            <Popconfirm
+              title={record.isActive ? t['unit.action.disableConfirm'] : t['unit.action.enableConfirm']}
+              onOk={() => handleToggleStatus(record)}
+            >
+              <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
+                {record.isActive ? t['unit.action.disable'] : t['unit.action.enable']}
+              </Button>
+            </Popconfirm>
+          </PermissionWrapper>
         </Space>
       ),
     },
@@ -291,9 +300,13 @@ export default function UnitManagementPage() {
       {/* 工具栏 */}
       <div className={styles['button-group']}>
         <Space>
-          <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
-            {t['unit.toolbar.create']}
-          </Button>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:unit', actions: ['create'] }]}
+          >
+            <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+              {t['unit.toolbar.create']}
+            </Button>
+          </PermissionWrapper>
         </Space>
         <Space>
           <Button icon={<IconSwap />} onClick={openConvert}>
