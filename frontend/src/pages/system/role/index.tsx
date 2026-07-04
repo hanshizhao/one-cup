@@ -24,6 +24,7 @@ import {
   RoleListItem,
 } from '@/api/role';
 import { getPermissionList, PermissionItem } from '@/api/permission';
+import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from './locale';
 import styles from './style/index.module.less';
 
@@ -152,18 +153,26 @@ export default function RoleManagement() {
       width: 140,
       render: (_: unknown, record: RoleListItem) => (
         <Space>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>
-            {t['role.edit']}
-          </Button>
-          <Popconfirm
-            title={t['role.delete.confirm']}
-            onOk={() => handleDelete(record.id)}
-            disabled={record.code === 'admin'}
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:role', actions: ['update'] }]}
           >
-            <Button type="text" size="small" status="danger" disabled={record.code === 'admin'}>
-              {t['role.delete']}
+            <Button type="text" size="small" onClick={() => openEdit(record)}>
+              {t['role.edit']}
             </Button>
-          </Popconfirm>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:role', actions: ['delete'] }]}
+          >
+            <Popconfirm
+              title={t['role.delete.confirm']}
+              onOk={() => handleDelete(record.id)}
+              disabled={record.code === 'admin'}
+            >
+              <Button type="text" size="small" status="danger" disabled={record.code === 'admin'}>
+                {t['role.delete']}
+              </Button>
+            </Popconfirm>
+          </PermissionWrapper>
         </Space>
       ),
     },
@@ -175,9 +184,13 @@ export default function RoleManagement() {
 
       <div className={styles['button-group']}>
         <Space>
-          <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
-            {t['role.add']}
-          </Button>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:role', actions: ['create'] }]}
+          >
+            <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+              {t['role.add']}
+            </Button>
+          </PermissionWrapper>
         </Space>
         <Space />
       </div>
