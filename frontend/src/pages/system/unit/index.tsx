@@ -26,6 +26,13 @@ const DEFAULT_FORM: CreateUnitRequest = {
 export default function UnitManagementPage() {
   const t = useLocale(locale);
   const [searchForm] = Form.useForm();
+
+  // 类别英文枚举值 → 本地化文案，未知类别兜底显示原始 code
+  // （category 存储值是 LENGTH/WEIGHT 等英文标识，不可改，仅在显示层翻译）
+  const categoryLabel = useCallback(
+    (code: string) => t[`unit.category.${code}`] || code,
+    [t],
+  );
   const [editForm] = Form.useForm();
   const [convertForm] = Form.useForm();
 
@@ -200,7 +207,7 @@ export default function UnitManagementPage() {
     { title: t['unit.col.symbol'], dataIndex: 'symbol', width: 70 },
     { title: t['unit.col.nameZh'], dataIndex: 'nameZh', width: 90 },
     { title: t['unit.col.nameEn'], dataIndex: 'nameEn', width: 110 },
-    { title: t['unit.col.category'], dataIndex: 'category', width: 90, render: (v: string) => <Tag>{v}</Tag> },
+    { title: t['unit.col.category'], dataIndex: 'category', width: 90, render: (v: string) => <Tag>{categoryLabel(v)}</Tag> },
     {
       title: t['unit.col.isBase'], dataIndex: 'isBase', width: 70,
       render: (v: boolean) => v ? <Tag color="green">{t['unit.tag.base']}</Tag> : null,
@@ -256,7 +263,7 @@ export default function UnitManagementPage() {
               <FormItem label={t['unit.search.category']} field="category">
                 <Select allowClear allowCreate placeholder={t['unit.search.category']}>
                   {categoryOptions.map((c) => (
-                    <Select.Option key={c} value={c}>{c}</Select.Option>
+                    <Select.Option key={c} value={c}>{categoryLabel(c)}</Select.Option>
                   ))}
                 </Select>
               </FormItem>
@@ -338,7 +345,7 @@ export default function UnitManagementPage() {
               >
                 <Select allowCreate placeholder={t['unit.form.categoryPlaceholder']}>
                   {categoryOptions.map((c) => (
-                    <Select.Option key={c} value={c}>{c}</Select.Option>
+                    <Select.Option key={c} value={c}>{categoryLabel(c)}</Select.Option>
                   ))}
                 </Select>
               </FormItem>
@@ -350,7 +357,7 @@ export default function UnitManagementPage() {
                 <Input disabled value={data.find((x) => x.id === editingId)?.code} />
               </FormItem>
               <FormItem label={t['unit.form.category']}>
-                <Input disabled value={data.find((x) => x.id === editingId)?.category} />
+                <Input disabled value={categoryLabel(data.find((x) => x.id === editingId)?.category ?? '')} />
               </FormItem>
             </>
           )}
@@ -409,7 +416,7 @@ export default function UnitManagementPage() {
                   return acc;
                 }, {}),
               ).map(([cat, units]) => (
-                <Select.OptGroup key={cat} label={cat}>
+                <Select.OptGroup key={cat} label={categoryLabel(cat)}>
                   {units.map((u) => (
                     <Select.Option key={u.code} value={u.code}>
                       {u.nameZh} ({u.symbol})

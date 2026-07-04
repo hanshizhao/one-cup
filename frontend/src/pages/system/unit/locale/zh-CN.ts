@@ -50,6 +50,13 @@ export default {
   'unit.form.createSuccess': '创建成功',
   'unit.form.updateSuccess': '更新成功',
   'unit.form.statusSuccess': '状态更新成功',
+  // 单位类别文案（英文枚举值 → 中文显示，兜底回退原始 code）
+  'unit.category.LENGTH': '长度',
+  'unit.category.WEIGHT': '重量',
+  'unit.category.AREA': '面积',
+  'unit.category.COUNT': '数量',
+  'unit.category.VOLUME': '体积',
+  'unit.category.YARN': '纱线',
   // 换算 Drawer
   'unit.convert.title': '单位换算',
   'unit.convert.from': '源单位',

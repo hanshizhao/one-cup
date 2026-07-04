@@ -45,6 +45,13 @@ export default {
   'unit.form.createSuccess': 'Created',
   'unit.form.updateSuccess': 'Updated',
   'unit.form.statusSuccess': 'Status updated',
+  // Category labels (enum value → display, fallback to raw code)
+  'unit.category.LENGTH': 'Length',
+  'unit.category.WEIGHT': 'Weight',
+  'unit.category.AREA': 'Area',
+  'unit.category.COUNT': 'Count',
+  'unit.category.VOLUME': 'Volume',
+  'unit.category.YARN': 'Yarn',
   'unit.convert.title': 'Unit Conversion',
   'unit.convert.from': 'From',
   'unit.convert.to': 'To',
