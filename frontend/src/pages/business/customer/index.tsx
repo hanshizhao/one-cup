@@ -7,7 +7,7 @@ import {
   Grid,
   Input,
   Message,
-  Modal,
+  Popconfirm,
   Select,
   Space,
   Table,
@@ -143,15 +143,14 @@ export default function CustomerPage() {
       .catch(() => Message.error(t['customer.message.loadFailed']))
       .finally(() => closeLoading());
   }
-  function handleDelete(record: CustomerListItem) {
-    Modal.confirm({
-      title: t['customer.message.deleteOk'],
-      onOk: async () => {
-        await deleteCustomer(record.id);
-        Message.success(t['customer.message.deleteSuccess']);
-        fetchData();
-      },
-    });
+  async function handleDelete(record: CustomerListItem) {
+    try {
+      await deleteCustomer(record.id);
+      Message.success(t['customer.message.deleteSuccess']);
+      fetchData();
+    } catch {
+      // ignore
+    }
   }
 
   const columns = useMemo(
@@ -186,14 +185,14 @@ export default function CustomerPage() {
               <Button type="text" size="small" onClick={() => openEdit(record)}>
                 {t['customer.button.edit']}
               </Button>
-              <Button
-                type="text"
-                size="small"
-                status="danger"
-                onClick={() => handleDelete(record)}
+              <Popconfirm
+                title={t['customer.message.deleteOk']}
+                onOk={() => handleDelete(record)}
               >
-                {t['customer.button.delete']}
-              </Button>
+                <Button type="text" size="small" status="danger">
+                  {t['customer.button.delete']}
+                </Button>
+              </Popconfirm>
             </PermissionWrapper>
           </Space>
         ),
