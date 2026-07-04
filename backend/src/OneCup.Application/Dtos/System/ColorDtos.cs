@@ -9,6 +9,8 @@ public record CreateColorRequest
     public string ColorFamily { get; init; } = string.Empty;
     public string? Remark { get; init; }
     public int SortOrder { get; init; }
+    /// <summary>可选；编号规则要求分类码时必填，由引擎强校验。</summary>
+    public string? CategoryCode { get; init; }
 }
 
 public record UpdateColorRequest

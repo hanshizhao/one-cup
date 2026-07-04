@@ -52,6 +52,17 @@ public class ColorServiceTests
         Assert.True(dto.IsActive);
     }
 
+    [Fact]
+    public async Task CreateColorAsync_PassesCategoryCode_ToNumbering()
+    {
+        var (_, svc, numbering) = Setup();
+        numbering.NextCode = "COL-DARK-0001";
+        var req = ValidCreate() with { CategoryCode = "DARK" };
+
+        await svc.CreateColorAsync(req);
+        Assert.Equal("DARK", numbering.LastCategoryCode);
+    }
+
     [Theory]
     [MemberData(nameof(InvalidHexCases))]
     public async Task CreateColorAsync_InvalidHex_Throws(string hex)
@@ -195,9 +206,12 @@ internal sealed class FakeNumberingService : INumberingService
 {
     private int _seq;
     public string? NextCode { get; set; }
+    /// <summary>最近一次 GenerateAsync 收到的 categoryCode，供透传断言使用。</summary>
+    public string? LastCategoryCode { get; private set; }
 
     public Task<string> GenerateAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
     {
+        LastCategoryCode = categoryCode;
         if (NextCode is not null)
         {
             var code = NextCode;

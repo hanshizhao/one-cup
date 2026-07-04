@@ -95,7 +95,7 @@ public class CustomerService : ICustomerService
         await _uow.ExecuteInTransactionAsync(async () =>
         {
             // 事务内取号（行锁），计数器增量与客户记录一起提交
-            var code = await _numbering.GenerateAsync(NumberTargetTypes.Customer, null, ct);
+            var code = await _numbering.GenerateAsync(NumberTargetTypes.Customer, request.CategoryCode, ct);
             var customer = new Customer
             {
                 Code = code,
