@@ -111,16 +111,20 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
 
         var now = DateTime.UtcNow;
 
-        // ── 权限(仅种子 developer 角色会用到的几项;admin 走通配 * 不需绑定) ──
-        var fabricRead = new Permission
+        // ── 权限(种子 developer 角色用到的 10 项,与 SeedData/OneCupDbContext 的 post-refine 集合一致;
+        //    admin 走通配 * 不需绑定)。Guid 与 SeedData 对齐,保证一致性。──
+        var developerPerms = new[]
         {
-            Id = Guid.Parse("00000000-0000-0000-0000-000000000101"),
-            Code = "fabric:read", Name = "查看面料开发", CreatedAt = now
-        };
-        var fabricWrite = new Permission
-        {
-            Id = Guid.Parse("00000000-0000-0000-0000-000000000102"),
-            Code = "fabric:write", Name = "录入/编辑面料开发", CreatedAt = now
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-000000000301"), Code = "fabric:read", Name = "查看面料开发", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-000000000302"), Code = "fabric:create", Name = "录入面料开发", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-000000000303"), Code = "fabric:update", Name = "编辑面料开发", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-000000000304"), Code = "fabric:delete", Name = "删除面料开发", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-000000000305"), Code = "material:read", Name = "查看原料物料", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-000000000309"), Code = "equipment:read", Name = "查看设备", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-00000000030d"), Code = "customer:read", Name = "查看客户", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-000000000311"), Code = "color:read", Name = "查看颜色对色", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-000000000315"), Code = "product:read", Name = "查看产品", CreatedAt = now },
+            new Permission { Id = Guid.Parse("00000000-0000-0000-0000-00000000032a"), Code = "system:audit:read", Name = "查看审计日志", CreatedAt = now }
         };
 
         // ── 角色 ──
@@ -135,7 +139,7 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
             Id = DeveloperRoleId,
             Name = "开发员", Code = "developer",
             Description = "面料开发相关权限",
-            Permissions = [fabricRead, fabricWrite], CreatedAt = now
+            Permissions = [..developerPerms], CreatedAt = now
         };
 
         // ── 用户 ──
