@@ -22,19 +22,19 @@ public class ProcessDto : ProcessListItemDto
 /// <summary>新建工序请求。Code 不在此处——由系统在事务内生成。</summary>
 public record CreateProcessRequest
 {
-    public string Name { get; set; } = string.Empty;
-    public string? Category { get; set; }
-    public int SortOrder { get; set; } = 0;
-    public string? Remark { get; set; }
-    public bool IsActive { get; set; } = true;
+    public string Name { get; init; } = string.Empty;
+    public string? Category { get; init; }
+    public int SortOrder { get; init; } = 0;
+    public string? Remark { get; init; }
+    public bool IsActive { get; init; } = true;
 }
 
 /// <summary>编辑工序请求（字段同 Create，独立类以便 FluentValidation 区分规则）。</summary>
 public record UpdateProcessRequest
 {
-    public string Name { get; set; } = string.Empty;
-    public string? Category { get; set; }
-    public int SortOrder { get; set; } = 0;
-    public string? Remark { get; set; }
-    public bool IsActive { get; set; } = true;
+    public string Name { get; init; } = string.Empty;
+    public string? Category { get; init; }
+    public int SortOrder { get; init; } = 0;
+    public string? Remark { get; init; }
+    public bool IsActive { get; init; } = true;
 }
