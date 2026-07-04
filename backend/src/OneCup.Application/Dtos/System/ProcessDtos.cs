@@ -20,7 +20,7 @@ public class ProcessDto : ProcessListItemDto
 }
 
 /// <summary>新建工序请求。Code 不在此处——由系统在事务内生成。</summary>
-public class CreateProcessRequest
+public record CreateProcessRequest
 {
     public string Name { get; set; } = string.Empty;
     public string? Category { get; set; }
@@ -30,7 +30,7 @@ public class CreateProcessRequest
 }
 
 /// <summary>编辑工序请求（字段同 Create，独立类以便 FluentValidation 区分规则）。</summary>
-public class UpdateProcessRequest
+public record UpdateProcessRequest
 {
     public string Name { get; set; } = string.Empty;
     public string? Category { get; set; }
