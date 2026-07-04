@@ -144,9 +144,13 @@ export default function CustomerPage() {
       .finally(() => closeLoading());
   }
   async function handleDelete(record: CustomerListItem) {
-    await deleteCustomer(record.id);
-    Message.success(t['customer.message.deleteSuccess']);
-    fetchData();
+    try {
+      await deleteCustomer(record.id);
+      Message.success(t['customer.message.deleteSuccess']);
+      fetchData();
+    } catch {
+      // ignore
+    }
   }
 
   const columns = useMemo(

@@ -72,8 +72,8 @@ onChange 自动查询；重置按钮叫"刷新"；新建按钮用 `<span/>` hack
 
 | ID | 触发场景 | 必须走的标准 | 详情 |
 | --- | --- | --- | --- |
-| C01 | 任何"删除"操作（行内删除 / 批量删除 / 详情页删除） | 按"可逆性 + 影响范围"选 Popconfirm 或 Modal | docs/conventions/c01-delete-confirm.md |
-| C02 | 创建带编号的业务对象（颜色 / 客户 / 商品 / 计量单位等） | 走"取预览 → 只读展示 → null 则禁用表单 + 提示"流程 | docs/conventions/c02-numbered-object-create.md |
+| c01 | 任何"删除"操作（行内删除 / 批量删除 / 详情页删除） | 按"可逆性 + 影响范围"选 Popconfirm 或 Modal | docs/conventions/c01-delete-confirm.md |
+| c02 | 创建带编号的业务对象（颜色 / 客户 / 商品 / 计量单位等） | 走"取预览 → 只读展示 → null 则禁用表单 + 提示"流程 | docs/conventions/c02-numbered-object-create.md |
 
 ### 实施规则（不可绕过）
 
@@ -84,7 +84,7 @@ onChange 自动查询；重置按钮叫"刷新"；新建按钮用 `<span/>` hack
 3. **新增标准**：当用户描述"期望的工作流"或指出不一致时，先把它沉淀成一条
    新的 Convention（加一行表 + 建详情文件），再实现。不要只停留在对话里。
 4. **引用而非复述**：实现某功能时，在回复里引用命中的标准 ID（如"本次删除
-   操作按 C01 走 Popconfirm"），方便用户核对。
+   操作按 c01 走 Popconfirm"），方便用户核对。
 
 > 新增标准的完整步骤见 `docs/conventions/README.md`。标准采用渐进式成长：
 > 初版至少写"适用边界"和"决策树"，参考实现与反模式可后补。
