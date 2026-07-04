@@ -14,6 +14,7 @@ const UserPage = lazy(() => import('@/pages/system/user'));
 const RolePage = lazy(() => import('@/pages/system/role'));
 const PermissionPage = lazy(() => import('@/pages/system/permission'));
 const CustomerPage = lazy(() => import('@/pages/business/customer'));
+const ProcessPage = lazy(() => import('@/pages/business/process'));
 const NumberingPage = lazy(() => import('@/pages/system/numbering'));
 const OperationLogPage = lazy(() => import('@/pages/system/operation-log'));
 const LoginLogPage = lazy(() => import('@/pages/system/login-log'));
@@ -98,6 +99,14 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RequirePermission resource="customer" actions={['read']}>
             <CustomerPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'business/process',
+        element: withSuspense(
+          <RequirePermission resource="process" actions={['read']}>
+            <ProcessPage />
           </RequirePermission>
         ),
       },
