@@ -21,6 +21,8 @@ export default {
   'customer.button.delete': 'Delete',
   'customer.form.title.create': 'New Customer',
   'customer.form.title.edit': 'Edit Customer',
+  'customer.form.code': 'Customer Code',
+  'customer.form.code.placeholder': 'Auto-generated on create',
   'customer.form.name': 'Name',
   'customer.form.shortName': 'Short Name',
   'customer.form.contactPerson': 'Contact',

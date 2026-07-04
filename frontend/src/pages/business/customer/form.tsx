@@ -92,6 +92,14 @@ export default function CustomerFormModal({
     >
       {errorMsg && <Alert type="error" content={errorMsg} style={{ marginBottom: 16 }} />}
       <Form form={form} layout="vertical">
+        <FormItem label={t['customer.form.code']}>
+          <Input
+            value={editing?.code}
+            readOnly={!!editing}
+            placeholder={t['customer.form.code.placeholder']}
+            disabled={!editing}
+          />
+        </FormItem>
         <FormItem label={t['customer.form.name']} field="name" rules={[{ required: true }]}>
           <Input maxLength={100} />
         </FormItem>

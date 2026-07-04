@@ -21,6 +21,8 @@ export default {
   'customer.button.delete': '删除',
   'customer.form.title.create': '新建客户',
   'customer.form.title.edit': '编辑客户',
+  'customer.form.code': '客户编号',
+  'customer.form.code.placeholder': '创建时自动生成',
   'customer.form.name': '客户名称',
   'customer.form.shortName': '客户简称',
   'customer.form.contactPerson': '联系人',
