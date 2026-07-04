@@ -1,5 +1,7 @@
 const i18n = {
   'en-US': {
+    'menu.business': 'Business',
+    'menu.business.customer': 'Customer',
     'menu.system': 'System',
     'menu.system.user': 'Users',
     'menu.system.role': 'Roles',
@@ -10,6 +12,7 @@ const i18n = {
     'menu.system.loginLog': 'Login Log',
     'menu.masterData': 'Master Data',
     'menu.masterData.color': 'Color Management',
+    'menu.system.unit': 'Units',
     'navbar.logout': 'Logout',
     'settings.navbar.theme.toLight': 'Click to use light mode',
     'settings.navbar.theme.toDark': 'Click to use dark mode',
@@ -17,6 +20,8 @@ const i18n = {
     'navbar.search.placeholder': 'Please search',
   },
   'zh-CN': {
+    'menu.business': '业务管理',
+    'menu.business.customer': '客户',
     'menu.system': '系统管理',
     'menu.system.user': '用户管理',
     'menu.system.role': '角色管理',
@@ -27,6 +32,7 @@ const i18n = {
     'menu.system.loginLog': '登录日志',
     'menu.masterData': '基础设置',
     'menu.masterData.color': '颜色管理',
+    'menu.system.unit': '计量单位',
     'navbar.logout': '退出登录',
     'settings.navbar.theme.toLight': '点击切换为亮色模式',
     'settings.navbar.theme.toDark': '点击切换为暗黑模式',

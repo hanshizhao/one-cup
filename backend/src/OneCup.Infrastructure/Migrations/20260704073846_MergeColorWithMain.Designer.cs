@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OneCup.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using OneCup.Infrastructure.Persistence;
 namespace OneCup.Infrastructure.Migrations
 {
     [DbContext(typeof(OneCupDbContext))]
-    partial class OneCupDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260704073846_MergeColorWithMain")]
+    partial class MergeColorWithMain
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1434,7 +1437,7 @@ namespace OneCup.Infrastructure.Migrations
 
                     b.HasIndex("permission_id");
 
-                    b.ToTable("role_permissions", (string)null);
+                    b.ToTable("role_permissions");
 
                     b.HasData(
                         new
@@ -1491,7 +1494,7 @@ namespace OneCup.Infrastructure.Migrations
 
                     b.HasIndex("role_id");
 
-                    b.ToTable("user_roles", (string)null);
+                    b.ToTable("user_roles");
 
                     b.HasData(
                         new

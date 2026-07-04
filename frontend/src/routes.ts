@@ -15,6 +15,19 @@ export type IRoute = AuthParams & {
 
 export const routes: IRoute[] = [
   {
+    name: 'menu.business',
+    key: 'business',
+    children: [
+      {
+        name: 'menu.business.customer',
+        key: 'business/customer',
+        requiredPermissions: [
+          { resource: 'customer', actions: ['read'] },
+        ],
+      },
+    ],
+  },
+  {
     name: 'menu.system',
     key: 'system',
     children: [
@@ -55,6 +68,13 @@ export const routes: IRoute[] = [
         key: 'system/login-log',
         requiredPermissions: [
           { resource: 'system:audit', actions: ['view'] },
+        ],
+      },
+      {
+        name: 'menu.system.unit',
+        key: 'system/unit',
+        requiredPermissions: [
+          { resource: 'system:unit', actions: ['view'] },
         ],
       },
     ],
