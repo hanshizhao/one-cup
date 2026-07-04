@@ -16,6 +16,7 @@ const PermissionPage = lazy(() => import('@/pages/system/permission'));
 const NumberingPage = lazy(() => import('@/pages/system/numbering'));
 const OperationLogPage = lazy(() => import('@/pages/system/operation-log'));
 const LoginLogPage = lazy(() => import('@/pages/system/login-log'));
+const ColorPage = lazy(() => import('@/pages/master-data/color'));
 
 const PageFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
@@ -128,6 +129,14 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RequirePermission resource="system:audit" actions={['view']}>
             <LoginLogPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'master-data/color',
+        element: withSuspense(
+          <RequirePermission resource="color" actions={['read']}>
+            <ColorPage />
           </RequirePermission>
         ),
       },

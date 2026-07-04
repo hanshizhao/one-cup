@@ -59,6 +59,19 @@ export const routes: IRoute[] = [
       },
     ],
   },
+  {
+    name: 'menu.masterData',
+    key: 'master-data',
+    children: [
+      {
+        name: 'menu.masterData.color',
+        key: 'master-data/color',
+        requiredPermissions: [
+          { resource: 'color', actions: ['read'] },
+        ],
+      },
+    ],
+  },
 ];
 
 const useRoute = (userPermission: UserPermission): [IRoute[], string] => {
