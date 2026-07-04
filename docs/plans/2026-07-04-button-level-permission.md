@@ -728,6 +728,8 @@ git commit -m "feat(role): 写按钮接入PermissionWrapper(create/update/delete
 
 ### Task 11: system/numbering 及 dict 页写按钮接入权限
 
+> **注意(menu-hierarchy 同步后):** numbering 页面**源码仍在 `pages/system/numbering/`**(menu-hierarchy 只迁移了路由 path 到 `master-data/numbering`,未移动源文件)。resource 仍是 `system:numbering`。不要因路由路径变化而改动文件路径。
+
 **Files:**
 - Modify: `frontend/src/pages/system/numbering/index.tsx`
 - Modify: `frontend/src/pages/system/numbering/dict/index.tsx`
@@ -769,6 +771,8 @@ git commit -m "feat(numbering): 规则/字典写按钮接入PermissionWrapper"
 ---
 
 ### Task 12: system/unit 页写按钮接入权限
+
+> **注意(menu-hierarchy 同步后):** unit 页面**源码仍在 `pages/system/unit/`**(menu-hierarchy 只迁移了路由 path 到 `master-data/unit`,未移动源文件)。resource 仍是 `system:unit`。不要因路由路径变化而改动文件路径。
 
 **Files:**
 - Modify: `frontend/src/pages/system/unit/index.tsx`
@@ -913,33 +917,37 @@ git commit -m "feat(role): 权限分配树两级嵌套+动作中文化"
 
 ### Task 15: 菜单/路由 requiredPermissions 对齐 :read + 修复 permission 路由 bug
 
+> **注意(menu-hierarchy 同步后):** numbering/unit 的**菜单 key 与路由 path 已迁移到 master-data 域**(`master-data/numbering`、`master-data/unit`),但其 `<RequirePermission>` 的 resource/actions 仍是 `system:numbering`/`system:unit`(menu-hierarchy 只移了路径,没改权限码)。本 task 改的是 actions(`view`→`read`),不改路径。customer/color 路径不变。
+
 **Files:**
-- Modify: `frontend/src/routes.ts:16-95`
-- Modify: `frontend/src/router.tsx:96-160`
+- Modify: `frontend/src/routes.ts`
+- Modify: `frontend/src/router.tsx`
 
 - [ ] **Step 1: 更新 routes.ts 的 requiredPermissions**
 
-逐项修改 `routes.ts`:
-- `system/user`(`:38`)`actions: ['manage']` → `['read']`
-- `system/role`(`:45`)`actions: ['manage']` → `['read']`
-- `system/permission`(`:48-51`)补 `requiredPermissions: [{ resource: 'system:role', actions: ['read'] }]`
-- `system/numbering`(`:56`)`actions: ['view']` → `['read']`
-- `system/operation-log`(`:63`)`actions: ['view']` → `['read']`
-- `system/login-log`(`:70`)`actions: ['view']` → `['read']`
-- `system/unit`(`:77`)`actions: ['view']` → `['read']`
-- `business/customer`、`master-data/color` 不变(已是 read)
+逐项修改 `routes.ts`(行号以当前文件为准,编号见下方):
+- `business/customer`(`:25`)已是 `['read']`,不变
+- `master-data/color`(`:38`)已是 `['read']`,不变
+- `master-data/numbering`(`:45`)`actions: ['view']` → `['read']`(resource 仍是 `system:numbering`)
+- `master-data/unit`(`:52`)`actions: ['view']` → `['read']`(resource 仍是 `system:unit`)
+- `system/user`(`:65`)`actions: ['manage']` → `['read']`
+- `system/role`(`:72`)`actions: ['manage']` → `['read']`
+- `system/permission`(`:75-78`,当前无 requiredPermissions)补 `requiredPermissions: [{ resource: 'system:role', actions: ['read'] }]`
+- `system/operation-log`(`:83`)`actions: ['view']` → `['read']`
+- `system/login-log`(`:90`)`actions: ['view']` → `['read']`
 
 - [ ] **Step 2: 同步更新 router.tsx 的 RequirePermission**
 
-`router.tsx:96-160` 逐项与 routes.ts 对齐:
+`router.tsx` 逐项与 routes.ts 对齐(改 actions,不改 path):
+- `business/customer`(`:99`)已是 `['read']`,不变
+- `master-data/color`(`:148`)已是 `['read']`,不变
+- `master-data/numbering`(`:124`,path=`master-data/numbering`)`actions={['view']}` → `['read']`
+- `master-data/unit`(`:156`,path=`master-data/unit`)`actions={['view']}` → `['read']`
 - `system/user`(`:107`)`actions={['manage']}` → `['read']`
 - `system/role`(`:115`)`actions={['manage']}` → `['read']`
-- `system/permission`(`:120`)从裸 `<PermissionPage />` 改为 `<RequirePermission resource="system:role" actions={['read']}><PermissionPage /></RequirePermission>`
-- `system/numbering`(`:124`)`actions={['view']}` → `['read']`
+- `system/permission`(`:120`,当前裸 `<PermissionPage />`)改为 `<RequirePermission resource="system:role" actions={['read']}><PermissionPage /></RequirePermission>`
 - `system/operation-log`(`:132`)`actions={['view']}` → `['read']`
 - `system/login-log`(`:140`)`actions={['view']}` → `['read']`
-- `system/unit`(`:156`)`actions={['view']}` → `['read']`
-- `business/customer`、`master-data/color` 不变
 
 - [ ] **Step 3: 验证编译**
 
