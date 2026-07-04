@@ -28,7 +28,7 @@
 
 | 模块 | 功能 |
 |------|------|
-| **单位字典** | 单表 + 完整 CRUD（列表/详情/新增/编辑/启停）+ 种子迁移 19 个默认单位 |
+| **单位字典** | 单表 + 完整 CRUD（列表/详情/新增/编辑/启停）+ 种子迁移 20 个默认单位 |
 | **同类换算** | 后端换算计算接口（无副作用），同类单位中转换算 |
 | **前端管理页** | 标准查询表格页 + 新建/编辑 Drawer + 换算 Drawer |
 
@@ -46,7 +46,7 @@
 - 同类单位换算正确：`10 yard = 9.144 meter`、`10 tex = 90 denier`。
 - 跨类换算被拒并返回友好错误。
 - 基准单位约束生效：每类别有且仅有一个基准，停用基准被拒。
-- 种子 19 个单位迁移后即可用，覆盖印染厂主流计量场景。
+- 种子 20 个单位迁移后即可用，覆盖印染厂主流计量场景。
 
 ---
 
@@ -326,12 +326,12 @@ result = quantity × factor(from) / factor(to)
 
 ### 5.1 一次迁移 `AddUnitModule`
 
-建 `measurement_units` 表（带 code 唯一索引 + category 普通索引）+ 种子 19 个单位 + 2 个权限。
+建 `measurement_units` 表（带 code 唯一索引 + category 普通索引）+ 种子 20 个单位 + 2 个权限。
 
 > EF 命令：`dotnet ef migrations add AddUnitModule --project src/OneCup.Infrastructure --startup-project src/OneCup.Api`
 > （遵循 parallel-dev-contract §3.2，迁移命名防撞名）
 
-### 5.2 种子单位（19 个，6 类）
+### 5.2 种子单位（20 个，6 类）
 
 全部 `is_active=true`，`created_at` 用 DbContext 的 `SeedTimestamp`（2026-07-01）：
 
@@ -471,7 +471,7 @@ public static readonly Guid PermUnitWrite = Guid.Parse("00000000-0000-0000-0000-
 ### 8.2 后端共享文件修改（4，严格按 parallel-dev-contract §3）
 
 - `OneCup.Infrastructure/Persistence/SeedData.cs` — 追加 `PermUnitRead=...121`、`PermUnitWrite=...122`
-- `OneCup.Infrastructure/Persistence/OneCupDbContext.cs` — 追加 `DbSet<MeasurementUnit>` + `Seed()` 末尾追加 19 个单位 + 2 个权限
+- `OneCup.Infrastructure/Persistence/OneCupDbContext.cs` — 追加 `DbSet<MeasurementUnit>` + `Seed()` 末尾追加 20 个单位 + 2 个权限
 - `OneCup.Api/Program.cs` — 追加 DI 注册 + 2 个授权策略（`unit-view`/`unit-manage`）
 - `OneCup.Infrastructure/Migrations/<timestamp>_AddUnitModule.cs`（+ Designer + ModelSnapshot 自动刷新）
 
