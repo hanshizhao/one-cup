@@ -1,5 +1,7 @@
 const i18n = {
   'en-US': {
+    'menu.business': 'Business',
+    'menu.business.customer': 'Customer',
     'menu.system': 'System',
     'menu.system.user': 'Users',
     'menu.system.role': 'Roles',
@@ -15,6 +17,8 @@ const i18n = {
     'navbar.search.placeholder': 'Please search',
   },
   'zh-CN': {
+    'menu.business': '业务管理',
+    'menu.business.customer': '客户',
     'menu.system': '系统管理',
     'menu.system.user': '用户管理',
     'menu.system.role': '角色管理',

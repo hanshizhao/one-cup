@@ -13,6 +13,7 @@ import RequirePermission from '@/components/RequirePermission';
 const UserPage = lazy(() => import('@/pages/system/user'));
 const RolePage = lazy(() => import('@/pages/system/role'));
 const PermissionPage = lazy(() => import('@/pages/system/permission'));
+const CustomerPage = lazy(() => import('@/pages/business/customer'));
 const NumberingPage = lazy(() => import('@/pages/system/numbering'));
 const OperationLogPage = lazy(() => import('@/pages/system/operation-log'));
 const LoginLogPage = lazy(() => import('@/pages/system/login-log'));
@@ -90,6 +91,14 @@ export const router = createBrowserRouter([
     loader: authLoader,
     children: [
       { index: true, element: <Navigate to="/system/user" replace /> },
+      {
+        path: 'business/customer',
+        element: withSuspense(
+          <RequirePermission resource="customer" actions={['read']}>
+            <CustomerPage />
+          </RequirePermission>
+        ),
+      },
       {
         path: 'system/user',
         element: withSuspense(
