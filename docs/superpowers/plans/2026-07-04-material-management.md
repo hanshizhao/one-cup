@@ -19,7 +19,7 @@
 - **前端列表页必须从 `docs/specs/templates/query-table-page.template.tsx` 复制改造**(AGENTS.md 强制),不从零手写。
 - **删除走 Convention c01**(单条物理删除 → Popconfirm);**新建走 Convention c02**(previewCode → 只读回填 → 无规则禁用表单)。
 - **UnitId 仅 FK 无导航属性**(设计 1.2 节决策);外键级联 = Restrict。
-- **后端构建**:`dotnet build backend/OneCup.sln`;**测试**:`dotnet test backend/OneCup.sln`;**前端构建**:`cd frontend && npm run build`。
+- **后端构建**:`dotnet build backend/OneCup.slnx`;**测试**:`dotnet test backend/OneCup.slnx`;**前端构建**:`cd frontend && npm run build`。
 - **后端校验用 FluentValidation**(对齐 Customer,非 Color):`CreateMaterialRequestValidator`/`UpdateMaterialRequestValidator` 两个 `AbstractValidator` 类,MaterialService 构造函数注入 `IValidator<Create/UpdateMaterialRequest>` 并在 Create/Update 首行调 `EnsureValidAsync`。校验器由 Program.cs:66 `AddValidatorsFromAssembly` 自动注册,无需改 Program.cs。
 - **Update 走整表覆盖式 PUT,不做 null-skip**(对齐 CustomerService.UpdateAsync):UpdateDto 可空字段(`UnitId`/`Remark` 等)的 `null` 表示"置空"而非"不修改",否则前端清空可选字段会失效。必填字段(`Name`/`Spec`/`Category`)的 `null` 防御性保持原值(`request.X ?? entity.X`)。
 
@@ -160,7 +160,7 @@ public class MaterialConfiguration : IEntityTypeConfiguration<Material>
 
 - [ ] **Step 3: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED(此时实体/配置未被 DbContext 发现,但能编译通过;DbSet 在 Task 8 加)。
 
 - [ ] **Step 4: Commit**
@@ -233,7 +233,7 @@ public class MaterialDto
 
 - [ ] **Step 2: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 3: Commit**
@@ -305,7 +305,7 @@ public class UpdateMaterialRequestValidator : AbstractValidator<UpdateMaterialRe
 
 - [ ] **Step 3: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 4: Commit**
@@ -394,7 +394,7 @@ public class MaterialByCodeSpec : Specification<Material>
 
 - [ ] **Step 2: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 3: Commit**
@@ -451,7 +451,7 @@ public interface IMaterialService
 
 - [ ] **Step 2: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 3: Commit**
@@ -637,7 +637,7 @@ public class MaterialService : IMaterialService
 
 - [ ] **Step 2: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 3: Commit**
@@ -749,7 +749,7 @@ public class MaterialController : ControllerBase
 
 - [ ] **Step 2: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 3: Commit**
@@ -813,7 +813,7 @@ git commit -m "feat(material): MaterialController(api/materials)"
 
 - [ ] **Step 3: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 4: Commit**
@@ -853,7 +853,7 @@ Expected: `Done.`(迁移成功应用,materials 表创建)。
 
 - [ ] **Step 3: 编译验证**
 
-Run: `dotnet build backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 4: Commit**
@@ -1143,7 +1143,7 @@ internal sealed class FakeNumberingService : INumberingService
 
 - [ ] **Step 2: 运行测试验证通过**
 
-Run: `dotnet test backend/OneCup.sln --filter "FullyQualifiedName~OneCup.UnitTests.Material"`
+Run: `dotnet test backend/OneCup.slnx --filter "FullyQualifiedName~OneCup.UnitTests.Material"`
 Expected: 全部 PASS(16 个测试用例)
 
 - [ ] **Step 3: Commit**
@@ -1314,12 +1314,12 @@ public class MaterialSpecsTests
 
 - [ ] **Step 2: 运行测试验证通过**
 
-Run: `dotnet test backend/OneCup.sln --filter "FullyQualifiedName~OneCup.UnitTests.Material"`
+Run: `dotnet test backend/OneCup.slnx --filter "FullyQualifiedName~OneCup.UnitTests.Material"`
 Expected: 全部 PASS(MaterialService 16 + MaterialSpecs 7 = 23 个测试用例)
 
 - [ ] **Step 3: 后端全量构建 + 测试**
 
-Run: `dotnet build backend/OneCup.sln && dotnet test backend/OneCup.sln`
+Run: `dotnet build backend/OneCup.slnx && dotnet test backend/OneCup.slnx`
 Expected: BUILD SUCCEEDED + 全部测试 PASS(含新增 20 + 既有测试无回归)
 
 - [ ] **Step 4: Commit**
@@ -2286,8 +2286,8 @@ git commit -m "feat(material): 路由 + 菜单 + 全局文案接入"
 
 Run:
 ```bash
-dotnet build backend/OneCup.sln
-dotnet test backend/OneCup.sln
+dotnet build backend/OneCup.slnx
+dotnet test backend/OneCup.slnx
 ```
 Expected: BUILD SUCCEEDED + 全部测试 PASS(新增 23 + 既有无回归)
 
