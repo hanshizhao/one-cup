@@ -24,7 +24,7 @@ public class NumberingController : ControllerBase
         _numberingService = numberingService;
     }
 
-    // ── 规则管理（view 可查，manage 可改）──
+    // ── 规则管理（read 可查，create/update 可改）──
 
     [HttpGet("rules")]
     [Authorize(Policy = "system:numbering:read")]
@@ -82,7 +82,7 @@ public class NumberingController : ControllerBase
         return Ok(new PreviewCodeResult { Code = code });
     }
 
-    // ── 生成日志（view 可查）──
+    // ── 生成日志（read 可查）──
 
     [HttpGet("logs")]
     [Authorize(Policy = "system:numbering:read")]
