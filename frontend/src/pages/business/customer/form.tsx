@@ -13,6 +13,7 @@ import {
   createCustomer,
   updateCustomer,
 } from '@/api/customer';
+import { previewCode } from '@/api/numbering';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
 
@@ -34,11 +35,19 @@ export default function CustomerFormModal({
   const [form] = Form.useForm();
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  // 新建模式：预览下一个客户编号（不消耗计数）。null = 无启用规则 / 预览中。
+  const [previewedCode, setPreviewedCode] = useState<string | null>(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  // 无编号规则：阻塞新建（用户填了也提交不了）
+  const [noRule, setNoRule] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setErrorMsg('');
+      setNoRule(false);
       if (editing) {
+        // 编辑模式：展示实际编号
+        setPreviewedCode(editing.code);
         form.setFieldsValue({
           name: editing.name,
           shortName: editing.shortName,
@@ -48,6 +57,21 @@ export default function CustomerFormModal({
           isActive: editing.isActive,
         });
       } else {
+        // 新建模式：预览下一个编号（只读，不消耗计数）
+        setPreviewedCode(null);
+        setCodeLoading(true);
+        previewCode('customer')
+          .then((res) => {
+            // null 表示无启用规则 → 阻塞新建
+            if (res.code) {
+              setPreviewedCode(res.code);
+              setNoRule(false);
+            } else {
+              setNoRule(true);
+            }
+          })
+          .catch(() => setNoRule(true))
+          .finally(() => setCodeLoading(false));
         form.resetFields();
         form.setFieldValue('isActive', true);
       }
@@ -88,16 +112,19 @@ export default function CustomerFormModal({
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={confirmLoading}
+      okButtonProps={{ disabled: noRule }}
       unmountOnExit
     >
+      {noRule && (
+        <Alert type="warning" content={t['customer.form.noRule.block']} style={{ marginBottom: 16 }} />
+      )}
       {errorMsg && <Alert type="error" content={errorMsg} style={{ marginBottom: 16 }} />}
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" disabled={noRule}>
         <FormItem label={t['customer.form.code']}>
           <Input
-            value={editing?.code}
-            readOnly={!!editing}
-            placeholder={t['customer.form.code.placeholder']}
-            disabled={!editing}
+            value={previewedCode ?? undefined}
+            readOnly
+            placeholder={codeLoading ? t['customer.form.code.previewing'] : t['customer.form.code.placeholder']}
           />
         </FormItem>
         <FormItem label={t['customer.form.name']} field="name" rules={[{ required: true }]}>

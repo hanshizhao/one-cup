@@ -23,6 +23,8 @@ export default {
   'customer.form.title.edit': 'Edit Customer',
   'customer.form.code': 'Customer Code',
   'customer.form.code.placeholder': 'Auto-generated on create',
+  'customer.form.code.previewing': 'Previewing code…',
+  'customer.form.noRule.block': 'No active numbering rule configured for customer. Please configure one in "Numbering" first, then return here to create a customer.',
   'customer.form.name': 'Name',
   'customer.form.shortName': 'Short Name',
   'customer.form.contactPerson': 'Contact',

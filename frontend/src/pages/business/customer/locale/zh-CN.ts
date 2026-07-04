@@ -23,6 +23,8 @@ export default {
   'customer.form.title.edit': '编辑客户',
   'customer.form.code': '客户编号',
   'customer.form.code.placeholder': '创建时自动生成',
+  'customer.form.code.previewing': '编号预览中…',
+  'customer.form.noRule.block': '检测到尚未为客户配置编号规则，无法新建客户。请先到「编号管理」为客户配置一条启用的编号规则，再回来新建。',
   'customer.form.name': '客户名称',
   'customer.form.shortName': '客户简称',
   'customer.form.contactPerson': '联系人',
