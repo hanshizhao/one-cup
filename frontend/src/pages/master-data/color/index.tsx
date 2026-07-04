@@ -8,7 +8,7 @@ import useLocale from '@/utils/useLocale';
 import PermissionWrapper from '@/components/PermissionWrapper';
 import {
   getColors, createColor, updateColor, updateColorStatus,
-  Color, CreateColorRequest,
+  Color,
 } from '@/api/color';
 import { useNumberingPreview } from '@/components/Numbering/useNumberingPreview';
 import CategorySelect from '@/components/Numbering/CategorySelect';
@@ -248,14 +248,14 @@ export default function ColorPage() {
         visible={drawerVisible}
         onOk={handleDrawerOk}
         onCancel={() => setDrawerVisible(false)}
-        okButtonProps={{ disabled: preview.noRule }}
+        okButtonProps={{ disabled: editMode === 'create' && preview.noRule }}
         width={440}
         unmountOnExit
       >
-        {preview.noRule && (
+        {editMode === 'create' && preview.noRule && (
           <Alert type="warning" content={t['color.form.noRule.block']} style={{ marginBottom: 16 }} />
         )}
-        <Form form={form} layout="vertical" disabled={preview.noRule}>
+        <Form form={form} layout="vertical" disabled={editMode === 'create' && preview.noRule}>
           <FormItem label={t['color.form.code']}>
             <Input
               value={(editMode === 'edit' ? editingCode : preview.code) ?? undefined}
