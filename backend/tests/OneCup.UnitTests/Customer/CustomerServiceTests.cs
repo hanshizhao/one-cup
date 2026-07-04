@@ -216,6 +216,6 @@ internal sealed class FakeNumberingService : INumberingService
     public string NextCode { get; set; } = "CUST-0001";
     public Task<string> GenerateAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
         => Task.FromResult(NextCode);
-    public Task<string?> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
-        => Task.FromResult<string?>(NextCode);
+    public Task<PreviewResult> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
+        => Task.FromResult(new PreviewResult { Code = NextCode, IncludeCategory = false });
 }
