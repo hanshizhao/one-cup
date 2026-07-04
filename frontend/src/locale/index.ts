@@ -20,7 +20,7 @@ const i18n = {
   },
   'zh-CN': {
     'menu.business': '业务资料',
-    'menu.business.customer': '客户',
+    'menu.business.customer': '客户管理',
     'menu.system': '系统管理',
     'menu.system.user': '用户管理',
     'menu.system.role': '角色管理',
@@ -30,7 +30,7 @@ const i18n = {
     'menu.system.loginLog': '登录日志',
     'menu.masterData': '基础设置',
     'menu.masterData.color': '颜色管理',
-    'menu.masterData.unit': '计量单位',
+    'menu.masterData.unit': '单位管理',
     'navbar.logout': '退出登录',
     'settings.navbar.theme.toLight': '点击切换为亮色模式',
     'settings.navbar.theme.toDark': '点击切换为暗黑模式',
