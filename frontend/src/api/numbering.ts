@@ -71,7 +71,7 @@ export function updateNumberingRuleStatus(id: string, isActive: boolean) {
 
 // ── 预览 ──
 export function previewCode(targetType: string, categoryCode?: string) {
-  return request.get<unknown, { code: string | null; note: string }>('/api/numbering/preview', {
+  return request.get<unknown, { code: string | null; includeCategory: boolean; note: string }>('/api/numbering/preview', {
     params: { targetType, categoryCode },
   });
 }
