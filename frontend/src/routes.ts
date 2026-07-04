@@ -70,6 +70,13 @@ export const routes: IRoute[] = [
           { resource: 'system:audit', actions: ['view'] },
         ],
       },
+      {
+        name: 'menu.system.unit',
+        key: 'system/unit',
+        requiredPermissions: [
+          { resource: 'system:unit', actions: ['view'] },
+        ],
+      },
     ],
   },
 ];

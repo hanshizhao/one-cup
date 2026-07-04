@@ -41,4 +41,8 @@ internal static class SeedData
     public static readonly Guid TargetTypeCustomer = Guid.Parse("00000000-0000-0000-0000-000000000204");
     public static readonly Guid TargetTypeColor = Guid.Parse("00000000-0000-0000-0000-000000000205");
     public static readonly Guid TargetTypeProduct = Guid.Parse("00000000-0000-0000-0000-000000000206");
+
+    // ===== Unit 模块（计量单位） =====
+    public static readonly Guid PermUnitRead = Guid.Parse("00000000-0000-0000-0000-000000000121");
+    public static readonly Guid PermUnitWrite = Guid.Parse("00000000-0000-0000-0000-000000000122");
 }

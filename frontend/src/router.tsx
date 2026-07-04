@@ -17,6 +17,7 @@ const CustomerPage = lazy(() => import('@/pages/business/customer'));
 const NumberingPage = lazy(() => import('@/pages/system/numbering'));
 const OperationLogPage = lazy(() => import('@/pages/system/operation-log'));
 const LoginLogPage = lazy(() => import('@/pages/system/login-log'));
+const UnitPage = lazy(() => import('@/pages/system/unit'));
 
 const PageFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
@@ -137,6 +138,14 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RequirePermission resource="system:audit" actions={['view']}>
             <LoginLogPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'system/unit',
+        element: withSuspense(
+          <RequirePermission resource="system:unit" actions={['view']}>
+            <UnitPage />
           </RequirePermission>
         ),
       },

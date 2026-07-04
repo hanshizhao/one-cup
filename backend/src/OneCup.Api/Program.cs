@@ -110,6 +110,8 @@ builder.Services.AddScoped<INumberingService, NumberingService>();
 builder.Services.AddScoped<INumberingRuleService, NumberingRuleService>();
 builder.Services.AddScoped<INumberingDictionaryService, NumberingDictionaryService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+// ===== Unit 模块 =====
+builder.Services.AddScoped<IMeasurementUnitService, MeasurementUnitService>();
 
 // ── 依赖注入:认证相关服务 ─────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -158,6 +160,11 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("perm_codes", "customer:read"));
     options.AddPolicy("customer-write", policy =>
         policy.RequireClaim("perm_codes", "customer:write"));
+    // ===== Unit 模块 =====
+    options.AddPolicy("unit-view", policy =>
+        policy.RequireClaim("perm_codes", "system:unit:view"));
+    options.AddPolicy("unit-manage", policy =>
+        policy.RequireClaim("perm_codes", "system:unit:manage"));
 });
 
 // 权限拒绝审计日志:装饰默认 handler,在 403 时记 Warning
