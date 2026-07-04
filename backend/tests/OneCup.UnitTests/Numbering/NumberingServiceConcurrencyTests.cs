@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Enums;
 using OneCup.Domain.Exceptions;
@@ -14,12 +15,21 @@ namespace OneCup.UnitTests.Numbering;
 ///
 /// 双模式连接：
 /// 1. 若设了环境变量 NUMBERING_TEST_PG，用它作为连接串（连已运行的 PG，如云上开发库）。
-///    强烈建议指向独立测试库（如 onecup_numbering_test），避免污染开发数据。
+///    必须指向独立测试库（库名以 _test 结尾，如 onecup_numbering_test），避免污染开发/生产数据。
 ///    每个测试类实例会先 DROP+CREATE 该库的表（EnsureDeleted + EnsureCreated），保证干净。
 /// 2. 否则回退 Testcontainers（需要本机 Docker）。
+///
+/// 安全护栏：连接串指向的库名必须严格等于 "numbering_test"，否则 InitializeAsync 直接抛异常，
+/// 防止误连业务库被 EnsureDeletedAsync 清空（每个测试方法都会执行 DROP）。
 /// </summary>
 public class NumberingServiceConcurrencyTests : IAsyncLifetime
 {
+    /// <summary>
+    /// 护栏白名单：NUMBERING_TEST_PG 模式下,库名必须匹配此模式(以 _test 结尾)。
+    /// 接受 onecup_numbering_test / numbering_test 等,拒绝误连业务库(如 onecup)。
+    /// </summary>
+    private const string RequiredTestDatabaseSuffix = "_test";
+
     private OneCupDbContext _db = null!;
     private NumberingService _svc = null!;
     private Guid _ruleId;
@@ -37,13 +47,25 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         {
             // 模式1：连已运行的 PG（云上/本地）。先 DROP 再 CREATE schema，保证每个测试类干净。
             _connectionString = envConn;
+
+            // ── 安全护栏 ──
+            // EnsureDeletedAsync 会 DROP 整个库。若误连生产库(如 onecup)将导致全队数据丢失。
+            // 强制校验库名必须以 _test 结尾(独立测试库),不匹配立即失败,绝不执行 DROP。
+            var dbName = new NpgsqlConnectionStringBuilder(_connectionString).Database;
+            if (string.IsNullOrEmpty(dbName) || !dbName.EndsWith(RequiredTestDatabaseSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"测试库护栏:NUMBERING_TEST_PG 指向的库名 '{dbName}' 不合法。"
+                    + $"必须指向独立测试库(库名以 '{RequiredTestDatabaseSuffix}' 结尾,如 onecup_numbering_test)。"
+                    + $"当前会被 DROP 重建,连业务库 = 删库事故。");
+            }
         }
         else
         {
-            // 模式2：Testcontainers 起独立容器（需 Docker）
+            // 模式2：Testcontainers 起独立容器（需 Docker）。容器库名须以 _test 结尾以通过护栏。
             _pg = new PostgreSqlBuilder()
                 .WithImage("postgres:17-alpine")
-                .WithDatabase("numbering_test")
+                .WithDatabase("onecup" + RequiredTestDatabaseSuffix)
                 .WithUsername("test")
                 .WithPassword("test")
                 .Build();

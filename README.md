@@ -64,6 +64,8 @@ dotnet run --project src/OneCup.Api
 
 后端默认运行在 `http://localhost:5000`。
 
+测试与本地开发详见 [backend/README.md](backend/README.md)。
+
 ### 前端
 
 ```bash
