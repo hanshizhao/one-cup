@@ -28,6 +28,33 @@ export const routes: IRoute[] = [
     ],
   },
   {
+    name: 'menu.masterData',
+    key: 'master-data',
+    children: [
+      {
+        name: 'menu.masterData.color',
+        key: 'master-data/color',
+        requiredPermissions: [
+          { resource: 'color', actions: ['read'] },
+        ],
+      },
+      {
+        name: 'menu.masterData.numbering',
+        key: 'master-data/numbering',
+        requiredPermissions: [
+          { resource: 'system:numbering', actions: ['view'] },
+        ],
+      },
+      {
+        name: 'menu.masterData.unit',
+        key: 'master-data/unit',
+        requiredPermissions: [
+          { resource: 'system:unit', actions: ['view'] },
+        ],
+      },
+    ],
+  },
+  {
     name: 'menu.system',
     key: 'system',
     children: [
@@ -50,13 +77,6 @@ export const routes: IRoute[] = [
         key: 'system/permission',
       },
       {
-        name: 'menu.system.numbering',
-        key: 'system/numbering',
-        requiredPermissions: [
-          { resource: 'system:numbering', actions: ['view'] },
-        ],
-      },
-      {
         name: 'menu.system.operationLog',
         key: 'system/operation-log',
         requiredPermissions: [
@@ -68,26 +88,6 @@ export const routes: IRoute[] = [
         key: 'system/login-log',
         requiredPermissions: [
           { resource: 'system:audit', actions: ['view'] },
-        ],
-      },
-      {
-        name: 'menu.system.unit',
-        key: 'system/unit',
-        requiredPermissions: [
-          { resource: 'system:unit', actions: ['view'] },
-        ],
-      },
-    ],
-  },
-  {
-    name: 'menu.masterData',
-    key: 'master-data',
-    children: [
-      {
-        name: 'menu.masterData.color',
-        key: 'master-data/color',
-        requiredPermissions: [
-          { resource: 'color', actions: ['read'] },
         ],
       },
     ],
