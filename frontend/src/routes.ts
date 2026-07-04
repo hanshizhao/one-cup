@@ -42,14 +42,14 @@ export const routes: IRoute[] = [
         name: 'menu.masterData.numbering',
         key: 'master-data/numbering',
         requiredPermissions: [
-          { resource: 'system:numbering', actions: ['view'] },
+          { resource: 'system:numbering', actions: ['read'] },
         ],
       },
       {
         name: 'menu.masterData.unit',
         key: 'master-data/unit',
         requiredPermissions: [
-          { resource: 'system:unit', actions: ['view'] },
+          { resource: 'system:unit', actions: ['read'] },
         ],
       },
     ],
@@ -62,32 +62,35 @@ export const routes: IRoute[] = [
         name: 'menu.system.user',
         key: 'system/user',
         requiredPermissions: [
-          { resource: 'system:user', actions: ['manage'] },
+          { resource: 'system:user', actions: ['read'] },
         ],
       },
       {
         name: 'menu.system.role',
         key: 'system/role',
         requiredPermissions: [
-          { resource: 'system:role', actions: ['manage'] },
+          { resource: 'system:role', actions: ['read'] },
         ],
       },
       {
         name: 'menu.system.permission',
         key: 'system/permission',
+        requiredPermissions: [
+          { resource: 'system:role', actions: ['read'] },
+        ],
       },
       {
         name: 'menu.system.operationLog',
         key: 'system/operation-log',
         requiredPermissions: [
-          { resource: 'system:audit', actions: ['view'] },
+          { resource: 'system:audit', actions: ['read'] },
         ],
       },
       {
         name: 'menu.system.loginLog',
         key: 'system/login-log',
         requiredPermissions: [
-          { resource: 'system:audit', actions: ['view'] },
+          { resource: 'system:audit', actions: ['read'] },
         ],
       },
     ],
