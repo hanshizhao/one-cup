@@ -71,7 +71,8 @@ public class MaterialServiceTests
     [Fact]
     public async Task CreateMaterialAsync_EmptyName_ThrowsValidation()
     {
-        // FluentValidation 拦截:Name 必填,空串/空白抛 ValidationException
+        // FluentValidation 拦截:Name 必填,空串/空白校验失败。
+        // EnsureValidAsync 扩展把校验失败包装成 DomainException(项目约定,→400)
         var (_, svc, _) = Setup();
         await Assert.ThrowsAsync<DomainException>(() =>
             svc.CreateMaterialAsync(ValidCreate() with { Name = "" }));
