@@ -7,7 +7,7 @@ namespace OneCup.Api.Controllers;
 
 /// <summary>
 /// 编号字典管理端点（业务类型 + 分类）。
-/// 复用 numbering-view / numbering-manage 权限。
+/// 复用 system:numbering:read / system:numbering:create / system:numbering:update 权限。
 /// </summary>
 [ApiController]
 [Route("api/numbering/dict")]
@@ -23,7 +23,7 @@ public class NumberingDictionaryController : ControllerBase
     // ── 业务类型 ──
 
     [HttpGet("target-types")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetTargetTypes(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string? keyword = null, [FromQuery] bool? isActive = null,
@@ -34,7 +34,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpGet("target-types/all")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetAllActiveTargetTypes(CancellationToken ct)
     {
         var list = await _svc.GetAllActiveTargetTypesAsync(ct);
@@ -42,7 +42,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpGet("target-types/{id:guid}")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetTargetType(Guid id, CancellationToken ct)
     {
         var dto = await _svc.GetTargetTypeAsync(id, ct);
@@ -50,7 +50,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpPost("target-types")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:create")]
     public async Task<IActionResult> CreateTargetType([FromBody] CreateTargetTypeRequest request, CancellationToken ct)
     {
         var dto = await _svc.CreateTargetTypeAsync(request, ct);
@@ -58,7 +58,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpPut("target-types/{id:guid}")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:update")]
     public async Task<IActionResult> UpdateTargetType(Guid id, [FromBody] UpdateTargetTypeRequest request, CancellationToken ct)
     {
         await _svc.UpdateTargetTypeAsync(id, request, ct);
@@ -66,7 +66,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpPut("target-types/{id:guid}/status")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:update")]
     public async Task<IActionResult> UpdateTargetTypeStatus(Guid id, [FromBody] UpdateDictStatusRequest request, CancellationToken ct)
     {
         await _svc.UpdateTargetTypeStatusAsync(id, request.IsActive, ct);
@@ -76,7 +76,7 @@ public class NumberingDictionaryController : ControllerBase
     // ── 分类 ──
 
     [HttpGet("categories")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetCategories(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string? targetTypeCode = null, [FromQuery] string? keyword = null,
@@ -87,7 +87,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpGet("categories/all")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetActiveCategories([FromQuery] string targetTypeCode, CancellationToken ct)
     {
         var list = await _svc.GetActiveCategoriesAsync(targetTypeCode, ct);
@@ -95,7 +95,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpGet("categories/{id:guid}")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetCategory(Guid id, CancellationToken ct)
     {
         var dto = await _svc.GetCategoryAsync(id, ct);
@@ -103,7 +103,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpPost("categories")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:create")]
     public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequest request, CancellationToken ct)
     {
         var dto = await _svc.CreateCategoryAsync(request, ct);
@@ -111,7 +111,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpPut("categories/{id:guid}")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:update")]
     public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryRequest request, CancellationToken ct)
     {
         await _svc.UpdateCategoryAsync(id, request, ct);
@@ -119,7 +119,7 @@ public class NumberingDictionaryController : ControllerBase
     }
 
     [HttpPut("categories/{id:guid}/status")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:update")]
     public async Task<IActionResult> UpdateCategoryStatus(Guid id, [FromBody] UpdateDictStatusRequest request, CancellationToken ct)
     {
         await _svc.UpdateCategoryStatusAsync(id, request.IsActive, ct);
