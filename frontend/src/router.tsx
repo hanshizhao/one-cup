@@ -119,7 +119,7 @@ export const router = createBrowserRouter([
       },
       { path: 'system/permission', element: withSuspense(<PermissionPage />) },
       {
-        path: 'system/numbering',
+        path: 'master-data/numbering',
         element: withSuspense(
           <RequirePermission resource="system:numbering" actions={['view']}>
             <NumberingPage />
@@ -151,7 +151,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'system/unit',
+        path: 'master-data/unit',
         element: withSuspense(
           <RequirePermission resource="system:unit" actions={['view']}>
             <UnitPage />
