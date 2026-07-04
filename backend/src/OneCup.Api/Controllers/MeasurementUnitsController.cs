@@ -6,7 +6,7 @@ using OneCup.Application.Interfaces;
 namespace OneCup.Api.Controllers;
 
 /// <summary>
-/// 计量单位管理端点。复用 unit-view / unit-manage 权限。
+/// 计量单位管理端点。权限：system:unit:read / system:unit:create / system:unit:update。
 /// </summary>
 [ApiController]
 [Route("api/measurement-units")]
@@ -20,7 +20,7 @@ public class MeasurementUnitsController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "unit-view")]
+    [Authorize(Policy = "system:unit:read")]
     public async Task<IActionResult> GetList(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string? keyword = null, [FromQuery] string? category = null,
@@ -32,7 +32,7 @@ public class MeasurementUnitsController : ControllerBase
     }
 
     [HttpGet("all")]
-    [Authorize(Policy = "unit-view")]
+    [Authorize(Policy = "system:unit:read")]
     public async Task<IActionResult> GetAllActive(CancellationToken ct)
     {
         var list = await _svc.GetAllActiveAsync(ct);
@@ -40,7 +40,7 @@ public class MeasurementUnitsController : ControllerBase
     }
 
     [HttpGet("categories")]
-    [Authorize(Policy = "unit-view")]
+    [Authorize(Policy = "system:unit:read")]
     public async Task<IActionResult> GetCategories(CancellationToken ct)
     {
         var list = await _svc.GetCategoriesAsync(ct);
@@ -48,7 +48,7 @@ public class MeasurementUnitsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "unit-view")]
+    [Authorize(Policy = "system:unit:read")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var dto = await _svc.GetByIdAsync(id, ct);
@@ -56,7 +56,7 @@ public class MeasurementUnitsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "unit-manage")]
+    [Authorize(Policy = "system:unit:create")]
     public async Task<IActionResult> Create([FromBody] CreateUnitRequest request, CancellationToken ct)
     {
         var dto = await _svc.CreateAsync(request, ct);
@@ -64,7 +64,7 @@ public class MeasurementUnitsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "unit-manage")]
+    [Authorize(Policy = "system:unit:update")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUnitRequest request, CancellationToken ct)
     {
         await _svc.UpdateAsync(id, request, ct);
@@ -72,7 +72,7 @@ public class MeasurementUnitsController : ControllerBase
     }
 
     [HttpPut("{id:guid}/status")]
-    [Authorize(Policy = "unit-manage")]
+    [Authorize(Policy = "system:unit:update")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateUnitStatusRequest request, CancellationToken ct)
     {
         await _svc.UpdateStatusAsync(id, request.IsActive, ct);
@@ -80,7 +80,7 @@ public class MeasurementUnitsController : ControllerBase
     }
 
     [HttpPost("convert")]
-    [Authorize(Policy = "unit-view")]
+    [Authorize(Policy = "system:unit:read")]
     public async Task<IActionResult> Convert([FromBody] ConvertUnitRequest request, CancellationToken ct)
     {
         var result = await _svc.ConvertAsync(request, ct);

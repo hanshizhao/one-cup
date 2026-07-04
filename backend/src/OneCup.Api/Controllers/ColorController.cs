@@ -7,7 +7,7 @@ namespace OneCup.Api.Controllers;
 
 /// <summary>
 /// 颜色主数据管理端点。
-/// 权限：color-view(perm color:read) / color-manage(perm color:write)。
+/// 权限：color:read / color:create / color:update（策略名 = 权限码）。
 /// </summary>
 [ApiController]
 [Route("api/colors")]
@@ -21,7 +21,7 @@ public class ColorController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "color-view")]
+    [Authorize(Policy = "color:read")]
     public async Task<IActionResult> GetColors(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string? keyword = null, [FromQuery] string? colorFamily = null,
@@ -33,7 +33,7 @@ public class ColorController : ControllerBase
     }
 
     [HttpGet("all")]
-    [Authorize(Policy = "color-view")]
+    [Authorize(Policy = "color:read")]
     public async Task<IActionResult> GetAllActiveColors(CancellationToken ct)
     {
         var list = await _svc.GetAllActiveColorsAsync(ct);
@@ -41,7 +41,7 @@ public class ColorController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "color-view")]
+    [Authorize(Policy = "color:read")]
     public async Task<IActionResult> GetColor(Guid id, CancellationToken ct)
     {
         var dto = await _svc.GetColorAsync(id, ct);
@@ -49,7 +49,7 @@ public class ColorController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "color-manage")]
+    [Authorize(Policy = "color:create")]
     public async Task<IActionResult> CreateColor([FromBody] CreateColorRequest request, CancellationToken ct)
     {
         var dto = await _svc.CreateColorAsync(request, ct);
@@ -57,7 +57,7 @@ public class ColorController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "color-manage")]
+    [Authorize(Policy = "color:update")]
     public async Task<IActionResult> UpdateColor(Guid id, [FromBody] UpdateColorRequest request, CancellationToken ct)
     {
         await _svc.UpdateColorAsync(id, request, ct);
@@ -65,7 +65,7 @@ public class ColorController : ControllerBase
     }
 
     [HttpPut("{id:guid}/status")]
-    [Authorize(Policy = "color-manage")]
+    [Authorize(Policy = "color:update")]
     public async Task<IActionResult> UpdateColorStatus(Guid id, [FromBody] UpdateColorStatusRequest request, CancellationToken ct)
     {
         await _svc.UpdateColorStatusAsync(id, request.IsActive, ct);

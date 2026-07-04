@@ -22,7 +22,7 @@ public class AuthAuthorizationTests : IClassFixture<IntegrationTestFactory>
         _factory.SeedAsync().GetAwaiter().GetResult();
     }
 
-    /// <summary>无 token 访问受保护端点(/api/users,需 user-manage 策略)→ 401。</summary>
+    /// <summary>无 token 访问受保护端点(/api/users,需 system:user:read 策略)→ 401。</summary>
     [Fact]
     public async Task No_token_protected_endpoint_returns_401()
     {
@@ -53,7 +53,7 @@ public class AuthAuthorizationTests : IClassFixture<IntegrationTestFactory>
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
-    /// <summary>developer 登录成功,但无 system:user:manage 权限 → /api/users 返回 403。</summary>
+    /// <summary>developer 登录成功,但无 system:user:read 权限 → /api/users 返回 403。</summary>
     [Fact]
     public async Task Developer_token_users_endpoint_returns_403()
     {
@@ -65,14 +65,14 @@ public class AuthAuthorizationTests : IClassFixture<IntegrationTestFactory>
         Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
     }
 
-    /// <summary>admin 通配(*):admin 角色持有 perm_codes="*",放行所有策略端点(含 role-manage)。</summary>
+    /// <summary>admin 通配(*):admin 角色持有 perm_codes="*",放行所有策略端点(含 system:role:read)。</summary>
     [Fact]
     public async Task Admin_wildcard_passes_role_manage_policy()
     {
         var token = await LoginAsync(IntegrationTestFactory.AdminUsername, IntegrationTestFactory.TestPassword);
 
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        // /api/users 需 user-manage,/api/roles 需 role-manage;两个都应放行(非 403)。
+        // /api/users 需 system:user:read,/api/roles 需 system:role:read;两个都应放行(非 403)。
         var users = await _client.GetAsync("/api/users");
         var roles = await _client.GetAsync("/api/roles");
         Assert.Equal(HttpStatusCode.OK, users.StatusCode);

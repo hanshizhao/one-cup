@@ -7,11 +7,11 @@ using OneCup.Application.Interfaces;
 namespace OneCup.Api.Controllers;
 
 /// <summary>
-/// 客户管理端点。类级需 customer:read；写操作叠加 customer:write。
+/// 客户管理端点。类级需 customer:read；写操作需 customer:create / customer:update / customer:delete。
 /// </summary>
 [ApiController]
 [Route("api/customers")]
-[Authorize(Policy = "customer-read")]
+[Authorize(Policy = "customer:read")]
 public class CustomersController : ControllerBase
 {
     private readonly ICustomerService _customerService;
@@ -42,7 +42,7 @@ public class CustomersController : ControllerBase
     }
 
     [Audit(Module = "Customer", Action = "Create", TargetType = "Customer")]
-    [Authorize(Policy = "customer-write")]
+    [Authorize(Policy = "customer:create")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateCustomerRequest request, CancellationToken ct)
     {
@@ -51,7 +51,7 @@ public class CustomersController : ControllerBase
     }
 
     [Audit(Module = "Customer", Action = "Update", TargetType = "Customer")]
-    [Authorize(Policy = "customer-write")]
+    [Authorize(Policy = "customer:update")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCustomerRequest request, CancellationToken ct)
     {
@@ -60,7 +60,7 @@ public class CustomersController : ControllerBase
     }
 
     [Audit(Module = "Customer", Action = "Delete", TargetType = "Customer")]
-    [Authorize(Policy = "customer-write")]
+    [Authorize(Policy = "customer:delete")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {

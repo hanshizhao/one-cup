@@ -7,11 +7,11 @@ using OneCup.Application.Interfaces;
 namespace OneCup.Api.Controllers;
 
 /// <summary>
-/// 角色管理端点。需要 system:role:manage 权限（或 admin 通配）。
+/// 角色管理端点。需要 system:role:* 权限（或 admin 通配）。
 /// </summary>
 [ApiController]
 [Route("api/roles")]
-[Authorize(Policy = "role-manage")]
+[Authorize]
 public class RolesController : ControllerBase
 {
     private readonly IRoleService _roleService;
@@ -22,6 +22,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "system:role:read")]
     public async Task<IActionResult> GetList(CancellationToken ct)
     {
         var roles = await _roleService.GetListAsync(ct);
@@ -29,6 +30,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "system:role:read")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var role = await _roleService.GetByIdAsync(id, ct);
@@ -36,6 +38,7 @@ public class RolesController : ControllerBase
     }
 
     [Audit(Module = "Role", Action = "Create", TargetType = "Role")]
+    [Authorize(Policy = "system:role:create")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateRoleRequest request, CancellationToken ct)
     {
@@ -44,6 +47,7 @@ public class RolesController : ControllerBase
     }
 
     [Audit(Module = "Role", Action = "Update", TargetType = "Role")]
+    [Authorize(Policy = "system:role:update")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken ct)
     {
@@ -52,6 +56,7 @@ public class RolesController : ControllerBase
     }
 
     [Audit(Module = "Role", Action = "Delete", TargetType = "Role")]
+    [Authorize(Policy = "system:role:delete")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {

@@ -180,11 +180,15 @@ export default function CustomerPage() {
               {t['customer.button.view']}
             </Button>
             <PermissionWrapper
-              requiredPermissions={[{ resource: 'customer', actions: ['write'] }]}
+              requiredPermissions={[{ resource: 'customer', actions: ['update'] }]}
             >
               <Button type="text" size="small" onClick={() => openEdit(record)}>
                 {t['customer.button.edit']}
               </Button>
+            </PermissionWrapper>
+            <PermissionWrapper
+              requiredPermissions={[{ resource: 'customer', actions: ['delete'] }]}
+            >
               <Popconfirm
                 title={t['customer.message.deleteOk']}
                 onOk={() => handleDelete(record)}
@@ -222,7 +226,7 @@ export default function CustomerPage() {
       <div className={styles['button-group']}>
         <Space>
           <PermissionWrapper
-            requiredPermissions={[{ resource: 'customer', actions: ['write'] }]}
+            requiredPermissions={[{ resource: 'customer', actions: ['create'] }]}
           >
             <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
               {t['customer.button.create']}

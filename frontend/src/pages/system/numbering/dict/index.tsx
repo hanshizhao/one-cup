@@ -13,6 +13,7 @@ import {
 } from '@/api/numberingDictionary';
 import locale from './locale';
 import styles from './style/index.module.less';
+import PermissionWrapper from '@/components/PermissionWrapper';
 
 const { Title } = Typography;
 const FormItem = Form.Item;
@@ -191,19 +192,27 @@ export default function NumberingDictionaryPage() {
       width: 160,
       render: (_: unknown, record: TargetType) => (
         <Space>
-          <Button type="text" size="small" onClick={() => openEditType(record)}>
-            {t['numbering.dict.edit']}
-          </Button>
-          <Popconfirm
-            title={record.isActive
-              ? t['numbering.dict.disable.confirm']
-              : t['numbering.dict.enable.confirm']}
-            onOk={() => handleToggleTypeStatus(record)}
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:numbering', actions: ['update'] }]}
           >
-            <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
-              {record.isActive ? t['numbering.dict.disable'] : t['numbering.dict.enable']}
+            <Button type="text" size="small" onClick={() => openEditType(record)}>
+              {t['numbering.dict.edit']}
             </Button>
-          </Popconfirm>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:numbering', actions: ['update'] }]}
+          >
+            <Popconfirm
+              title={record.isActive
+                ? t['numbering.dict.disable.confirm']
+                : t['numbering.dict.enable.confirm']}
+              onOk={() => handleToggleTypeStatus(record)}
+            >
+              <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
+                {record.isActive ? t['numbering.dict.disable'] : t['numbering.dict.enable']}
+              </Button>
+            </Popconfirm>
+          </PermissionWrapper>
         </Space>
       ),
     },
@@ -228,19 +237,27 @@ export default function NumberingDictionaryPage() {
       width: 160,
       render: (_: unknown, record: Category) => (
         <Space>
-          <Button type="text" size="small" onClick={() => openEditCategory(record)}>
-            {t['numbering.dict.edit']}
-          </Button>
-          <Popconfirm
-            title={record.isActive
-              ? t['numbering.dict.disable.confirm']
-              : t['numbering.dict.enable.confirm']}
-            onOk={() => handleToggleCatStatus(record)}
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:numbering', actions: ['update'] }]}
           >
-            <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
-              {record.isActive ? t['numbering.dict.disable'] : t['numbering.dict.enable']}
+            <Button type="text" size="small" onClick={() => openEditCategory(record)}>
+              {t['numbering.dict.edit']}
             </Button>
-          </Popconfirm>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:numbering', actions: ['update'] }]}
+          >
+            <Popconfirm
+              title={record.isActive
+                ? t['numbering.dict.disable.confirm']
+                : t['numbering.dict.enable.confirm']}
+              onOk={() => handleToggleCatStatus(record)}
+            >
+              <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
+                {record.isActive ? t['numbering.dict.disable'] : t['numbering.dict.enable']}
+              </Button>
+            </Popconfirm>
+          </PermissionWrapper>
         </Space>
       ),
     },
@@ -257,9 +274,13 @@ export default function NumberingDictionaryPage() {
       <div className={styles['button-group']}>
         <Space />
         <Space>
-          <Button type="primary" icon={<IconPlus />} onClick={openCreateType}>
-            {t['numbering.dict.type.create']}
-          </Button>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:numbering', actions: ['create'] }]}
+          >
+            <Button type="primary" icon={<IconPlus />} onClick={openCreateType}>
+              {t['numbering.dict.type.create']}
+            </Button>
+          </PermissionWrapper>
         </Space>
       </div>
       <Table
@@ -293,9 +314,13 @@ export default function NumberingDictionaryPage() {
           <div className={styles['button-group']}>
             <Space />
             <Space>
-              <Button type="primary" icon={<IconPlus />} onClick={openCreateCategory}>
-                {t['numbering.dict.category.create']}
-              </Button>
+              <PermissionWrapper
+                requiredPermissions={[{ resource: 'system:numbering', actions: ['create'] }]}
+              >
+                <Button type="primary" icon={<IconPlus />} onClick={openCreateCategory}>
+                  {t['numbering.dict.category.create']}
+                </Button>
+              </PermissionWrapper>
             </Space>
           </div>
           <Table

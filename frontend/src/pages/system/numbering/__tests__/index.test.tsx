@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { GlobalContext } from '@/context';
 import NumberingManagement from '../index';
 
@@ -19,12 +21,20 @@ vi.mock('@/api/numberingDictionary', () => ({
 // useLocale 从 GlobalContext 读取 lang；测试环境无 provider，默认值为 {}，
 // 会导致所有 t[...] 文案为 undefined（tab 标题渲染为空）。
 // 提供 lang='zh-CN' 让页面文案按 zh-CN locale 解析。
-const renderWithLocale = (ui: React.ReactElement) =>
-  render(
-    <GlobalContext.Provider value={{ lang: 'zh-CN' }}>
-      {ui}
-    </GlobalContext.Provider>,
+// PermissionWrapper 通过 useAppSelector 读权限；布局测试需所有按钮可见，
+// 故注入通配权限 {'*':['*']}（admin 语义），让写操作按钮全部渲染。
+const renderWithLocale = (ui: React.ReactElement) => {
+  const store = configureStore({
+    reducer: () => ({ userInfo: { userInfo: { permissions: { '*': ['*'] } } } }),
+  });
+  return render(
+    <Provider store={store}>
+      <GlobalContext.Provider value={{ lang: 'zh-CN' }}>
+        {ui}
+      </GlobalContext.Provider>
+    </Provider>,
   );
+};
 
 describe('NumberingManagement — 标准布局结构', () => {
   beforeEach(() => vi.clearAllMocks());

@@ -104,7 +104,7 @@ export const router = createBrowserRouter([
       {
         path: 'system/user',
         element: withSuspense(
-          <RequirePermission resource="system:user" actions={['manage']}>
+          <RequirePermission resource="system:user" actions={['read']}>
             <UserPage />
           </RequirePermission>
         ),
@@ -112,16 +112,23 @@ export const router = createBrowserRouter([
       {
         path: 'system/role',
         element: withSuspense(
-          <RequirePermission resource="system:role" actions={['manage']}>
+          <RequirePermission resource="system:role" actions={['read']}>
             <RolePage />
           </RequirePermission>
         ),
       },
-      { path: 'system/permission', element: withSuspense(<PermissionPage />) },
+      {
+        path: 'system/permission',
+        element: withSuspense(
+          <RequirePermission resource="system:role" actions={['read']}>
+            <PermissionPage />
+          </RequirePermission>
+        ),
+      },
       {
         path: 'master-data/numbering',
         element: withSuspense(
-          <RequirePermission resource="system:numbering" actions={['view']}>
+          <RequirePermission resource="system:numbering" actions={['read']}>
             <NumberingPage />
           </RequirePermission>
         ),
@@ -129,7 +136,7 @@ export const router = createBrowserRouter([
       {
         path: 'system/operation-log',
         element: withSuspense(
-          <RequirePermission resource="system:audit" actions={['view']}>
+          <RequirePermission resource="system:audit" actions={['read']}>
             <OperationLogPage />
           </RequirePermission>
         ),
@@ -137,7 +144,7 @@ export const router = createBrowserRouter([
       {
         path: 'system/login-log',
         element: withSuspense(
-          <RequirePermission resource="system:audit" actions={['view']}>
+          <RequirePermission resource="system:audit" actions={['read']}>
             <LoginLogPage />
           </RequirePermission>
         ),
@@ -153,7 +160,7 @@ export const router = createBrowserRouter([
       {
         path: 'master-data/unit',
         element: withSuspense(
-          <RequirePermission resource="system:unit" actions={['view']}>
+          <RequirePermission resource="system:unit" actions={['read']}>
             <UnitPage />
           </RequirePermission>
         ),

@@ -147,29 +147,50 @@ builder.Services.AddSingleton<IPermissionCalculator, PermissionCalculator>();
 builder.Services.AddSingleton<IAuthorizationHandler, WildcardAuthorizationHandler>();
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("user-manage", policy =>
-        policy.RequireClaim("perm_codes", "system:user:manage"));
-    options.AddPolicy("role-manage", policy =>
-        policy.RequireClaim("perm_codes", "system:role:manage"));
-    options.AddPolicy("numbering-view", policy =>
-        policy.RequireClaim("perm_codes", "system:numbering:view"));
-    options.AddPolicy("numbering-manage", policy =>
-        policy.RequireClaim("perm_codes", "system:numbering:manage"));
-    options.AddPolicy("audit-view", policy =>
-        policy.RequireClaim("perm_codes", "system:audit:view"));
-    options.AddPolicy("color-view", policy =>
-        policy.RequireClaim("perm_codes", "color:read"));
-    options.AddPolicy("color-manage", policy =>
-        policy.RequireClaim("perm_codes", "color:write"));
-    options.AddPolicy("customer-read", policy =>
-        policy.RequireClaim("perm_codes", "customer:read"));
-    options.AddPolicy("customer-write", policy =>
-        policy.RequireClaim("perm_codes", "customer:write"));
-    // ===== Unit 模块 =====
-    options.AddPolicy("unit-view", policy =>
-        policy.RequireClaim("perm_codes", "system:unit:view"));
-    options.AddPolicy("unit-manage", policy =>
-        policy.RequireClaim("perm_codes", "system:unit:manage"));
+    // 业务模块（策略名 = 权限码,带冒号,ASP.NET Core 合法）
+    options.AddPolicy("fabric:read", p => p.RequireClaim("perm_codes", "fabric:read"));
+    options.AddPolicy("fabric:create", p => p.RequireClaim("perm_codes", "fabric:create"));
+    options.AddPolicy("fabric:update", p => p.RequireClaim("perm_codes", "fabric:update"));
+    options.AddPolicy("fabric:delete", p => p.RequireClaim("perm_codes", "fabric:delete"));
+    options.AddPolicy("material:read", p => p.RequireClaim("perm_codes", "material:read"));
+    options.AddPolicy("material:create", p => p.RequireClaim("perm_codes", "material:create"));
+    options.AddPolicy("material:update", p => p.RequireClaim("perm_codes", "material:update"));
+    options.AddPolicy("material:delete", p => p.RequireClaim("perm_codes", "material:delete"));
+    options.AddPolicy("equipment:read", p => p.RequireClaim("perm_codes", "equipment:read"));
+    options.AddPolicy("equipment:create", p => p.RequireClaim("perm_codes", "equipment:create"));
+    options.AddPolicy("equipment:update", p => p.RequireClaim("perm_codes", "equipment:update"));
+    options.AddPolicy("equipment:delete", p => p.RequireClaim("perm_codes", "equipment:delete"));
+    options.AddPolicy("customer:read", p => p.RequireClaim("perm_codes", "customer:read"));
+    options.AddPolicy("customer:create", p => p.RequireClaim("perm_codes", "customer:create"));
+    options.AddPolicy("customer:update", p => p.RequireClaim("perm_codes", "customer:update"));
+    options.AddPolicy("customer:delete", p => p.RequireClaim("perm_codes", "customer:delete"));
+    options.AddPolicy("color:read", p => p.RequireClaim("perm_codes", "color:read"));
+    options.AddPolicy("color:create", p => p.RequireClaim("perm_codes", "color:create"));
+    options.AddPolicy("color:update", p => p.RequireClaim("perm_codes", "color:update"));
+    options.AddPolicy("color:delete", p => p.RequireClaim("perm_codes", "color:delete"));
+    options.AddPolicy("product:read", p => p.RequireClaim("perm_codes", "product:read"));
+    options.AddPolicy("product:create", p => p.RequireClaim("perm_codes", "product:create"));
+    options.AddPolicy("product:update", p => p.RequireClaim("perm_codes", "product:update"));
+    options.AddPolicy("product:delete", p => p.RequireClaim("perm_codes", "product:delete"));
+    // 系统模块
+    options.AddPolicy("system:user:read", p => p.RequireClaim("perm_codes", "system:user:read"));
+    options.AddPolicy("system:user:create", p => p.RequireClaim("perm_codes", "system:user:create"));
+    options.AddPolicy("system:user:update", p => p.RequireClaim("perm_codes", "system:user:update"));
+    options.AddPolicy("system:user:delete", p => p.RequireClaim("perm_codes", "system:user:delete"));
+    options.AddPolicy("system:user:reset-password", p => p.RequireClaim("perm_codes", "system:user:reset-password"));
+    options.AddPolicy("system:role:read", p => p.RequireClaim("perm_codes", "system:role:read"));
+    options.AddPolicy("system:role:create", p => p.RequireClaim("perm_codes", "system:role:create"));
+    options.AddPolicy("system:role:update", p => p.RequireClaim("perm_codes", "system:role:update"));
+    options.AddPolicy("system:role:delete", p => p.RequireClaim("perm_codes", "system:role:delete"));
+    options.AddPolicy("system:numbering:read", p => p.RequireClaim("perm_codes", "system:numbering:read"));
+    options.AddPolicy("system:numbering:create", p => p.RequireClaim("perm_codes", "system:numbering:create"));
+    options.AddPolicy("system:numbering:update", p => p.RequireClaim("perm_codes", "system:numbering:update"));
+    options.AddPolicy("system:numbering:delete", p => p.RequireClaim("perm_codes", "system:numbering:delete"));
+    options.AddPolicy("system:unit:read", p => p.RequireClaim("perm_codes", "system:unit:read"));
+    options.AddPolicy("system:unit:create", p => p.RequireClaim("perm_codes", "system:unit:create"));
+    options.AddPolicy("system:unit:update", p => p.RequireClaim("perm_codes", "system:unit:update"));
+    options.AddPolicy("system:unit:delete", p => p.RequireClaim("perm_codes", "system:unit:delete"));
+    options.AddPolicy("system:audit:read", p => p.RequireClaim("perm_codes", "system:audit:read"));
 });
 
 // 权限拒绝审计日志:装饰默认 handler,在 403 时记 Warning

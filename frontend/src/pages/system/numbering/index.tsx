@@ -41,6 +41,7 @@ import {
 import NumberingDictionary from './dict';
 import locale from './locale';
 import styles from './style/index.module.less';
+import PermissionWrapper from '@/components/PermissionWrapper';
 
 const FormItem = Form.Item;
 const { Row, Col } = Grid;
@@ -354,27 +355,35 @@ export default function NumberingManagement() {
       width: 160,
       render: (_: unknown, record: NumberingRuleListItem) => (
         <Space>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>
-            {t['numbering.rules.edit']}
-          </Button>
-          <Popconfirm
-            title={
-              record.isActive
-                ? t['numbering.rules.disable.confirm']
-                : t['numbering.rules.enable.confirm']
-            }
-            onOk={() => handleToggleStatus(record)}
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:numbering', actions: ['update'] }]}
           >
-            <Button
-              type="text"
-              size="small"
-              status={record.isActive ? 'warning' : 'success'}
-            >
-              {record.isActive
-                ? t['numbering.rules.disable']
-                : t['numbering.rules.enable']}
+            <Button type="text" size="small" onClick={() => openEdit(record)}>
+              {t['numbering.rules.edit']}
             </Button>
-          </Popconfirm>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:numbering', actions: ['update'] }]}
+          >
+            <Popconfirm
+              title={
+                record.isActive
+                  ? t['numbering.rules.disable.confirm']
+                  : t['numbering.rules.enable.confirm']
+              }
+              onOk={() => handleToggleStatus(record)}
+            >
+              <Button
+                type="text"
+                size="small"
+                status={record.isActive ? 'warning' : 'success'}
+              >
+                {record.isActive
+                  ? t['numbering.rules.disable']
+                  : t['numbering.rules.enable']}
+              </Button>
+            </Popconfirm>
+          </PermissionWrapper>
         </Space>
       ),
     },
@@ -494,9 +503,13 @@ export default function NumberingManagement() {
 
           <div className={styles['button-group']}>
             <Space>
-              <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
-                {t['numbering.rules.create']}
-              </Button>
+              <PermissionWrapper
+                requiredPermissions={[{ resource: 'system:numbering', actions: ['create'] }]}
+              >
+                <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+                  {t['numbering.rules.create']}
+                </Button>
+              </PermissionWrapper>
             </Space>
             <Space />
           </div>

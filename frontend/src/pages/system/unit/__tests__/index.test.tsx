@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { GlobalContext } from '@/context';
 import UnitPage from '../index';
 
@@ -15,13 +17,21 @@ vi.mock('@/api/measurementUnit', () => ({
   convertUnit: vi.fn().mockResolvedValue({}),
 }));
 
-// useLocale 从 GlobalContext 读取 lang；提供 lang='zh-CN' 让文案正常解析
-const renderWithLocale = (ui: React.ReactElement) =>
-  render(
-    <GlobalContext.Provider value={{ lang: 'zh-CN' }}>
-      {ui}
-    </GlobalContext.Provider>,
+// useLocale 从 GlobalContext 读取 lang；提供 lang='zh-CN' 让文案正常解析。
+// PermissionWrapper 通过 useAppSelector 读权限；布局测试需所有按钮可见，
+// 故注入通配权限 {'*':['*']}（admin 语义），让写操作按钮全部渲染。
+const renderWithLocale = (ui: React.ReactElement) => {
+  const store = configureStore({
+    reducer: () => ({ userInfo: { userInfo: { permissions: { '*': ['*'] } } } }),
+  });
+  return render(
+    <Provider store={store}>
+      <GlobalContext.Provider value={{ lang: 'zh-CN' }}>
+        {ui}
+      </GlobalContext.Provider>
+    </Provider>,
   );
+};
 
 describe('UnitPage — 标准布局结构', () => {
   beforeEach(() => vi.clearAllMocks());

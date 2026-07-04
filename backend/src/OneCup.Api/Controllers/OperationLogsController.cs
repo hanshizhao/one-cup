@@ -6,11 +6,11 @@ using OneCup.Application.Interfaces;
 namespace OneCup.Api.Controllers;
 
 /// <summary>
-/// 操作日志查询端点。需 system:audit:view 权限。
+/// 操作日志查询端点。需 system:audit:read 权限。
 /// </summary>
 [ApiController]
 [Route("api/audit/operation-logs")]
-[Authorize(Policy = "audit-view")]
+[Authorize(Policy = "system:audit:read")]
 public class OperationLogsController : ControllerBase
 {
     private readonly IAuditLogService _svc;

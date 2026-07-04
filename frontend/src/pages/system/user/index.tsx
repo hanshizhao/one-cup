@@ -29,6 +29,7 @@ import {
   RoleOption,
 } from '@/api/user';
 import { getRoleList } from '@/api/role';
+import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from './locale';
 import styles from './style/index.module.less';
 
@@ -202,20 +203,32 @@ export default function UserManagement() {
       width: 220,
       render: (_: unknown, record: UserListItem) => (
         <Space>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>
-            {t['user.edit']}
-          </Button>
-          <Button type="text" size="small" onClick={() => openReset(record)}>
-            {t['user.resetPassword']}
-          </Button>
-          <Popconfirm
-            title={record.isActive ? t['user.disable'] : t['user.enable']}
-            onOk={() => handleToggleStatus(record)}
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:user', actions: ['update'] }]}
           >
-            <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
-              {record.isActive ? t['user.disable'] : t['user.enable']}
+            <Button type="text" size="small" onClick={() => openEdit(record)}>
+              {t['user.edit']}
             </Button>
-          </Popconfirm>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:user', actions: ['reset-password'] }]}
+          >
+            <Button type="text" size="small" onClick={() => openReset(record)}>
+              {t['user.resetPassword']}
+            </Button>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:user', actions: ['update'] }]}
+          >
+            <Popconfirm
+              title={record.isActive ? t['user.disable'] : t['user.enable']}
+              onOk={() => handleToggleStatus(record)}
+            >
+              <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
+                {record.isActive ? t['user.disable'] : t['user.enable']}
+              </Button>
+            </Popconfirm>
+          </PermissionWrapper>
         </Space>
       ),
     },
@@ -249,9 +262,13 @@ export default function UserManagement() {
 
       <div className={styles['button-group']}>
         <Space>
-          <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
-            {t['user.add']}
-          </Button>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:user', actions: ['create'] }]}
+          >
+            <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+              {t['user.add']}
+            </Button>
+          </PermissionWrapper>
         </Space>
         <Space />
       </div>

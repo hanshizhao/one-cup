@@ -7,11 +7,11 @@ using OneCup.Application.Interfaces;
 namespace OneCup.Api.Controllers;
 
 /// <summary>
-/// 用户管理端点。需要 system:user:manage 权限（或 admin 通配）。
+/// 用户管理端点。需要 system:user:* 权限（或 admin 通配）。
 /// </summary>
 [ApiController]
 [Route("api/users")]
-[Authorize(Policy = "user-manage")]
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -22,6 +22,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "system:user:read")]
     public async Task<IActionResult> GetList([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? keyword = null, CancellationToken ct = default)
     {
         var result = await _userService.GetListAsync(page, pageSize, keyword, ct);
@@ -29,6 +30,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "system:user:read")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var user = await _userService.GetByIdAsync(id, ct);
@@ -36,6 +38,7 @@ public class UsersController : ControllerBase
     }
 
     [Audit(Module = "User", Action = "Create", TargetType = "User")]
+    [Authorize(Policy = "system:user:create")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken ct)
     {
@@ -44,6 +47,7 @@ public class UsersController : ControllerBase
     }
 
     [Audit(Module = "User", Action = "Update", TargetType = "User")]
+    [Authorize(Policy = "system:user:update")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequest request, CancellationToken ct)
     {
@@ -52,6 +56,7 @@ public class UsersController : ControllerBase
     }
 
     [Audit(Module = "User", Action = "ResetPassword", TargetType = "User")]
+    [Authorize(Policy = "system:user:reset-password")]
     [HttpPut("{id:guid}/password")]
     public async Task<IActionResult> ResetPassword(Guid id, [FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
@@ -60,6 +65,7 @@ public class UsersController : ControllerBase
     }
 
     [Audit(Module = "User", Action = "ChangeStatus", TargetType = "User")]
+    [Authorize(Policy = "system:user:update")]
     [HttpPut("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateStatusRequest request, CancellationToken ct)
     {
@@ -69,6 +75,7 @@ public class UsersController : ControllerBase
 
     /// <summary>删除用户(软删除;admin 账号受保护;同步吊销其 refresh token)。</summary>
     [Audit(Module = "User", Action = "Delete", TargetType = "User")]
+    [Authorize(Policy = "system:user:delete")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)

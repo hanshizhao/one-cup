@@ -24,6 +24,7 @@ import {
   RoleListItem,
 } from '@/api/role';
 import { getPermissionList, PermissionItem } from '@/api/permission';
+import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from './locale';
 import styles from './style/index.module.less';
 
@@ -31,19 +32,45 @@ const { Title } = Typography;
 const FormItem = Form.Item;
 const TreeNode = Tree.Node;
 
-// 将权限列表按模块前缀（code 的第一段）分组为树结构
+// 动作词中文化
+const ACTION_LABELS: Record<string, string> = {
+  read: '查看',
+  create: '新增',
+  update: '编辑',
+  delete: '删除',
+  'reset-password': '重置密码',
+};
+
+// 将权限列表按 code 段数分组：2 段(资源:动作)→ 两级树;3 段(system:资源:动作)→ 三级树
 function buildPermissionTree(permissions: PermissionItem[]) {
-  const groups: Record<string, PermissionItem[]> = {};
+  const tree: any[] = [];
+  const groupMap: Record<string, any> = {};
+
   permissions.forEach((p) => {
-    const module = p.code.split(':')[0];
-    if (!groups[module]) groups[module] = [];
-    groups[module].push(p);
+    const parts = p.code.split(':');
+    if (parts.length === 2) {
+      const [resource, action] = parts;
+      if (!groupMap[resource]) {
+        groupMap[resource] = { key: `g-${resource}`, title: resource, children: [] };
+        tree.push(groupMap[resource]);
+      }
+      groupMap[resource].children.push({ key: p.id, title: ACTION_LABELS[action] ?? action });
+    } else if (parts.length === 3) {
+      const [prefix, resource, action] = parts;
+      if (!groupMap[prefix]) {
+        groupMap[prefix] = { key: `g-${prefix}`, title: prefix, children: [], childMap: {} };
+        tree.push(groupMap[prefix]);
+      }
+      const parent = groupMap[prefix];
+      if (!parent.childMap[resource]) {
+        const subNode = { key: `g-${prefix}-${resource}`, title: resource, children: [] };
+        parent.childMap[resource] = subNode;
+        parent.children.push(subNode);
+      }
+      parent.childMap[resource].children.push({ key: p.id, title: ACTION_LABELS[action] ?? action });
+    }
   });
-  return Object.entries(groups).map(([module, perms]) => ({
-    key: `group-${module}`,
-    title: module,
-    children: perms.map((p) => ({ key: p.id, title: p.name })),
-  }));
+  return tree;
 }
 
 export default function RoleManagement() {
@@ -117,7 +144,7 @@ export default function RoleManagement() {
         await updateRole(editingId!, {
           name: values.name,
           description: values.description,
-          permissionIds: checkedKeys.filter((k) => !k.startsWith('group-')),
+          permissionIds: checkedKeys.filter((k) => !k.startsWith('g-')),
         });
         Message.success(t['role.edit.success']);
       }
@@ -152,18 +179,26 @@ export default function RoleManagement() {
       width: 140,
       render: (_: unknown, record: RoleListItem) => (
         <Space>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>
-            {t['role.edit']}
-          </Button>
-          <Popconfirm
-            title={t['role.delete.confirm']}
-            onOk={() => handleDelete(record.id)}
-            disabled={record.code === 'admin'}
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:role', actions: ['update'] }]}
           >
-            <Button type="text" size="small" status="danger" disabled={record.code === 'admin'}>
-              {t['role.delete']}
+            <Button type="text" size="small" onClick={() => openEdit(record)}>
+              {t['role.edit']}
             </Button>
-          </Popconfirm>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:role', actions: ['delete'] }]}
+          >
+            <Popconfirm
+              title={t['role.delete.confirm']}
+              onOk={() => handleDelete(record.id)}
+              disabled={record.code === 'admin'}
+            >
+              <Button type="text" size="small" status="danger" disabled={record.code === 'admin'}>
+                {t['role.delete']}
+              </Button>
+            </Popconfirm>
+          </PermissionWrapper>
         </Space>
       ),
     },
@@ -175,9 +210,13 @@ export default function RoleManagement() {
 
       <div className={styles['button-group']}>
         <Space>
-          <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
-            {t['role.add']}
-          </Button>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'system:role', actions: ['create'] }]}
+          >
+            <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+              {t['role.add']}
+            </Button>
+          </PermissionWrapper>
         </Space>
         <Space />
       </div>

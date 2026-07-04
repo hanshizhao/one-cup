@@ -8,7 +8,7 @@ namespace OneCup.Api.Controllers;
 
 /// <summary>
 /// 编号管理端点。
-/// 规则 CRUD 需 system:numbering:manage；列表/日志/预览仅需登录或 view。
+/// 规则 CRUD 需 system:numbering:create / system:numbering:update；列表/日志需 system:numbering:read；预览仅需登录。
 /// 生成接口（GenerateAsync）是内部服务调用，不在此暴露 HTTP。
 /// </summary>
 [ApiController]
@@ -24,10 +24,10 @@ public class NumberingController : ControllerBase
         _numberingService = numberingService;
     }
 
-    // ── 规则管理（view 可查，manage 可改）──
+    // ── 规则管理（read 可查，create/update 可改）──
 
     [HttpGet("rules")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetRules(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string? keyword = null, [FromQuery] string? targetType = null,
@@ -38,7 +38,7 @@ public class NumberingController : ControllerBase
     }
 
     [HttpGet("rules/{id:guid}")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetRule(Guid id, CancellationToken ct)
     {
         var rule = await _ruleService.GetAsync(id, ct);
@@ -47,7 +47,7 @@ public class NumberingController : ControllerBase
 
     [Audit(Module = "Numbering", Action = "Create", TargetType = "NumberingRule")]
     [HttpPost("rules")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:create")]
     public async Task<IActionResult> CreateRule([FromBody] CreateNumberingRuleRequest request, CancellationToken ct)
     {
         var rule = await _ruleService.CreateAsync(request, ct);
@@ -56,7 +56,7 @@ public class NumberingController : ControllerBase
 
     [Audit(Module = "Numbering", Action = "Update", TargetType = "NumberingRule")]
     [HttpPut("rules/{id:guid}")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:update")]
     public async Task<IActionResult> UpdateRule(Guid id, [FromBody] UpdateNumberingRuleRequest request, CancellationToken ct)
     {
         await _ruleService.UpdateAsync(id, request, ct);
@@ -65,7 +65,7 @@ public class NumberingController : ControllerBase
 
     [Audit(Module = "Numbering", Action = "ChangeStatus", TargetType = "NumberingRule")]
     [HttpPut("rules/{id:guid}/status")]
-    [Authorize(Policy = "numbering-manage")]
+    [Authorize(Policy = "system:numbering:update")]
     public async Task<IActionResult> UpdateRuleStatus(Guid id, [FromBody] UpdateRuleStatusRequest request, CancellationToken ct)
     {
         await _ruleService.UpdateStatusAsync(id, request.IsActive, ct);
@@ -82,10 +82,10 @@ public class NumberingController : ControllerBase
         return Ok(new PreviewCodeResult { Code = code });
     }
 
-    // ── 生成日志（view 可查）──
+    // ── 生成日志（read 可查）──
 
     [HttpGet("logs")]
-    [Authorize(Policy = "numbering-view")]
+    [Authorize(Policy = "system:numbering:read")]
     public async Task<IActionResult> GetLogs(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
         [FromQuery] string? targetType = null, [FromQuery] string? categoryCode = null,
