@@ -34,6 +34,9 @@ public class OneCupDbContext : DbContext
     // ===== Unit 模块 =====
     public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
 
+    // ===== Material 模块 =====
+    public DbSet<Material> Materials => Set<Material>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
