@@ -20,6 +20,10 @@ RUN dotnet publish ./backend/src/OneCup.Api/OneCup.Api.csproj \
 # ── 运行阶段（不含 SDK，镜像更小）──
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
+
+# 装 curl 供 docker-compose healthcheck 探活 /health 用(aspnet 基础镜像默认无 curl)
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish .
 
 # 监听 5000 端口（与项目约定一致）

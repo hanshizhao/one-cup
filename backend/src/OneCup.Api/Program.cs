@@ -1,9 +1,11 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OneCup.Api.Authorization;
@@ -26,6 +28,19 @@ var builder = WebApplication.CreateBuilder(args);
 // ── 数据库 (PostgreSQL via EF Core) ──────────────────────────
 builder.Services.AddDbContext<OneCupDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ── 健康检查 ───────────────────────────────────────────────
+// /health       公开,返回 200/503 状态码,供 docker/K8s/监控探针用(无详细信息)
+// /health/details 仅 Development 暴露,返回每项检查的详细状态(含 DB 耗时)
+// AddNpgSql 用与 DbContext 相同的连接串,探活时执行一条轻量查询(SELECT 1)。
+// 注:方法名是 AddNpgSql(p 小写 S 大写),来自 AspNetCore.HealthChecks.NpgSql 包,
+// 扩展方法命名空间为 Microsoft.Extensions.DependencyInjection(无需额外 using)。
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        healthQuery: "SELECT 1",
+        name: "postgresql",
+        failureStatus: HealthStatus.Unhealthy);
 
 // ── 依赖注入:仓储 & 工作单元 ──────────────────────────────────
 // 泛型仓储:所有实体共享一个实现
@@ -246,6 +261,39 @@ app.UseExceptionHandler(appBuilder =>
         await context.Response.WriteAsJsonAsync(response);
     });
 });
+
+// ── 健康检查端点 ───────────────────────────────────────────
+// /health:公开,仅返回 200(Healthy)或 503(Unhealthy),不带详情。供 docker healthcheck /
+// K8s probe / 外部监控轮询用。放 CORS/认证之后、Controllers 之前,且无需鉴权。
+app.MapHealthChecks("/health");
+
+// /health/details:返回每项检查的详细 JSON(名称、状态、耗时)。生产环境不暴露
+// (会泄露依赖拓扑与延迟数据),仅 Development 开放,供开发联调用。
+// 不引额外包:用内置 HealthCheckOptions.ResponseWriter 自定义 JSON 输出。
+if (app.Environment.IsDevelopment())
+{
+    app.MapHealthChecks("/health/details", new HealthCheckOptions
+    {
+        ResponseWriter = async (context, report) =>
+        {
+            context.Response.ContentType = "application/json";
+            var result = new
+            {
+                status = report.Status.ToString(),
+                checks = report.Entries.Select(e => new
+                {
+                    name = e.Key,
+                    status = e.Value.Status.ToString(),
+                    duration = e.Value.Duration.TotalMilliseconds,
+                    e.Value.Description,
+                    e.Value.Exception?.Message,
+                }),
+                totalDuration = report.TotalDuration.TotalMilliseconds,
+            };
+            await context.Response.WriteAsJsonAsync(result);
+        },
+    });
+}
 
 app.MapControllers();
 

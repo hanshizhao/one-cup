@@ -92,6 +92,14 @@ services:
       - Cors__AllowedOrigins__1=http://${SERVER_HOST:-localhost}:${FRONTEND_PORT:-8080}
     ports:
       - "${BACKEND_PORT:-5000}:5000"
+    healthcheck:
+      # 探活 /health 端点:迁移完成且 DB 连通返回 200,否则 503。
+      # 容器内 curl:容器启动→EF 迁移(数秒)→DB 探活通过才变 healthy。
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5000/health || exit 1"]
+      interval: 15s        # 每 15 秒探一次
+      timeout: 5s          # 单次探活超时 5 秒
+      retries: 5           # 连续 5 次失败才标记 unhealthy
+      start_period: 40s    # 启动后 40 秒内的失败不计入(等迁移完成)
 
   # ── 前端 (nginx 静态托管 + API 反代) ───────────────────────
   frontend:
@@ -105,7 +113,8 @@ services:
     container_name: onecup-frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy   # 等后端真正 ready(迁移+DB 探活通过)再启动,避免启动期空窗
     ports:
       - "${FRONTEND_PORT:-8080}:80"
 

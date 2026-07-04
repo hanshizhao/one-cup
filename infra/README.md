@@ -13,6 +13,19 @@
 
 > 前端经 nginx 反代访问 API，对外只需暴露前端端口（8080）。API 和数据库可不直接对公网开放。
 
+### 健康检查
+
+后端暴露 `/health` 端点供容器编排与外部监控探活：
+
+| 端点 | 鉴权 | 说明 |
+|------|------|------|
+| `GET /health` | 公开 | 返回 `200`（Healthy）或 `503`（Unhealthy）。docker-compose 用它做容器健康检查。 |
+| `GET /health/details` | 仅开发环境 | 返回每项检查的详细 JSON（名称、状态、耗时、异常）。生产不暴露。 |
+
+- 后端容器启动后，docker-compose 会持续探测 `/health`：EF 迁移完成且数据库连通后才标记为 `healthy`，期间不会把流量转发过来（frontend `depends_on: backend(service_healthy)`）。
+- 探活含 PostgreSQL 连接检查（执行 `SELECT 1`），能发现"进程活着但 DB 连不上"的故障。
+- 本地开发联调时访问 `http://localhost:5000/health/details` 可看详细诊断信息。
+
 ---
 
 ## 一、全栈部署（数据库 + 后端 + 前端）
