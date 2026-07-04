@@ -140,10 +140,13 @@ public class CustomerService : ICustomerService
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var customer = await _customers.FirstOrDefaultAsync(new CustomerByIdSpec(id), ct)
+        // GetByIdAsync 走 FindAsync（绕过 QueryFilter），已软删客户仍可找到 → 幂等重删返回 204（与 UserService 一致）。
+        // 不能用 FirstOrDefaultAsync(CustomerByIdSpec)：它走 Set<T>().AsQueryable() 会应用全局软删除过滤器，
+        // 已软删客户被隐藏 → 返回 null → 抛 404，破坏幂等契约。
+        var customer = await _customers.GetByIdAsync(id, ct)
             ?? throw new DomainException("客户不存在");
 
-        customer.IsDeleted = true;  // 幂等软删
+        customer.IsDeleted = true;
         await _uow.SaveChangesAsync(ct);
     }
 }

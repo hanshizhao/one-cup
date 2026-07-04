@@ -153,6 +153,22 @@ public class CustomerServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_Idempotent_SecondDeleteDoesNotThrow()
+    {
+        var (db, svc, _) = Setup();
+        var c = new CustomerEntity { Code = "C1", Name = "待删", IsActive = true };
+        db.Customers.Add(c);
+        await db.SaveChangesAsync();
+
+        await svc.DeleteAsync(c.Id);        // 第一次删除：成功
+        await svc.DeleteAsync(c.Id);        // 第二次删除：幂等，不应抛异常
+
+        // 验证仍处于软删状态
+        var soft = await db.Customers.IgnoreQueryFilters().FirstAsync(x => x.Id == c.Id);
+        Assert.True(soft.IsDeleted);
+    }
+
+    [Fact]
     public async Task GetListAsync_AppliesFilters()
     {
         var (db, svc, _) = Setup();
