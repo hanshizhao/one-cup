@@ -25,6 +25,9 @@ public class OneCupDbContext : DbContext
     public DbSet<OperationLog> OperationLogs => Set<OperationLog>();
     public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
 
+    // ===== Customer 模块 =====
+    public DbSet<Customer> Customers => Set<Customer>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
