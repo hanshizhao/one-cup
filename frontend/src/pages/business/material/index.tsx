@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Badge,
   Button,
   Card,
   Form,
@@ -10,6 +9,7 @@ import {
   Popconfirm,
   Select,
   Space,
+  Switch,
   Table,
   Typography,
 } from '@arco-design/web-react';
@@ -20,6 +20,7 @@ import {
   deleteMaterial,
   getMaterial,
   getMaterials,
+  updateMaterialStatus,
 } from '@/api/material';
 import { getAllActiveUnits, MeasurementUnit } from '@/api/measurementUnit';
 import useLocale from '@/utils/useLocale';
@@ -165,7 +166,19 @@ export default function MaterialPage() {
       Message.success(t['material.message.deleteSuccess']);
       fetchData();
     } catch {
-      // ignore
+      Message.error(t['material.message.loadFailed']);
+    }
+  }
+
+  // 状态启停:走独立的 status 端点(非 UpdateMaterialRequest)。失败时刷新回滚。
+  async function handleToggleStatus(record: MaterialListItem, checked: boolean) {
+    try {
+      await updateMaterialStatus(record.id, checked);
+      Message.success(t['material.message.updateSuccess']);
+      fetchData();
+    } catch {
+      Message.error(t['material.message.loadFailed']);
+      fetchData();
     }
   }
 
@@ -184,11 +197,15 @@ export default function MaterialPage() {
       {
         title: t['material.column.status'],
         dataIndex: 'isActive',
-        render: (v: boolean) => (
-          <Badge
-            status={v ? 'success' : 'default'}
-            text={v ? t['material.active'] : t['material.inactive']}
-          />
+        render: (v: boolean, record: MaterialListItem) => (
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'material', actions: ['update'] }]}
+          >
+            <Switch
+              checked={v}
+              onChange={(checked: boolean) => handleToggleStatus(record, checked)}
+            />
+          </PermissionWrapper>
         ),
       },
       { title: t['material.column.createdAt'], dataIndex: 'createdAt' },

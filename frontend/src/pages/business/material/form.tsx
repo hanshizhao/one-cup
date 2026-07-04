@@ -7,7 +7,6 @@ import {
   Message,
   Modal,
   Select,
-  Switch,
 } from '@arco-design/web-react';
 import {
   MaterialDetail,
@@ -61,7 +60,6 @@ export default function MaterialFormModal({
           unitId: editing.unitId,
           sortOrder: editing.sortOrder,
           remark: editing.remark,
-          isActive: editing.isActive,
         });
       } else {
         // 新建模式:预览下一个编号(只读,不消耗计数)
@@ -80,7 +78,6 @@ export default function MaterialFormModal({
           .catch(() => setNoRule(true))
           .finally(() => setCodeLoading(false));
         form.resetFields();
-        form.setFieldValue('isActive', true);
       }
     }
   }, [visible, editing, form]);
@@ -158,9 +155,6 @@ export default function MaterialFormModal({
         </FormItem>
         <FormItem label={t['material.form.remark']} field="remark">
           <TextArea maxLength={256} />
-        </FormItem>
-        <FormItem label={t['material.form.isActive']} field="isActive" triggerPropName="checked">
-          <Switch />
         </FormItem>
       </Form>
     </Modal>
