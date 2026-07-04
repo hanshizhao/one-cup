@@ -32,5 +32,7 @@ export default {
   'customer.message.deleteSuccess': '删除成功',
   'customer.message.createSuccess': '创建成功',
   'customer.message.updateSuccess': '更新成功',
+  'customer.message.loading': '加载中…',
+  'customer.message.loadFailed': '加载失败',
   'customer.error.noNumberingRule': '请先在编号管理为客户配置启用规则',
 };

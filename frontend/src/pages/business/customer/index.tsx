@@ -15,8 +15,10 @@ import {
 } from '@arco-design/web-react';
 import { IconPlus, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
 import {
+  CustomerDetail,
   CustomerListItem,
   deleteCustomer,
+  getCustomer,
   getCustomers,
 } from '@/api/customer';
 import useLocale from '@/utils/useLocale';
@@ -98,9 +100,9 @@ export default function CustomerPage() {
   });
 
   const [formVisible, setFormVisible] = useState(false);
-  const [editing, setEditing] = useState<CustomerListItem | null>(null);
+  const [editing, setEditing] = useState<CustomerDetail | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
-  const [detailData, setDetailData] = useState<CustomerListItem | null>(null);
+  const [detailData, setDetailData] = useState<CustomerDetail | null>(null);
 
   function fetchData() {
     setLoading(true);
@@ -121,12 +123,25 @@ export default function CustomerPage() {
     setFormVisible(true);
   }
   function openEdit(record: CustomerListItem) {
-    setEditing(record);
-    setFormVisible(true);
+    // 加载完整 CustomerDetail（含 remark），避免编辑保存后清空备注
+    const closeLoading = Message.loading({ content: t['customer.message.loading'] });
+    getCustomer(record.id)
+      .then((detail) => {
+        setEditing(detail);
+        setFormVisible(true);
+      })
+      .catch(() => Message.error(t['customer.message.loadFailed']))
+      .finally(() => closeLoading());
   }
   function openDetail(record: CustomerListItem) {
-    setDetailData(record);
-    setDetailVisible(true);
+    const closeLoading = Message.loading({ content: t['customer.message.loading'] });
+    getCustomer(record.id)
+      .then((detail) => {
+        setDetailData(detail);
+        setDetailVisible(true);
+      })
+      .catch(() => Message.error(t['customer.message.loadFailed']))
+      .finally(() => closeLoading());
   }
   function handleDelete(record: CustomerListItem) {
     Modal.confirm({

@@ -32,6 +32,8 @@ export default {
   'customer.message.deleteSuccess': 'Deleted',
   'customer.message.createSuccess': 'Created',
   'customer.message.updateSuccess': 'Updated',
+  'customer.message.loading': 'Loading…',
+  'customer.message.loadFailed': 'Load failed',
   'customer.error.noNumberingRule':
     'Please configure an active numbering rule for customer first',
 };
