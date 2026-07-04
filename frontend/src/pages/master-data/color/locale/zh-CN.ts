@@ -42,6 +42,8 @@ export default {
   'color.form.colorFamily': '颜色系',
   'color.form.sortOrder': '排序号',
   'color.form.remark': '备注',
+  'color.form.category': '分类',
+  'color.form.category.placeholder': '请选择分类',
   'color.form.required': '该项为必填',
   'color.form.hex.invalid': '请输入 #RRGGBB 格式（如 #FF0000）',
   // 颜色系常用项
