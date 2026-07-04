@@ -92,14 +92,42 @@ request.interceptors.response.use(
       }
     }
 
-    // 其他错误：全局提示
-    const message = error.response?.data?.message || error.message || '请求失败';
+    // 其他错误：全局提示（按状态码映射普通人能看懂的文案）
+    // 优先使用后端返回的业务 message（如校验错误"角色编码只能含小写字母"），
+    // 后端无 message 时按状态码兜底，避免暴露 "Request failed with status code 403" 这种程序员文案。
     if (status !== 401) {
-      Message.error(message);
+      const backendMessage = error.response?.data?.message;
+      const friendly = backendMessage || statusToFriendlyMessage(status, error);
+      Message.error(friendly);
     }
     return Promise.reject(error);
   },
 );
+
+/**
+ * 按 HTTP 状态码返回普通人能看懂的错误文案。
+ * 后端未提供业务 message 时兜底使用，避免暴露原始 "Request failed with status code 403" 之类的技术文案。
+ */
+function statusToFriendlyMessage(status: number, error: unknown): string {
+  switch (status) {
+    case 400:
+      return '请求参数有误，请检查输入后重试';
+    case 403:
+      return '您没有该操作的权限';
+    case 404:
+      return '请求的资源不存在';
+    case 408:
+      return '请求超时，请稍后重试';
+    case 409:
+      return '操作冲突，数据可能已被他人修改，请刷新后重试';
+    case 429:
+      return '操作过于频繁，请稍后再试';
+    default:
+      if (status >= 500) return '服务器开小差了，请稍后重试';
+      // 网络错误（无 response）或未知状态码
+      return (error as { message?: string })?.message || '网络异常，请稍后重试';
+  }
+}
 
 function redirectToLogin() {
   removeTokens();
