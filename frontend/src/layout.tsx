@@ -4,6 +4,7 @@ import { Layout, Menu, Breadcrumb, Spin } from '@arco-design/web-react';
 import cs from 'classnames';
 import {
   IconSettings,
+  IconStorage,
   IconMenuFold,
   IconMenuUnfold,
 } from '@arco-design/web-react/icon';
@@ -25,6 +26,8 @@ function getIconFromKey(key: string) {
   switch (key) {
     case 'system':
       return <IconSettings className={styles.icon} />;
+    case 'master-data':
+      return <IconStorage className={styles.icon} />;
     default:
       return <div className={styles['icon-empty']} />;
   }
