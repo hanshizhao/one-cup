@@ -109,6 +109,7 @@ builder.Services.AddScoped<INumberingClock, NumberingClock>();
 builder.Services.AddScoped<INumberingService, NumberingService>();
 builder.Services.AddScoped<INumberingRuleService, NumberingRuleService>();
 builder.Services.AddScoped<INumberingDictionaryService, NumberingDictionaryService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 
 // ── 依赖注入:认证相关服务 ─────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -153,6 +154,10 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("perm_codes", "system:numbering:manage"));
     options.AddPolicy("audit-view", policy =>
         policy.RequireClaim("perm_codes", "system:audit:view"));
+    options.AddPolicy("customer-read", policy =>
+        policy.RequireClaim("perm_codes", "customer:read"));
+    options.AddPolicy("customer-write", policy =>
+        policy.RequireClaim("perm_codes", "customer:write"));
 });
 
 // 权限拒绝审计日志:装饰默认 handler,在 403 时记 Warning
