@@ -5,6 +5,7 @@ import {
 } from '@arco-design/web-react';
 import { IconPlus, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
 import useLocale from '@/utils/useLocale';
+import PermissionWrapper from '@/components/PermissionWrapper';
 import {
   getColors, createColor, updateColor, updateColorStatus,
   Color, CreateColorRequest,
@@ -207,18 +208,26 @@ export default function ColorPage() {
       title: t['color.column.operations'], dataIndex: 'operations', width: 160,
       render: (_: unknown, record: Color) => (
         <Space>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>
-            {t['color.edit']}
-          </Button>
-          <Popconfirm
-            title={record.isActive
-              ? t['color.disable.confirm'] : t['color.enable.confirm']}
-            onOk={() => handleToggleStatus(record)}
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'color', actions: ['update'] }]}
           >
-            <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
-              {record.isActive ? t['color.disable'] : t['color.enable']}
+            <Button type="text" size="small" onClick={() => openEdit(record)}>
+              {t['color.edit']}
             </Button>
-          </Popconfirm>
+          </PermissionWrapper>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'color', actions: ['update'] }]}
+          >
+            <Popconfirm
+              title={record.isActive
+                ? t['color.disable.confirm'] : t['color.enable.confirm']}
+              onOk={() => handleToggleStatus(record)}
+            >
+              <Button type="text" size="small" status={record.isActive ? 'warning' : 'success'}>
+                {record.isActive ? t['color.disable'] : t['color.enable']}
+              </Button>
+            </Popconfirm>
+          </PermissionWrapper>
         </Space>
       ),
     },
@@ -230,9 +239,13 @@ export default function ColorPage() {
       <SearchForm onSearch={handleSearch} />
       <div className={styles['button-group']}>
         <Space>
-          <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
-            {t['color.create']}
-          </Button>
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'color', actions: ['create'] }]}
+          >
+            <Button type="primary" icon={<IconPlus />} onClick={openCreate}>
+              {t['color.create']}
+            </Button>
+          </PermissionWrapper>
         </Space>
         <Space />
       </div>
