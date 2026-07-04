@@ -5,6 +5,7 @@ import cs from 'classnames';
 import {
   IconSettings,
   IconStorage,
+  IconBook,
   IconMenuFold,
   IconMenuUnfold,
 } from '@arco-design/web-react/icon';
@@ -28,6 +29,8 @@ function getIconFromKey(key: string) {
       return <IconSettings className={styles.icon} />;
     case 'master-data':
       return <IconStorage className={styles.icon} />;
+    case 'business':
+      return <IconBook className={styles.icon} />;
     default:
       return <div className={styles['icon-empty']} />;
   }
