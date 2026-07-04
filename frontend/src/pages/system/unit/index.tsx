@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   Table, Button, Drawer, Form, Input, InputNumber, Select, Switch,
   Tag, Popconfirm, Message, Space, Alert, Typography, Card, Grid,
@@ -47,6 +47,8 @@ export default function UnitManagementPage() {
   const [allUnits, setAllUnits] = useState<MeasurementUnit[]>([]);
   const [convertResult, setConvertResult] = useState<ConvertResult | null>(null);
   const [convertLoading, setConvertLoading] = useState(false);
+  // 换算请求 300ms 防抖（spec §4.6）
+  const convertTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // ── 拉取列表 ──
   const fetchData = useCallback(async () => {
@@ -177,6 +179,12 @@ export default function UnitManagementPage() {
       setConvertLoading(false);
     }
   }
+
+  // 换算请求防抖：每次字段变化 300ms 后触发一次（spec §4.6）
+  const debouncedConvert = useCallback(() => {
+    clearTimeout(convertTimer.current);
+    convertTimer.current = setTimeout(doConvert, 300);
+  }, []);
 
   // 换算 Drawer：源单位选中后，目标单位只显示同 category
   const fromCode = Form.useWatch('fromCode', convertForm);
@@ -394,7 +402,7 @@ export default function UnitManagementPage() {
       >
         <Form form={convertForm} layout="vertical">
           <FormItem label={t['unit.convert.from']} field="fromCode">
-            <Select allowClear placeholder={t['unit.convert.from']} onChange={doConvert}>
+            <Select allowClear placeholder={t['unit.convert.from']} onChange={debouncedConvert}>
               {Object.entries(
                 allUnits.reduce<Record<string, MeasurementUnit[]>>((acc, u) => {
                   (acc[u.category] ??= []).push(u);
@@ -412,7 +420,7 @@ export default function UnitManagementPage() {
             </Select>
           </FormItem>
           <FormItem label={t['unit.convert.to']} field="toCode">
-            <Select allowClear placeholder={t['unit.convert.to']} onChange={doConvert}>
+            <Select allowClear placeholder={t['unit.convert.to']} onChange={debouncedConvert}>
               {toOptions.map((u) => (
                 <Select.Option key={u.code} value={u.code}>
                   {u.nameZh} ({u.symbol})
@@ -421,7 +429,7 @@ export default function UnitManagementPage() {
             </Select>
           </FormItem>
           <FormItem label={t['unit.convert.quantity']} field="quantity">
-            <InputNumber min={0} style={{ width: '100%' }} onChange={doConvert} />
+            <InputNumber min={0} style={{ width: '100%' }} onChange={debouncedConvert} />
           </FormItem>
         </Form>
         <div style={{ marginTop: 16 }}>

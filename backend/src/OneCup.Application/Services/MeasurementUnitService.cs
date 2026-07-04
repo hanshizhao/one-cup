@@ -102,11 +102,13 @@ public class MeasurementUnitService : IMeasurementUnitService
         var entity = await _units.FirstOrDefaultAsync(new UnitByIdSpec(id), ct)
             ?? throw new DomainException("单位不存在");
 
-        // factor：基准不可改
+        // factor：基准不可改；必须大于 0（否则 ConvertAsync 会 DivideByZero）
         if (request.Factor is not null)
         {
             if (entity.IsBase)
                 throw new DomainException("基准单位的换算系数固定为 1，不可修改（请先取消其基准身份）");
+            if (request.Factor.Value <= 0m)
+                throw new DomainException("换算系数必须大于 0");
             entity.Factor = request.Factor.Value;
         }
 
@@ -140,7 +142,12 @@ public class MeasurementUnitService : IMeasurementUnitService
         if (request.NameZh is not null) entity.NameZh = request.NameZh;
         if (request.NameEn is not null) entity.NameEn = request.NameEn;
         if (request.Symbol is not null) entity.Symbol = request.Symbol;
-        if (request.Precision is not null) entity.Precision = request.Precision.Value;
+        if (request.Precision is not null)
+        {
+            if (request.Precision.Value < 0 || request.Precision.Value > 6)
+                throw new DomainException("小数位数必须在 0-6 之间");
+            entity.Precision = request.Precision.Value;
+        }
         if (request.SortOrder is not null) entity.SortOrder = request.SortOrder.Value;
 
         await _uow.SaveChangesAsync(ct);
@@ -176,7 +183,7 @@ public class MeasurementUnitService : IMeasurementUnitService
                 $"单位 '{from.Code}'({from.Category}) 与 '{to.Code}'({to.Category}) 类别不同，无法换算");
 
         var result = request.Quantity * from.Factor / to.Factor;
-        result = Math.Round(result, to.Precision);
+        result = Math.Round(result, to.Precision, MidpointRounding.AwayFromZero);
 
         return new ConvertUnitResult
         {

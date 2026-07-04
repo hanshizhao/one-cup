@@ -158,7 +158,7 @@ public class OneCupDbContext : DbContext
             new Permission { Id = SeedData.PermUnitWrite, Code = "system:unit:manage", Name = "管理计量单位", CreatedAt = SeedTimestamp }
         );
 
-        // 19 个默认单位（6 类，每类一个基准 factor=1）
+        // 20 个默认单位（6 类，每类一个基准 factor=1）
         modelBuilder.Entity<MeasurementUnit>().HasData(
             // LENGTH 长度
             new MeasurementUnit { Id = Guid.Parse("00000000-0000-0000-0000-000000010001"), Code = "meter", NameZh = "米", NameEn = "Meter", Symbol = "m", Category = "LENGTH", IsBase = true, Factor = 1m, Precision = 2, SortOrder = 1, IsActive = true, CreatedAt = SeedTimestamp },

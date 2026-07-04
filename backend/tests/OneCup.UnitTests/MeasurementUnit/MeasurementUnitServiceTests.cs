@@ -132,6 +132,27 @@ public class MeasurementUnitServiceTests
             svc.UpdateAsync(meter.Id, new UpdateUnitRequest { IsBase = false }));
     }
 
+    [Fact]
+    public async Task UpdateAsync_ZeroFactor_Throws()
+    {
+        // 防止 factor=0 被持久化后导致 ConvertAsync 触发 DivideByZeroException（HTTP 500）
+        var (db, svc) = Setup();
+        await svc.CreateAsync(ValidCreate("meter", "LENGTH", true));
+        var yard = await svc.CreateAsync(ValidCreate("yard", "LENGTH", false, 0.9m));
+        await Assert.ThrowsAsync<DomainException>(() =>
+            svc.UpdateAsync(yard.Id, new UpdateUnitRequest { Factor = 0m }));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PrecisionOutOfRange_Throws()
+    {
+        // Precision 必须在 0-6 之间（与 Create 校验一致）
+        var (db, svc) = Setup();
+        var meter = await svc.CreateAsync(ValidCreate("meter", "LENGTH", true));
+        await Assert.ThrowsAsync<DomainException>(() =>
+            svc.UpdateAsync(meter.Id, new UpdateUnitRequest { Precision = 99 }));
+    }
+
     // ── UpdateStatus ──
 
     [Fact]
