@@ -1,8 +1,8 @@
 namespace OneCup.Application.Dtos.System;
 
+/// <summary>新建颜色请求。Code 不在此处——由系统在事务内经编号引擎生成。</summary>
 public record CreateColorRequest
 {
-    public string Code { get; init; } = string.Empty;
     public string NameZh { get; init; } = string.Empty;
     public string NameEn { get; init; } = string.Empty;
     public string Hex { get; init; } = string.Empty;

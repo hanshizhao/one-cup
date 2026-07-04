@@ -32,7 +32,9 @@ export default {
   'color.form.create': '新建颜色',
   'color.form.edit': '编辑颜色',
   'color.form.code': '编码',
-  'color.form.code.placeholder': '如 RED001',
+  'color.form.code.placeholder': '创建时自动生成',
+  'color.form.code.previewing': '编号预览中…',
+  'color.form.noRule.block': '检测到尚未为颜色配置编号规则，无法新建颜色。请先到「编号管理」为颜色配置一条启用的编号规则，再回来新建。',
   'color.form.nameZh': '中文名',
   'color.form.nameEn': '英文名',
   'color.form.hex': '颜色值',
@@ -40,7 +42,6 @@ export default {
   'color.form.colorFamily': '颜色系',
   'color.form.sortOrder': '排序号',
   'color.form.remark': '备注',
-  'color.form.lockedHint': '编码创建后不可修改',
   'color.form.required': '该项为必填',
   'color.form.hex.invalid': '请输入 #RRGGBB 格式（如 #FF0000）',
   // 颜色系常用项

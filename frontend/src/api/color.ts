@@ -17,7 +17,6 @@ export interface Color {
 }
 
 export interface CreateColorRequest {
-  code: string;
   nameZh: string;
   nameEn: string;
   hex: string;

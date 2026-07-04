@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  Button, Card, Drawer, Form, Grid, Input, InputNumber, Select, Space,
+  Alert, Button, Card, Drawer, Form, Grid, Input, InputNumber, Select, Space,
   Table, Tag, Popconfirm, Message, Typography,
 } from '@arco-design/web-react';
 import { IconPlus, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
@@ -9,6 +9,7 @@ import {
   getColors, createColor, updateColor, updateColorStatus,
   Color, CreateColorRequest,
 } from '@/api/color';
+import { previewCode } from '@/api/numbering';
 import locale from './locale';
 import styles from './style/index.module.less';
 
@@ -91,8 +92,12 @@ export default function ColorPage() {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [editMode, setEditMode] = useState<'create' | 'edit'>('create');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingCode, setEditingCode] = useState<string>('');
   const [form] = Form.useForm();
+  // 新建模式：预览下一个颜色编号（不消耗计数）。null = 无启用规则 / 预览中
+  const [previewedCode, setPreviewedCode] = useState<string | null>(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  // 无编号规则：阻塞新建（用户填了也提交不了）
+  const [noRule, setNoRule] = useState(false);
 
   const fetchColors = useCallback(() => {
     const { current, pageSize } = pagination;
@@ -120,16 +125,32 @@ export default function ColorPage() {
   function openCreate() {
     setEditMode('create');
     setEditingId(null);
-    setEditingCode('');
+    setNoRule(false);
+    setPreviewedCode(null);
+    setCodeLoading(true);
     form.resetFields();
     form.setFieldsValue({ sortOrder: 0 });
+    // 预览下一个颜色编号（只读，不消耗计数）
+    previewCode('color')
+      .then((res) => {
+        // null 表示无启用规则 → 阻塞新建
+        if (res.code) {
+          setPreviewedCode(res.code);
+          setNoRule(false);
+        } else {
+          setNoRule(true);
+        }
+      })
+      .catch(() => setNoRule(true))
+      .finally(() => setCodeLoading(false));
     setDrawerVisible(true);
   }
 
   function openEdit(record: Color) {
     setEditMode('edit');
     setEditingId(record.id);
-    setEditingCode(record.code);
+    setNoRule(false);
+    setPreviewedCode(record.code);
     form.resetFields();
     form.setFieldsValue({
       nameZh: record.nameZh, nameEn: record.nameEn, hex: record.hex,
@@ -229,23 +250,21 @@ export default function ColorPage() {
         visible={drawerVisible}
         onOk={handleDrawerOk}
         onCancel={() => setDrawerVisible(false)}
+        okButtonProps={{ disabled: noRule }}
         width={440}
         unmountOnExit
       >
-        <Form form={form} layout="vertical">
-          {editMode === 'create' ? (
-            <FormItem
-              label={t['color.form.code']}
-              field="code"
-              rules={[{ required: true, message: t['color.form.required'] }]}
-            >
-              <Input placeholder={t['color.form.code.placeholder']} />
-            </FormItem>
-          ) : (
-            <FormItem label={t['color.form.code']}>
-              <Input disabled value={editingCode} />
-            </FormItem>
-          )}
+        {noRule && (
+          <Alert type="warning" content={t['color.form.noRule.block']} style={{ marginBottom: 16 }} />
+        )}
+        <Form form={form} layout="vertical" disabled={noRule}>
+          <FormItem label={t['color.form.code']}>
+            <Input
+              value={previewedCode ?? undefined}
+              readOnly
+              placeholder={codeLoading ? t['color.form.code.previewing'] : t['color.form.code.placeholder']}
+            />
+          </FormItem>
           <FormItem
             label={t['color.form.nameZh']}
             field="nameZh"

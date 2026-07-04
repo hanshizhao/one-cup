@@ -10,7 +10,8 @@ namespace OneCup.Application.Services;
 
 /// <summary>
 /// 颜色主数据管理服务实现。通过 IRepository + Specification 访问数据，IUnitOfWork 提交。
-/// code 创建后不可改；hex 格式校验；只启停不物理删除。
+/// CreateAsync 在事务内经编号引擎取号（并发安全、不跳号）；code 创建后不可改；
+/// hex 格式校验；只启停不物理删除。
 /// </summary>
 public class ColorService : IColorService
 {
@@ -19,11 +20,13 @@ public class ColorService : IColorService
 
     private readonly IRepository<Color> _colors;
     private readonly IUnitOfWork _uow;
+    private readonly INumberingService _numbering;
 
-    public ColorService(IRepository<Color> colors, IUnitOfWork uow)
+    public ColorService(IRepository<Color> colors, IUnitOfWork uow, INumberingService numbering)
     {
         _colors = colors;
         _uow = uow;
+        _numbering = numbering;
     }
 
     public async Task<PagedResult<ColorDto>> GetColorsAsync(
@@ -62,24 +65,28 @@ public class ColorService : IColorService
     {
         ValidateHex(request.Hex);
 
-        // code 唯一性:用 ColorByCodeSpec(不含 IsActive 过滤),停用也占用 code
-        if (await _colors.AnyAsync(new ColorByCodeSpec(request.Code), ct))
-            throw new DomainException($"颜色 code '{request.Code}' 已存在");
-
-        var entity = new Color
+        Guid createdId = Guid.Empty;
+        await _uow.ExecuteInTransactionAsync(async () =>
         {
-            Code = request.Code,
-            NameZh = request.NameZh,
-            NameEn = request.NameEn,
-            Hex = request.Hex,
-            ColorFamily = request.ColorFamily,
-            Remark = request.Remark,
-            SortOrder = request.SortOrder,
-            IsActive = true,
-        };
-        await _colors.AddAsync(entity, ct);
-        await _uow.SaveChangesAsync(ct);
-        return ToDto(entity);
+            // 事务内经编号引擎取号（行锁），计数器增量与颜色记录一起提交（不跳号）
+            var code = await _numbering.GenerateAsync(NumberTargetTypes.Color, null, ct);
+            var entity = new Color
+            {
+                Code = code,
+                NameZh = request.NameZh,
+                NameEn = request.NameEn,
+                Hex = request.Hex,
+                ColorFamily = request.ColorFamily,
+                Remark = request.Remark,
+                SortOrder = request.SortOrder,
+                IsActive = true,
+            };
+            await _colors.AddAsync(entity, ct);
+            await _uow.SaveChangesAsync(ct);
+            createdId = entity.Id;
+        }, ct);
+
+        return await GetColorAsync(createdId, ct) ?? throw new DomainException("颜色创建失败");
     }
 
     public async Task UpdateColorAsync(Guid id, UpdateColorRequest request, CancellationToken ct = default)
