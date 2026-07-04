@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OneCup.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using OneCup.Infrastructure.Persistence;
 namespace OneCup.Infrastructure.Migrations
 {
     [DbContext(typeof(OneCupDbContext))]
-    partial class OneCupDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260704031837_AddColorModule")]
+    partial class AddColorModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -90,72 +93,6 @@ namespace OneCup.Infrastructure.Migrations
                     b.ToTable("colors", (string)null);
                 });
 
-            modelBuilder.Entity("OneCup.Domain.Entities.Customer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("ContactPerson")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("contact_person");
-
-                    b.Property<string>("ContactPhone")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("contact_phone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("Remark")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("remark");
-
-                    b.Property<string>("ShortName")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("short_name");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("customers", (string)null);
-                });
-
             modelBuilder.Entity("OneCup.Domain.Entities.LoginLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -221,386 +158,6 @@ namespace OneCup.Infrastructure.Migrations
                         .HasDatabaseName("ix_login_logs_username");
 
                     b.ToTable("login_logs", (string)null);
-                });
-
-            modelBuilder.Entity("OneCup.Domain.Entities.MeasurementUnit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("category");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("code");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<decimal>("Factor")
-                        .HasPrecision(18, 8)
-                        .HasColumnType("numeric(18,8)")
-                        .HasColumnName("factor");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("IsBase")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_base");
-
-                    b.Property<string>("NameEn")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("name_en");
-
-                    b.Property<string>("NameZh")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("name_zh");
-
-                    b.Property<int>("Precision")
-                        .HasColumnType("integer")
-                        .HasColumnName("precision");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("sort_order");
-
-                    b.Property<string>("Symbol")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("symbol");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Category")
-                        .HasDatabaseName("ix_measurement_units_category");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("ux_measurement_units_code");
-
-                    b.ToTable("measurement_units", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010001"),
-                            Category = "LENGTH",
-                            Code = "meter",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = true,
-                            NameEn = "Meter",
-                            NameZh = "米",
-                            Precision = 2,
-                            SortOrder = 1,
-                            Symbol = "m"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010002"),
-                            Category = "LENGTH",
-                            Code = "decimeter",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 0.1m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Decimeter",
-                            NameZh = "分米",
-                            Precision = 2,
-                            SortOrder = 2,
-                            Symbol = "dm"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010003"),
-                            Category = "LENGTH",
-                            Code = "centimeter",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 0.01m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Centimeter",
-                            NameZh = "厘米",
-                            Precision = 2,
-                            SortOrder = 3,
-                            Symbol = "cm"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010004"),
-                            Category = "LENGTH",
-                            Code = "yard",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 0.9144m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Yard",
-                            NameZh = "码",
-                            Precision = 2,
-                            SortOrder = 4,
-                            Symbol = "yd"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010005"),
-                            Category = "LENGTH",
-                            Code = "foot",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 0.3048m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Foot",
-                            NameZh = "英尺",
-                            Precision = 2,
-                            SortOrder = 5,
-                            Symbol = "ft"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010010"),
-                            Category = "WEIGHT",
-                            Code = "kilogram",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = true,
-                            NameEn = "Kilogram",
-                            NameZh = "千克",
-                            Precision = 2,
-                            SortOrder = 1,
-                            Symbol = "kg"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010011"),
-                            Category = "WEIGHT",
-                            Code = "gram",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 0.001m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Gram",
-                            NameZh = "克",
-                            Precision = 2,
-                            SortOrder = 2,
-                            Symbol = "g"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010012"),
-                            Category = "WEIGHT",
-                            Code = "ton",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1000m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Ton",
-                            NameZh = "吨",
-                            Precision = 2,
-                            SortOrder = 3,
-                            Symbol = "t"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010013"),
-                            Category = "WEIGHT",
-                            Code = "pound",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 0.453592m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Pound",
-                            NameZh = "磅",
-                            Precision = 2,
-                            SortOrder = 4,
-                            Symbol = "lb"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010020"),
-                            Category = "AREA",
-                            Code = "square_meter",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = true,
-                            NameEn = "Square Meter",
-                            NameZh = "平方米",
-                            Precision = 2,
-                            SortOrder = 1,
-                            Symbol = "㎡"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010021"),
-                            Category = "AREA",
-                            Code = "square_yard",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 0.836127m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Square Yard",
-                            NameZh = "平方码",
-                            Precision = 2,
-                            SortOrder = 2,
-                            Symbol = "yd²"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010030"),
-                            Category = "COUNT",
-                            Code = "piece",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = true,
-                            NameEn = "Piece",
-                            NameZh = "件",
-                            Precision = 0,
-                            SortOrder = 1,
-                            Symbol = "件"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010031"),
-                            Category = "COUNT",
-                            Code = "roll",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Roll",
-                            NameZh = "卷",
-                            Precision = 0,
-                            SortOrder = 2,
-                            Symbol = "卷"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010032"),
-                            Category = "COUNT",
-                            Code = "bolt",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Bolt",
-                            NameZh = "匹",
-                            Precision = 0,
-                            SortOrder = 3,
-                            Symbol = "匹"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010033"),
-                            Category = "COUNT",
-                            Code = "set",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Set",
-                            NameZh = "套",
-                            Precision = 0,
-                            SortOrder = 4,
-                            Symbol = "套"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010040"),
-                            Category = "VOLUME",
-                            Code = "liter",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = true,
-                            NameEn = "Liter",
-                            NameZh = "升",
-                            Precision = 2,
-                            SortOrder = 1,
-                            Symbol = "L"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010041"),
-                            Category = "VOLUME",
-                            Code = "milliliter",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 0.001m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Milliliter",
-                            NameZh = "毫升",
-                            Precision = 2,
-                            SortOrder = 2,
-                            Symbol = "mL"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010050"),
-                            Category = "YARN",
-                            Code = "tex",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 1m,
-                            IsActive = true,
-                            IsBase = true,
-                            NameEn = "Tex",
-                            NameZh = "特",
-                            Precision = 2,
-                            SortOrder = 1,
-                            Symbol = "tex"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010051"),
-                            Category = "YARN",
-                            Code = "dtex",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 10m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Decitex",
-                            NameZh = "分特",
-                            Precision = 2,
-                            SortOrder = 2,
-                            Symbol = "dtex"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000010052"),
-                            Category = "YARN",
-                            Code = "denier",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Factor = 9m,
-                            IsActive = true,
-                            IsBase = false,
-                            NameEn = "Denier",
-                            NameZh = "旦尼尔",
-                            Precision = 2,
-                            SortOrder = 3,
-                            Symbol = "D"
-                        });
                 });
 
             modelBuilder.Entity("OneCup.Domain.Entities.NumberingCategory", b =>
@@ -1235,20 +792,6 @@ namespace OneCup.Infrastructure.Migrations
                             Code = "system:audit:view",
                             CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "查看审计日志"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000121"),
-                            Code = "system:unit:view",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "查看计量单位"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000122"),
-                            Code = "system:unit:manage",
-                            CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "管理计量单位"
                         });
                 });
 
@@ -1434,7 +977,7 @@ namespace OneCup.Infrastructure.Migrations
 
                     b.HasIndex("permission_id");
 
-                    b.ToTable("role_permissions", (string)null);
+                    b.ToTable("role_permissions");
 
                     b.HasData(
                         new
@@ -1491,7 +1034,7 @@ namespace OneCup.Infrastructure.Migrations
 
                     b.HasIndex("role_id");
 
-                    b.ToTable("user_roles", (string)null);
+                    b.ToTable("user_roles");
 
                     b.HasData(
                         new

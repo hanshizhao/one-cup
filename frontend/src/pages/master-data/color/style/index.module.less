@@ -1,0 +1,37 @@
+/* 查询区：表单 + 右侧按钮列，flex 并排 */
+.search-form-wrapper {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-1);
+  margin-bottom: 20px;
+
+  .right-button {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-left: 20px;
+    margin-bottom: 20px;
+    border-left: 1px solid var(--color-border-2);
+    box-sizing: border-box;
+  }
+}
+
+.search-form {
+  padding-right: 20px;
+}
+
+/* 表格工具栏 */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+/* 色块圆点 */
+.color-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-2);
+  vertical-align: middle;
+}

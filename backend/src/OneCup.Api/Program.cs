@@ -109,6 +109,7 @@ builder.Services.AddScoped<INumberingClock, NumberingClock>();
 builder.Services.AddScoped<INumberingService, NumberingService>();
 builder.Services.AddScoped<INumberingRuleService, NumberingRuleService>();
 builder.Services.AddScoped<INumberingDictionaryService, NumberingDictionaryService>();
+builder.Services.AddScoped<IColorService, ColorService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 // ===== Unit 模块 =====
 builder.Services.AddScoped<IMeasurementUnitService, MeasurementUnitService>();
@@ -156,6 +157,10 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("perm_codes", "system:numbering:manage"));
     options.AddPolicy("audit-view", policy =>
         policy.RequireClaim("perm_codes", "system:audit:view"));
+    options.AddPolicy("color-view", policy =>
+        policy.RequireClaim("perm_codes", "color:read"));
+    options.AddPolicy("color-manage", policy =>
+        policy.RequireClaim("perm_codes", "color:write"));
     options.AddPolicy("customer-read", policy =>
         policy.RequireClaim("perm_codes", "customer:read"));
     options.AddPolicy("customer-write", policy =>

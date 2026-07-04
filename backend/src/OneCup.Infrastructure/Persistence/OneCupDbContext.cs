@@ -25,6 +25,9 @@ public class OneCupDbContext : DbContext
     public DbSet<OperationLog> OperationLogs => Set<OperationLog>();
     public DbSet<LoginLog> LoginLogs => Set<LoginLog>();
 
+    // ===== Color 模块（feat/color-mgmt）=====
+    public DbSet<Color> Colors => Set<Color>();
+
     // ===== Customer 模块 =====
     public DbSet<Customer> Customers => Set<Customer>();
 

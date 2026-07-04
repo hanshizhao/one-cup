@@ -17,6 +17,7 @@ const CustomerPage = lazy(() => import('@/pages/business/customer'));
 const NumberingPage = lazy(() => import('@/pages/system/numbering'));
 const OperationLogPage = lazy(() => import('@/pages/system/operation-log'));
 const LoginLogPage = lazy(() => import('@/pages/system/login-log'));
+const ColorPage = lazy(() => import('@/pages/master-data/color'));
 const UnitPage = lazy(() => import('@/pages/system/unit'));
 
 const PageFallback = () => (
@@ -138,6 +139,14 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RequirePermission resource="system:audit" actions={['view']}>
             <LoginLogPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'master-data/color',
+        element: withSuspense(
+          <RequirePermission resource="color" actions={['read']}>
+            <ColorPage />
           </RequirePermission>
         ),
       },
