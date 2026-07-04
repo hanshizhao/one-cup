@@ -34,6 +34,9 @@ public class OneCupDbContext : DbContext
     // ===== Unit 模块 =====
     public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
 
+    // ===== Process 模块（feat/process-mgmt）=====
+    public DbSet<Process> Processes => Set<Process>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -128,7 +131,12 @@ public class OneCupDbContext : DbContext
             new Permission { Id = SeedData.PermSystemUnitCreate, Code = "system:unit:create", Name = "新增计量单位", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermSystemUnitUpdate, Code = "system:unit:update", Name = "编辑计量单位", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermSystemUnitDelete, Code = "system:unit:delete", Name = "删除计量单位", CreatedAt = SeedTimestamp },
-            new Permission { Id = SeedData.PermSystemAuditRead, Code = "system:audit:read", Name = "查看审计日志", CreatedAt = SeedTimestamp }
+            new Permission { Id = SeedData.PermSystemAuditRead, Code = "system:audit:read", Name = "查看审计日志", CreatedAt = SeedTimestamp },
+            // Process 模块
+            new Permission { Id = SeedData.PermProcessRead, Code = "process:read", Name = "查看工序", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermProcessCreate, Code = "process:create", Name = "录入工序", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermProcessUpdate, Code = "process:update", Name = "编辑工序", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermProcessDelete, Code = "process:delete", Name = "删除工序", CreatedAt = SeedTimestamp }
         );
 
         // ── 角色 ──
@@ -165,7 +173,8 @@ public class OneCupDbContext : DbContext
         {
             SeedData.PermFabricRead, SeedData.PermFabricCreate, SeedData.PermFabricUpdate, SeedData.PermFabricDelete,
             SeedData.PermMaterialRead, SeedData.PermEquipmentRead, SeedData.PermCustomerRead,
-            SeedData.PermColorRead, SeedData.PermProductRead, SeedData.PermSystemAuditRead
+            SeedData.PermColorRead, SeedData.PermProductRead, SeedData.PermSystemAuditRead,
+            SeedData.PermProcessRead
         };
         modelBuilder.Entity<Role>()
             .HasMany(r => r.Permissions)
@@ -182,7 +191,8 @@ public class OneCupDbContext : DbContext
             new NumberingTargetType { Id = SeedData.TargetTypeEquipment, Code = "equipment", NameZh = "设备", NameEn = "Equipment", SortOrder = 3, IsActive = true, CreatedAt = SeedTimestamp },
             new NumberingTargetType { Id = SeedData.TargetTypeCustomer, Code = "customer", NameZh = "客户", NameEn = "Customer", SortOrder = 4, IsActive = true, CreatedAt = SeedTimestamp },
             new NumberingTargetType { Id = SeedData.TargetTypeColor, Code = "color", NameZh = "颜色", NameEn = "Color", SortOrder = 5, IsActive = true, CreatedAt = SeedTimestamp },
-            new NumberingTargetType { Id = SeedData.TargetTypeProduct, Code = "product", NameZh = "产品", NameEn = "Product", SortOrder = 6, IsActive = true, CreatedAt = SeedTimestamp }
+            new NumberingTargetType { Id = SeedData.TargetTypeProduct, Code = "product", NameZh = "产品", NameEn = "Product", SortOrder = 6, IsActive = true, CreatedAt = SeedTimestamp },
+            new NumberingTargetType { Id = SeedData.TargetTypeProcess, Code = "process", NameZh = "工序", NameEn = "Process", SortOrder = 7, IsActive = true, CreatedAt = SeedTimestamp }
         );
 
         // ===== Unit 模块：计量单位 =====

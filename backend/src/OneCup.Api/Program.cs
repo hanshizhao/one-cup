@@ -113,6 +113,8 @@ builder.Services.AddScoped<IColorService, ColorService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 // ===== Unit 模块 =====
 builder.Services.AddScoped<IMeasurementUnitService, MeasurementUnitService>();
+// ===== Process 模块 =====
+builder.Services.AddScoped<IProcessService, ProcessService>();
 
 // ── 依赖注入:认证相关服务 ─────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -172,6 +174,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("product:create", p => p.RequireClaim("perm_codes", "product:create"));
     options.AddPolicy("product:update", p => p.RequireClaim("perm_codes", "product:update"));
     options.AddPolicy("product:delete", p => p.RequireClaim("perm_codes", "product:delete"));
+    options.AddPolicy("process:read", p => p.RequireClaim("perm_codes", "process:read"));
+    options.AddPolicy("process:create", p => p.RequireClaim("perm_codes", "process:create"));
+    options.AddPolicy("process:update", p => p.RequireClaim("perm_codes", "process:update"));
+    options.AddPolicy("process:delete", p => p.RequireClaim("perm_codes", "process:delete"));
     // 系统模块
     options.AddPolicy("system:user:read", p => p.RequireClaim("perm_codes", "system:user:read"));
     options.AddPolicy("system:user:create", p => p.RequireClaim("perm_codes", "system:user:create"));
