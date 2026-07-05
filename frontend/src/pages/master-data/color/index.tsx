@@ -8,9 +8,10 @@ import useLocale from '@/utils/useLocale';
 import PermissionWrapper from '@/components/PermissionWrapper';
 import {
   getColors, createColor, updateColor, updateColorStatus,
-  Color, CreateColorRequest,
+  Color,
 } from '@/api/color';
-import { previewCode } from '@/api/numbering';
+import { useNumberingPreview } from '@/components/Numbering/useNumberingPreview';
+import CategorySelect from '@/components/Numbering/CategorySelect';
 import locale from './locale';
 import styles from './style/index.module.less';
 
@@ -94,11 +95,10 @@ export default function ColorPage() {
   const [editMode, setEditMode] = useState<'create' | 'edit'>('create');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form] = Form.useForm();
-  // 新建模式：预览下一个颜色编号（不消耗计数）。null = 无启用规则 / 预览中
-  const [previewedCode, setPreviewedCode] = useState<string | null>(null);
-  const [codeLoading, setCodeLoading] = useState(false);
-  // 无编号规则：阻塞新建（用户填了也提交不了）
-  const [noRule, setNoRule] = useState(false);
+  // 编辑态编号展示（新建态编号由 preview.code 提供）
+  const [editingCode, setEditingCode] = useState<string | null>(null);
+  // 新建模式：编号预览 + 分类码自判（规则驱动）
+  const preview = useNumberingPreview('color');
 
   const fetchColors = useCallback(() => {
     const { current, pageSize } = pagination;
@@ -126,32 +126,17 @@ export default function ColorPage() {
   function openCreate() {
     setEditMode('create');
     setEditingId(null);
-    setNoRule(false);
-    setPreviewedCode(null);
-    setCodeLoading(true);
+    setEditingCode(null);
     form.resetFields();
     form.setFieldsValue({ sortOrder: 0 });
-    // 预览下一个颜色编号（只读，不消耗计数）
-    previewCode('color')
-      .then((res) => {
-        // null 表示无启用规则 → 阻塞新建
-        if (res.code) {
-          setPreviewedCode(res.code);
-          setNoRule(false);
-        } else {
-          setNoRule(true);
-        }
-      })
-      .catch(() => setNoRule(true))
-      .finally(() => setCodeLoading(false));
+    preview.reload();
     setDrawerVisible(true);
   }
 
   function openEdit(record: Color) {
     setEditMode('edit');
     setEditingId(record.id);
-    setNoRule(false);
-    setPreviewedCode(record.code);
+    setEditingCode(record.code);
     form.resetFields();
     form.setFieldsValue({
       nameZh: record.nameZh, nameEn: record.nameEn, hex: record.hex,
@@ -164,7 +149,7 @@ export default function ColorPage() {
     try {
       const values = await form.validate();
       if (editMode === 'create') {
-        await createColor(values as CreateColorRequest);
+        await createColor({ ...values, categoryCode: preview.categoryCode });
         Message.success(t['color.create.success']);
       } else {
         await updateColor(editingId!, {
@@ -263,21 +248,32 @@ export default function ColorPage() {
         visible={drawerVisible}
         onOk={handleDrawerOk}
         onCancel={() => setDrawerVisible(false)}
-        okButtonProps={{ disabled: noRule }}
+        okButtonProps={{ disabled: editMode === 'create' && preview.noRule }}
         width={440}
         unmountOnExit
       >
-        {noRule && (
+        {editMode === 'create' && preview.noRule && (
           <Alert type="warning" content={t['color.form.noRule.block']} style={{ marginBottom: 16 }} />
         )}
-        <Form form={form} layout="vertical" disabled={noRule}>
+        <Form form={form} layout="vertical" disabled={editMode === 'create' && preview.noRule}>
           <FormItem label={t['color.form.code']}>
             <Input
-              value={previewedCode ?? undefined}
+              value={(editMode === 'edit' ? editingCode : preview.code) ?? undefined}
               readOnly
-              placeholder={codeLoading ? t['color.form.code.previewing'] : t['color.form.code.placeholder']}
+              placeholder={preview.codeLoading ? t['color.form.code.previewing'] : t['color.form.code.placeholder']}
             />
           </FormItem>
+          {editMode === 'create' && preview.includeCategory && (
+            <FormItem label={t['color.form.category']} field="categoryCode">
+              <CategorySelect
+                options={preview.categoryOptions}
+                value={preview.categoryCode}
+                onChange={preview.setCategoryCode}
+                loading={preview.codeLoading}
+                placeholder={t['color.form.category.placeholder']}
+              />
+            </FormItem>
+          )}
           <FormItem
             label={t['color.form.nameZh']}
             field="nameZh"

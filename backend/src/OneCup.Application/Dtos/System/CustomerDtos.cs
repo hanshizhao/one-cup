@@ -29,6 +29,8 @@ public class CreateCustomerRequest
     public string? ContactPhone { get; set; }
     public string? Remark { get; set; }
     public bool IsActive { get; set; } = true;
+    /// <summary>可选；编号规则要求分类码时必填，由引擎强校验。</summary>
+    public string? CategoryCode { get; set; }
 }
 
 /// <summary>编辑客户请求（字段同 Create，独立类以便 FluentValidation 区分规则）。</summary>

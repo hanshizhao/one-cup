@@ -31,6 +31,8 @@ export default {
   'customer.form.contactPhone': '联系电话',
   'customer.form.remark': '备注',
   'customer.form.isActive': '启用状态',
+  'customer.form.category': '分类',
+  'customer.form.category.placeholder': '请选择分类',
   'customer.detail.title': '客户详情',
   'customer.message.deleteOk': '确定删除该客户吗？',
   'customer.message.deleteSuccess': '删除成功',

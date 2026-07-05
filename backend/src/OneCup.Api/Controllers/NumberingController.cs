@@ -78,8 +78,8 @@ public class NumberingController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Preview([FromQuery] string targetType, [FromQuery] string? categoryCode = null, CancellationToken ct = default)
     {
-        var code = await _numberingService.PreviewAsync(targetType, categoryCode, ct);
-        return Ok(new PreviewCodeResult { Code = code });
+        var r = await _numberingService.PreviewAsync(targetType, categoryCode, ct);
+        return Ok(new PreviewCodeResult { Code = r.Code, IncludeCategory = r.IncludeCategory });
     }
 
     // ── 生成日志（read 可查）──

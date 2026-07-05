@@ -238,19 +238,21 @@ public class NumberingServiceConcurrencyTests : IAsyncLifetime
         using var db = NewDbContext();
         var svc = new NumberingService(db, new NumberingClock());
         var preview = await svc.PreviewAsync("fabric", "COT");
-        Assert.NotNull(preview);
+        Assert.NotNull(preview.Code);
+        Assert.True(preview.IncludeCategory);  // fabric 规则种子 IncludeCategory=true
         // 预览不消耗计数：连续两次预览应相同
         var preview2 = await svc.PreviewAsync("fabric", "COT");
-        Assert.Equal(preview, preview2);
+        Assert.Equal(preview.Code, preview2.Code);
     }
 
     [Fact]
-    public async Task PreviewAsync_NoRule_ReturnsNull()
+    public async Task PreviewAsync_NoRule_ReturnsNullCode()
     {
         using var db = NewDbContext();
         var svc = new NumberingService(db, new NumberingClock());
         var preview = await svc.PreviewAsync("nonexistent");
-        Assert.Null(preview);
+        Assert.Null(preview.Code);
+        Assert.False(preview.IncludeCategory);
     }
 
     // ──────────────────────────────────────────────────────────────

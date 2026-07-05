@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OneCup.Application.Common;
+using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Exceptions;
@@ -120,11 +121,11 @@ public class NumberingService : INumberingService
         throw new DomainException("编号生成失败：并发冲突，请重试");
     }
 
-    public async Task<string?> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
+    public async Task<PreviewResult> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
     {
         var rule = await _db.NumberingRules
             .FirstOrDefaultAsync(r => r.TargetType == targetType && r.IsActive, ct);
-        if (rule is null) return null;
+        if (rule is null) return new PreviewResult { Code = null, IncludeCategory = false };
 
         // ── 字典强校验（Task 6）──
         var typeExists = await _db.NumberingTargetTypes
@@ -154,9 +155,11 @@ public class NumberingService : INumberingService
             .Select(c => (int?)c.CurrentSeq)
             .FirstOrDefaultAsync(ct) ?? 0;
 
-        return CodeFormatter.Format(
+        var code = CodeFormatter.Format(
             rule.Prefix, rule.IncludeCategory, rule.DateSegment,
             rule.SeqLength, rule.Separator, currentSeq + 1, effectiveCategory, now);
+
+        return new PreviewResult { Code = code, IncludeCategory = rule.IncludeCategory };
     }
 
     /// <summary>

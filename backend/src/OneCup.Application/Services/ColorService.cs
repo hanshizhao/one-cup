@@ -69,7 +69,7 @@ public class ColorService : IColorService
         await _uow.ExecuteInTransactionAsync(async () =>
         {
             // 事务内经编号引擎取号（行锁），计数器增量与颜色记录一起提交（不跳号）
-            var code = await _numbering.GenerateAsync(NumberTargetTypes.Color, null, ct);
+            var code = await _numbering.GenerateAsync(NumberTargetTypes.Color, request.CategoryCode, ct);
             var entity = new Color
             {
                 Code = code,

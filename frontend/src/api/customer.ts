@@ -39,6 +39,7 @@ export interface CustomerFormData {
   contactPhone?: string;
   remark?: string;
   isActive: boolean;
+  categoryCode?: string;
 }
 
 // ── API ──

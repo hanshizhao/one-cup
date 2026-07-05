@@ -31,6 +31,8 @@ export default {
   'customer.form.contactPhone': 'Phone',
   'customer.form.remark': 'Remark',
   'customer.form.isActive': 'Active',
+  'customer.form.category': 'Category',
+  'customer.form.category.placeholder': 'Select category',
   'customer.detail.title': 'Customer Detail',
   'customer.message.deleteOk': 'Delete this customer?',
   'customer.message.deleteSuccess': 'Deleted',

@@ -67,9 +67,18 @@ public class NumberingRuleListItemDto
 
 // ── 预览 ──
 
+/// <summary>PreviewAsync 的返回（服务层）。Code=null 表示无启用规则。</summary>
+public record PreviewResult
+{
+    public string? Code { get; init; }
+    public bool IncludeCategory { get; init; }   // 规则是否要求分类码
+}
+
+/// <summary>预览端点的 HTTP 响应。</summary>
 public record PreviewCodeResult
 {
     public string? Code { get; init; }
+    public bool IncludeCategory { get; init; }
     public string Note { get; init; } = "预览编号，实际保存时以系统分配为准";
 }
 

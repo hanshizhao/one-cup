@@ -23,6 +23,7 @@ export interface CreateColorRequest {
   colorFamily: string;
   remark?: string;
   sortOrder: number;
+  categoryCode?: string;
 }
 
 export interface UpdateColorRequest {

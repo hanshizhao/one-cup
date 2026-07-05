@@ -1,3 +1,5 @@
+using OneCup.Application.Dtos.System;
+
 namespace OneCup.Application.Interfaces;
 
 /// <summary>
@@ -14,6 +16,7 @@ public interface INumberingService
 
     /// <summary>
     /// 预览下一个编码（只读，不消耗计数，仅供参考）。
+    /// 返回 PreviewResult：Code=null 表示无启用规则，IncludeCategory 表示规则是否要求分类码。
     /// </summary>
-    Task<string?> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default);
+    Task<PreviewResult> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default);
 }

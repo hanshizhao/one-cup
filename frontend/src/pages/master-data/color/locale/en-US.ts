@@ -37,6 +37,8 @@ export default {
   'color.form.colorFamily': 'Color Family',
   'color.form.sortOrder': 'Sort Order',
   'color.form.remark': 'Remark',
+  'color.form.category': 'Category',
+  'color.form.category.placeholder': 'Select category',
   'color.form.required': 'This field is required',
   'color.form.hex.invalid': 'Enter #RRGGBB format (e.g. #FF0000)',
   'color.family.red': 'Red',
