@@ -66,7 +66,7 @@ export default {
   'numbering.enum.resetPeriod.Daily': '按日',
   // 业务类型选项
   'numbering.targetType.fabric': '面料',
-  'numbering.targetType.material': '原料',
+  'numbering.targetType.material': '物料',
   'numbering.targetType.equipment': '设备',
   'numbering.targetType.customer': '客户',
   'numbering.targetType.color': '颜色',

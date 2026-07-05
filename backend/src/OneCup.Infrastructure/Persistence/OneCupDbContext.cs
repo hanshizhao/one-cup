@@ -34,6 +34,9 @@ public class OneCupDbContext : DbContext
     // ===== Unit 模块 =====
     public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
 
+    // ===== Material 模块 =====
+    public DbSet<Material> Materials => Set<Material>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -90,10 +93,10 @@ public class OneCupDbContext : DbContext
             new Permission { Id = SeedData.PermFabricCreate, Code = "fabric:create", Name = "录入面料开发", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermFabricUpdate, Code = "fabric:update", Name = "编辑面料开发", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermFabricDelete, Code = "fabric:delete", Name = "删除面料开发", CreatedAt = SeedTimestamp },
-            new Permission { Id = SeedData.PermMaterialRead, Code = "material:read", Name = "查看原料物料", CreatedAt = SeedTimestamp },
-            new Permission { Id = SeedData.PermMaterialCreate, Code = "material:create", Name = "录入原料物料", CreatedAt = SeedTimestamp },
-            new Permission { Id = SeedData.PermMaterialUpdate, Code = "material:update", Name = "编辑原料物料", CreatedAt = SeedTimestamp },
-            new Permission { Id = SeedData.PermMaterialDelete, Code = "material:delete", Name = "删除原料物料", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermMaterialRead, Code = "material:read", Name = "查看物料", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermMaterialCreate, Code = "material:create", Name = "录入物料", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermMaterialUpdate, Code = "material:update", Name = "编辑物料", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermMaterialDelete, Code = "material:delete", Name = "删除物料", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermEquipmentRead, Code = "equipment:read", Name = "查看设备", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermEquipmentCreate, Code = "equipment:create", Name = "录入设备", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermEquipmentUpdate, Code = "equipment:update", Name = "编辑设备", CreatedAt = SeedTimestamp },
@@ -178,7 +181,7 @@ public class OneCupDbContext : DbContext
         // ── 编号业务类型字典（6 个默认类型，code 与 NumberTargetTypes 常量一致，保证存量数据无缝兼容）──
         modelBuilder.Entity<NumberingTargetType>().HasData(
             new NumberingTargetType { Id = SeedData.TargetTypeFabric, Code = "fabric", NameZh = "面料", NameEn = "Fabric", SortOrder = 1, IsActive = true, CreatedAt = SeedTimestamp },
-            new NumberingTargetType { Id = SeedData.TargetTypeMaterial, Code = "material", NameZh = "原料", NameEn = "Material", SortOrder = 2, IsActive = true, CreatedAt = SeedTimestamp },
+            new NumberingTargetType { Id = SeedData.TargetTypeMaterial, Code = "material", NameZh = "物料", NameEn = "Material", SortOrder = 2, IsActive = true, CreatedAt = SeedTimestamp },
             new NumberingTargetType { Id = SeedData.TargetTypeEquipment, Code = "equipment", NameZh = "设备", NameEn = "Equipment", SortOrder = 3, IsActive = true, CreatedAt = SeedTimestamp },
             new NumberingTargetType { Id = SeedData.TargetTypeCustomer, Code = "customer", NameZh = "客户", NameEn = "Customer", SortOrder = 4, IsActive = true, CreatedAt = SeedTimestamp },
             new NumberingTargetType { Id = SeedData.TargetTypeColor, Code = "color", NameZh = "颜色", NameEn = "Color", SortOrder = 5, IsActive = true, CreatedAt = SeedTimestamp },

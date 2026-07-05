@@ -114,6 +114,9 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 // ===== Unit 模块 =====
 builder.Services.AddScoped<IMeasurementUnitService, MeasurementUnitService>();
 
+// ===== Material 模块 =====
+builder.Services.AddScoped<IMaterialService, MaterialService>();
+
 // ── 依赖注入:认证相关服务 ─────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
