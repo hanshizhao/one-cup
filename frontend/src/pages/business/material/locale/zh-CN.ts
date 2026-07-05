@@ -29,6 +29,8 @@ export default {
   'material.form.name': '名称',
   'material.form.spec': '规格型号',
   'material.form.category': '类别',
+  'material.form.categoryCode': '编号分类码',
+  'material.form.categoryCode.placeholder': '请选择分类码',
   'material.form.unit': '计量单位',
   'material.form.sortOrder': '排序号',
   'material.form.remark': '备注',

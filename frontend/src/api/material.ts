@@ -40,6 +40,7 @@ export interface MaterialFormData {
   unitId: string | null;
   remark?: string;
   sortOrder: number;
+  categoryCode?: string;
 }
 
 export interface UpdateMaterialStatusRequest {

@@ -29,6 +29,8 @@ export default {
   'material.form.name': 'Name',
   'material.form.spec': 'Spec',
   'material.form.category': 'Category',
+  'material.form.categoryCode': 'Numbering Category',
+  'material.form.categoryCode.placeholder': 'Select category code',
   'material.form.unit': 'Unit',
   'material.form.sortOrder': 'Sort Order',
   'material.form.remark': 'Remark',

@@ -94,7 +94,7 @@ public class ProcessService : IProcessService
         await _uow.ExecuteInTransactionAsync(async () =>
         {
             // 事务内取号（行锁），计数器增量与工序记录一起提交
-            var code = await _numbering.GenerateAsync(NumberTargetTypes.Process, null, ct);
+            var code = await _numbering.GenerateAsync(NumberTargetTypes.Process, request.CategoryCode, ct);
             var process = new Process
             {
                 Code = code,

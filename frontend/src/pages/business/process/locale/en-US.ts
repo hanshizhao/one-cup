@@ -26,6 +26,8 @@ export default {
   'process.form.noRule.block': 'No active numbering rule configured for process. Please configure one in "Numbering" first, then return here to create a process.',
   'process.form.name': 'Name',
   'process.form.category': 'Category',
+  'process.form.categoryCode': 'Numbering Category',
+  'process.form.categoryCode.placeholder': 'Select category code',
   'process.form.sortOrder': 'Sort Order',
   'process.form.remark': 'Remark',
   'process.form.isActive': 'Active',

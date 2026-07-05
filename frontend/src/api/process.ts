@@ -37,6 +37,7 @@ export interface ProcessFormData {
   sortOrder: number;
   remark?: string;
   isActive: boolean;
+  categoryCode?: string;
 }
 
 // ── API ──

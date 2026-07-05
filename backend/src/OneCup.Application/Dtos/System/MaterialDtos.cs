@@ -9,6 +9,8 @@ public record CreateMaterialRequest
     public Guid? UnitId { get; init; }
     public string? Remark { get; init; }
     public int SortOrder { get; init; }
+    /// <summary>可选；编号规则要求分类码时必填，由引擎强校验。</summary>
+    public string? CategoryCode { get; init; }
 }
 
 /// <summary>更新物料请求。全可空,部分更新;Code 不可改(不在此处),IsActive 走状态接口。</summary>

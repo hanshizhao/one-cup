@@ -27,6 +27,8 @@ public record CreateProcessRequest
     public int SortOrder { get; init; } = 0;
     public string? Remark { get; init; }
     public bool IsActive { get; init; } = true;
+    /// <summary>可选；编号规则要求分类码时必填，由引擎强校验。</summary>
+    public string? CategoryCode { get; init; }
 }
 
 /// <summary>编辑工序请求（字段同 Create，独立类以便 FluentValidation 区分规则）。</summary>

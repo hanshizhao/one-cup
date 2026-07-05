@@ -26,6 +26,8 @@ export default {
   'process.form.noRule.block': '检测到尚未为工序配置编号规则，无法新建工序。请先到「编号管理」为工序配置一条启用的编号规则，再回来新建。',
   'process.form.name': '工序名称',
   'process.form.category': '工序分类',
+  'process.form.categoryCode': '编号分类码',
+  'process.form.categoryCode.placeholder': '请选择分类码',
   'process.form.sortOrder': '排序号',
   'process.form.remark': '备注',
   'process.form.isActive': '启用状态',

@@ -74,7 +74,7 @@ public class MaterialService : IMaterialService
         await _uow.ExecuteInTransactionAsync(async () =>
         {
             // 事务内经编号引擎取号(行锁),计数器增量与物料记录一起提交(不跳号)
-            var code = await _numbering.GenerateAsync(NumberTargetTypes.Material, null, ct);
+            var code = await _numbering.GenerateAsync(NumberTargetTypes.Material, request.CategoryCode, ct);
             var entity = new Material
             {
                 Code = code,
