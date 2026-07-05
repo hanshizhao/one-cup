@@ -256,6 +256,6 @@ internal sealed class FakeNumberingService : INumberingService
         return Task.FromResult($"MAT-{_seq:D4}");
     }
 
-    public Task<string?> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
-        => Task.FromResult<string?>(NextCode ?? $"MAT-{(_seq + 1):D4}");
+    public Task<PreviewResult> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
+        => Task.FromResult(new PreviewResult { Code = NextCode ?? $"MAT-{(_seq + 1):D4}", IncludeCategory = false });
 }
