@@ -68,4 +68,11 @@ internal static class SeedData
     public static readonly Guid TargetTypeCustomer = Guid.Parse("00000000-0000-0000-0000-000000000204");
     public static readonly Guid TargetTypeColor = Guid.Parse("00000000-0000-0000-0000-000000000205");
     public static readonly Guid TargetTypeProduct = Guid.Parse("00000000-0000-0000-0000-000000000206");
+
+    // === Process 模块（feat/process-mgmt）===
+    public static readonly Guid PermProcessRead = Guid.Parse("00000000-0000-0000-0000-00000000032b");
+    public static readonly Guid PermProcessCreate = Guid.Parse("00000000-0000-0000-0000-00000000032c");
+    public static readonly Guid PermProcessUpdate = Guid.Parse("00000000-0000-0000-0000-00000000032d");
+    public static readonly Guid PermProcessDelete = Guid.Parse("00000000-0000-0000-0000-00000000032e");
+    public static readonly Guid TargetTypeProcess = Guid.Parse("00000000-0000-0000-0000-000000000207");
 }

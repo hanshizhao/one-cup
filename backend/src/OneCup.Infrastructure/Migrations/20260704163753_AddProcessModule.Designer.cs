@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OneCup.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using OneCup.Infrastructure.Persistence;
 namespace OneCup.Infrastructure.Migrations
 {
     [DbContext(typeof(OneCupDbContext))]
-    partial class OneCupDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260704163753_AddProcessModule")]
+    partial class AddProcessModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -221,73 +224,6 @@ namespace OneCup.Infrastructure.Migrations
                         .HasDatabaseName("ix_login_logs_username");
 
                     b.ToTable("login_logs", (string)null);
-                });
-
-            modelBuilder.Entity("OneCup.Domain.Entities.Material", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("category");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("code");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("Remark")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("remark");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("sort_order");
-
-                    b.Property<string>("Spec")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("spec");
-
-                    b.Property<Guid?>("UnitId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("unit_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("ux_materials_code");
-
-                    b.HasIndex("UnitId");
-
-                    b.ToTable("materials", (string)null);
                 });
 
             modelBuilder.Entity("OneCup.Domain.Entities.MeasurementUnit", b =>
@@ -984,7 +920,7 @@ namespace OneCup.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             NameEn = "Material",
-                            NameZh = "物料",
+                            NameZh = "原料",
                             SortOrder = 2
                         },
                         new
@@ -1227,28 +1163,28 @@ namespace OneCup.Infrastructure.Migrations
                             Id = new Guid("00000000-0000-0000-0000-000000000305"),
                             Code = "material:read",
                             CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "查看物料"
+                            Name = "查看原料物料"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000306"),
                             Code = "material:create",
                             CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "录入物料"
+                            Name = "录入原料物料"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000307"),
                             Code = "material:update",
                             CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "编辑物料"
+                            Name = "编辑原料物料"
                         },
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000308"),
                             Code = "material:delete",
                             CreatedAt = new DateTime(2026, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "删除物料"
+                            Name = "删除原料物料"
                         },
                         new
                         {
@@ -1840,14 +1776,6 @@ namespace OneCup.Infrastructure.Migrations
                             user_id = new Guid("00000000-0000-0000-0000-000000000001"),
                             role_id = new Guid("00000000-0000-0000-0000-000000000002")
                         });
-                });
-
-            modelBuilder.Entity("OneCup.Domain.Entities.Material", b =>
-                {
-                    b.HasOne("OneCup.Domain.Entities.MeasurementUnit", null)
-                        .WithMany()
-                        .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("OneCup.Domain.Entities.NumberingCounter", b =>
