@@ -22,7 +22,7 @@ const i18n = {
   'zh-CN': {
     'menu.business': '业务资料',
     'menu.business.customer': '客户管理',
-    'menu.business.material': '原料管理',
+    'menu.business.material': '物料管理',
     'menu.system': '系统管理',
     'menu.system.user': '用户管理',
     'menu.system.role': '角色管理',
