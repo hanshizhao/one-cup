@@ -57,6 +57,30 @@ onChange 自动查询；重置按钮叫"刷新"；新建按钮用 `<span/>` hack
 **新建列表页**：复制 `docs/specs/templates/query-table-page.template.tsx` 改名，
 按 `【替换点】` 注释改字段/列/接口，**不要从零手写布局**。
 
+---
+
+## 前端：带编号对象创建标准（Numbered Object Create）
+
+带系统生成编号的业务对象（颜色/客户/物料/工序/商品/设备等），其"新建"表单
+**前后端都要按 c02 标准做**，否则分类码透传不到编号引擎。完整规范见
+`docs/conventions/c02-numbered-object-create.md`。
+
+**核心原则：编号用户永不手填；前端用可复用 hook + 组件，后端透传 categoryCode。**
+
+速查决策表：
+
+| 问题 | 标准答案 |
+| --- | --- |
+| 前端编号预览 + 分类码自判 | 用 `useNumberingPreview(targetType)` hook（**不要手写 state + 直调 `previewCode`**） |
+| 分类码下拉 | `<CategorySelect>`，`!editing && preview.includeCategory` 时条件渲染，加 `required` |
+| 后端编号引擎调用 | `GenerateAsync(targetType, request.CategoryCode, ct)`（**禁止硬编码 null**） |
+| 后端 Create DTO | 加 `public string? CategoryCode { get; init; }`（可选，引擎强校验） |
+| 提交 categoryCode | 从 `preview.categoryCode` 取（`{ ...values, categoryCode: preview.categoryCode }`） |
+
+**可复用资产**：`frontend/src/components/Numbering/useNumberingPreview.ts` +
+`frontend/src/components/Numbering/CategorySelect.tsx`。
+**主参考实例**：`frontend/src/pages/business/customer/form.tsx`。
+
 > 当需要查阅某个具体 Arco 组件的 API / 用法时，加载 `arco-design` 技能
 > （`$arco-design` 或按 description 自动触发）。
 
@@ -73,7 +97,7 @@ onChange 自动查询；重置按钮叫"刷新"；新建按钮用 `<span/>` hack
 | ID | 触发场景 | 必须走的标准 | 详情 |
 | --- | --- | --- | --- |
 | c01 | 任何"删除"操作（行内删除 / 批量删除 / 详情页删除） | 按"可逆性 + 影响范围"选 Popconfirm 或 Modal | docs/conventions/c01-delete-confirm.md |
-| c02 | 创建带编号的业务对象（颜色 / 客户 / 商品 / 计量单位等） | 走"取预览 → 只读展示 → null 则禁用表单 + 提示"流程 | docs/conventions/c02-numbered-object-create.md |
+| c02 | 创建带编号的业务对象（颜色 / 客户 / 物料 / 工序 / 商品 / 计量单位等） | 走"取预览 → 只读展示 → null 则禁用表单 + 提示 + 规则开分类码段时条件渲染分类码选择器"流程，**前后端都要做**（前端 hook+组件，后端 DTO+Service 透传 categoryCode） | docs/conventions/c02-numbered-object-create.md |
 
 ### 实施规则（不可绕过）
 
