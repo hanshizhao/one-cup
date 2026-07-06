@@ -19,10 +19,14 @@ import {
   EquipmentDto,
   EquipmentListItemDto,
   EquipmentStatus,
+  EquipmentTemplateDto,
+  EquipmentTypeDto,
   EquipmentTypeListItemDto,
   deleteEquipment,
   getActiveEquipmentTypes,
   getEquipmentById,
+  getEquipmentTemplateById,
+  getEquipmentTypeById,
   getEquipments,
 } from '@/api/equipment';
 import useLocale from '@/utils/useLocale';
@@ -31,6 +35,7 @@ import locale from '../locale';
 import styles from '../style/index.module.less';
 import EquipmentFormModal from './EquipmentForm';
 import EquipmentDetailDrawer from './EquipmentDetail';
+import TemplateFormModal from '../type/template/TemplateForm';
 
 const { Title } = Typography;
 const { Row, Col } = Grid;
@@ -144,6 +149,10 @@ export default function EquipmentTab() {
   const [editing, setEditing] = useState<EquipmentDto | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailData, setDetailData] = useState<EquipmentDto | null>(null);
+  const [typeDetailData, setTypeDetailData] = useState<EquipmentTypeDto | null>(null);
+  // 关联区模板编辑
+  const [tplFormVisible, setTplFormVisible] = useState(false);
+  const [tplEditing, setTplEditing] = useState<EquipmentTemplateDto | null>(null);
 
   useEffect(() => {
     getActiveEquipmentTypes()
@@ -184,9 +193,33 @@ export default function EquipmentTab() {
   function openDetail(record: EquipmentListItemDto) {
     const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
     getEquipmentById(record.id)
-      .then((detail) => {
+      .then(async (detail) => {
         setDetailData(detail);
         setDetailVisible(true);
+        // 关联区：额外 fetch 所属类型完整数据（含参数定义 + 模板列表）
+        if (detail.equipmentTypeId) {
+          try {
+            const typeDetail = await getEquipmentTypeById(detail.equipmentTypeId);
+            setTypeDetailData(typeDetail);
+          } catch {
+            setTypeDetailData(null);
+          }
+        } else {
+          setTypeDetailData(null);
+        }
+      })
+      .catch(() => Message.error(t['equipment.item.message.loadFailed']))
+      .finally(() => closeLoading());
+  }
+
+  // 关联区：点击可运行模板 → 打开模板编辑
+  function handleEditTemplate(templateId: string) {
+    if (!detailData?.equipmentTypeId) return;
+    const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
+    getEquipmentTemplateById(detailData.equipmentTypeId, templateId)
+      .then((tpl) => {
+        setTplEditing(tpl);
+        setTplFormVisible(true);
       })
       .catch(() => Message.error(t['equipment.item.message.loadFailed']))
       .finally(() => closeLoading());
@@ -315,8 +348,25 @@ export default function EquipmentTab() {
       <EquipmentDetailDrawer
         visible={detailVisible}
         data={detailData}
+        typeDetailData={typeDetailData}
+        onEditTemplate={handleEditTemplate}
         onClose={() => setDetailVisible(false)}
       />
+      {detailData?.equipmentTypeId && (
+        <TemplateFormModal
+          visible={tplFormVisible}
+          typeId={detailData.equipmentTypeId}
+          editing={tplEditing}
+          onClose={() => setTplFormVisible(false)}
+          onSuccess={() => {
+            setTplFormVisible(false);
+            // 刷新关联的类型数据（模板可能更新）
+            if (detailData.equipmentTypeId) {
+              getEquipmentTypeById(detailData.equipmentTypeId).then(setTypeDetailData).catch(() => {});
+            }
+          }}
+        />
+      )}
     </Card>
   );
 }
