@@ -39,6 +39,13 @@ export const routes: IRoute[] = [
           { resource: 'process', actions: ['read'] },
         ],
       },
+      {
+        name: 'menu.business.equipment',
+        key: 'business/equipment',
+        requiredPermissions: [
+          { resource: 'equipment', actions: ['read'] },
+        ],
+      },
     ],
   },
   {

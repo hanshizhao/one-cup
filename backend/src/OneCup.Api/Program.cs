@@ -119,6 +119,11 @@ builder.Services.AddScoped<IProcessService, ProcessService>();
 // ===== Material 模块 =====
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 
+// ===== Equipment 模块 =====
+builder.Services.AddScoped<IEquipmentTypeService, EquipmentTypeService>();
+builder.Services.AddScoped<IEquipmentTemplateService, EquipmentTemplateService>();
+builder.Services.AddScoped<IEquipmentService, EquipmentService>();
+
 // ── 依赖注入:认证相关服务 ─────────────────────────────────────
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -165,6 +170,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("equipment:create", p => p.RequireClaim("perm_codes", "equipment:create"));
     options.AddPolicy("equipment:update", p => p.RequireClaim("perm_codes", "equipment:update"));
     options.AddPolicy("equipment:delete", p => p.RequireClaim("perm_codes", "equipment:delete"));
+    options.AddPolicy("equipment-type:read", p => p.RequireClaim("perm_codes", "equipment-type:read"));
+    options.AddPolicy("equipment-type:create", p => p.RequireClaim("perm_codes", "equipment-type:create"));
+    options.AddPolicy("equipment-type:update", p => p.RequireClaim("perm_codes", "equipment-type:update"));
+    options.AddPolicy("equipment-type:delete", p => p.RequireClaim("perm_codes", "equipment-type:delete"));
     options.AddPolicy("customer:read", p => p.RequireClaim("perm_codes", "customer:read"));
     options.AddPolicy("customer:create", p => p.RequireClaim("perm_codes", "customer:create"));
     options.AddPolicy("customer:update", p => p.RequireClaim("perm_codes", "customer:update"));
