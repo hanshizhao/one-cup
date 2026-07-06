@@ -1,10 +1,11 @@
-import { Descriptions, Drawer, Empty, Table, Typography } from '@arco-design/web-react';
+import { Descriptions, Drawer, Table, Typography } from '@arco-design/web-react';
 import {
   EquipmentTypeDto,
   EquipmentTypeParameterDto,
 } from '@/api/equipment';
 import useLocale from '@/utils/useLocale';
 import locale from '../locale';
+import TemplateList from './template/TemplateList';
 
 const { Title } = Typography;
 
@@ -82,21 +83,7 @@ export default function EquipmentTypeDetailDrawer({
             {t['equipment.type.detail.templates']}
             {`（${data.templateCount ?? (data.templates?.length || 0)}）`}
           </Title>
-          {data.templates && data.templates.length > 0 ? (
-            <Table
-              size="small"
-              pagination={false}
-              rowKey="id"
-              columns={[
-                { title: t['equipment.type.column.name'], dataIndex: 'name' },
-                { title: '工序', dataIndex: 'processName' },
-                { title: t['equipment.type.column.sortOrder'], dataIndex: 'sortOrder' },
-              ]}
-              data={data.templates}
-            />
-          ) : (
-            <Empty description={t['equipment.type.detail.templates.empty']} />
-          )}
+          <TemplateList typeId={data.id} />
         </>
       )}
     </Drawer>
