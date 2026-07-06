@@ -48,6 +48,7 @@ public class EquipmentTypeByIdSpec : Specification<EquipmentType>
         ApplyCriteria(e => e.Id == id);
         ApplyInclude(nameof(EquipmentType.Parameters));
         ApplyInclude(nameof(EquipmentType.Templates));
+        ApplyInclude(nameof(EquipmentType.Templates) + ".Values");
     }
 }
 

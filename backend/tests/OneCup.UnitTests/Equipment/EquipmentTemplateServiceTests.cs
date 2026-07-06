@@ -156,15 +156,21 @@ public class EquipmentTemplateServiceTests
         var (typeId, numParamId, _) = await SeedType(typeSvc);
         var processId = await SeedProcess(db);
 
-        await tplSvc.CreateAsync(typeId, new CreateEquipmentTemplateRequest
+        var t1 = await tplSvc.CreateAsync(typeId, new CreateEquipmentTemplateRequest
         {
             Name = "T1", ProcessId = processId,
             Values = new() { new() { ParameterId = numParamId, Value = "100" } },
         });
-
-        await Assert.ThrowsAsync<DomainException>(() => tplSvc.CreateAsync(typeId, new CreateEquipmentTemplateRequest
+        await tplSvc.CreateAsync(typeId, new CreateEquipmentTemplateRequest
         {
-            Name = "T1", ProcessId = processId,
+            Name = "T2", ProcessId = processId,
+            Values = new() { new() { ParameterId = numParamId, Value = "100" } },
+        });
+
+        // Rename T1 → T2 (collides with existing T2) → should throw
+        await Assert.ThrowsAsync<DomainException>(() => tplSvc.UpdateAsync(typeId, t1.Id, new UpdateEquipmentTemplateRequest
+        {
+            Name = "T2", ProcessId = processId,
             Values = new() { new() { ParameterId = numParamId, Value = "100" } },
         }));
     }
