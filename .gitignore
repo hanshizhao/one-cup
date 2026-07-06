@@ -62,3 +62,7 @@ temp/
 
 # ── Git Worktrees（并行开发工作区）─────────────
 .worktrees/
+
+# ── Superpowers SDD 工作流临时产物 ─────────────
+# brainstorm visual companion 会话、task briefs、review packages 等 scratch 文件
+.superpowers/
