@@ -40,3 +40,89 @@
     border-style: dashed;
   }
 }
+
+// ── 模板值编辑器（屏 2）──
+.tpl-status-summary {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.tpl-value-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 200px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-fill-2);
+  position: relative;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.tpl-value-strip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: transparent;
+  border-radius: 2px 0 0 2px;
+}
+
+.tpl-value-label {
+  .tpl-value-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-1);
+  }
+  .tpl-value-meta {
+    font-size: 12px;
+    color: var(--color-text-3);
+    margin-top: 2px;
+  }
+}
+
+.tpl-value-input {
+  width: 100%;
+}
+
+.tpl-value-help {
+  font-size: 12px;
+  min-height: 18px;
+
+  .tpl-value-help-meta {
+    color: var(--color-text-3);
+  }
+  .tpl-value-help-error {
+    color: var(--color-danger-6);
+  }
+  .tpl-value-help-warn {
+    color: var(--color-warning-6);
+    margin-right: 8px;
+  }
+}
+
+// 异常行整行高亮
+.tpl-value-row.is-invalid {
+  background: var(--color-danger-light-1);
+
+  .tpl-value-strip {
+    background: var(--color-danger-6);
+  }
+}
+.tpl-value-row.is-orphan {
+  background: var(--color-warning-light-1);
+
+  .tpl-value-strip {
+    background: var(--color-warning-6);
+  }
+}
+
+.tpl-orphan-value {
+  color: var(--color-text-3);
+  font-size: 13px;
+  font-style: italic;
+}
