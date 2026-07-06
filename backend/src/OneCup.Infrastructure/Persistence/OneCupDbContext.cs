@@ -190,7 +190,6 @@ public class OneCupDbContext : DbContext
             SeedData.PermMaterialRead, SeedData.PermEquipmentRead, SeedData.PermCustomerRead,
             SeedData.PermColorRead, SeedData.PermProductRead, SeedData.PermSystemAuditRead,
             SeedData.PermProcessRead,
-            SeedData.PermEquipmentRead,
             SeedData.PermEquipmentTypeRead
         };
         modelBuilder.Entity<Role>()
