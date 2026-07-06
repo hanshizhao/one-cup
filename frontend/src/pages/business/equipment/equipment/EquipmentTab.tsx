@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -19,13 +20,11 @@ import {
   EquipmentDto,
   EquipmentListItemDto,
   EquipmentStatus,
-  EquipmentTemplateDto,
   EquipmentTypeDto,
   EquipmentTypeListItemDto,
   deleteEquipment,
   getActiveEquipmentTypes,
   getEquipmentById,
-  getEquipmentTemplateById,
   getEquipmentTypeById,
   getEquipments,
 } from '@/api/equipment';
@@ -33,9 +32,7 @@ import useLocale from '@/utils/useLocale';
 import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from '../locale';
 import styles from '../style/index.module.less';
-import EquipmentFormModal from './EquipmentForm';
 import EquipmentDetailDrawer from './EquipmentDetail';
-import TemplateFormModal from '../type/template/TemplateForm';
 
 const { Title } = Typography;
 const { Row, Col } = Grid;
@@ -143,16 +140,12 @@ export default function EquipmentTab() {
     pageSizeChangeResetCurrent: true,
   });
 
+  const navigate = useNavigate();
   const [types, setTypes] = useState<EquipmentTypeListItemDto[]>([]);
 
-  const [formVisible, setFormVisible] = useState(false);
-  const [editing, setEditing] = useState<EquipmentDto | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailData, setDetailData] = useState<EquipmentDto | null>(null);
   const [typeDetailData, setTypeDetailData] = useState<EquipmentTypeDto | null>(null);
-  // 关联区模板编辑
-  const [tplFormVisible, setTplFormVisible] = useState(false);
-  const [tplEditing, setTplEditing] = useState<EquipmentTemplateDto | null>(null);
 
   useEffect(() => {
     getActiveEquipmentTypes()
@@ -177,18 +170,10 @@ export default function EquipmentTab() {
   }
 
   function openCreate() {
-    setEditing(null);
-    setFormVisible(true);
+    navigate('/business/equipment/create');
   }
   function openEdit(record: EquipmentListItemDto) {
-    const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
-    getEquipmentById(record.id)
-      .then((detail) => {
-        setEditing(detail);
-        setFormVisible(true);
-      })
-      .catch(() => Message.error(t['equipment.item.message.loadFailed']))
-      .finally(() => closeLoading());
+    navigate(`/business/equipment/edit/${record.id}`);
   }
   function openDetail(record: EquipmentListItemDto) {
     const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
@@ -212,17 +197,11 @@ export default function EquipmentTab() {
       .finally(() => closeLoading());
   }
 
-  // 关联区：点击可运行模板 → 打开模板编辑
+  // 关联区：点击可运行模板 → 跳转模板编辑页
   function handleEditTemplate(templateId: string) {
     if (!detailData?.equipmentTypeId) return;
-    const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
-    getEquipmentTemplateById(detailData.equipmentTypeId, templateId)
-      .then((tpl) => {
-        setTplEditing(tpl);
-        setTplFormVisible(true);
-      })
-      .catch(() => Message.error(t['equipment.item.message.loadFailed']))
-      .finally(() => closeLoading());
+    setDetailVisible(false); // 关闭详情 Drawer
+    navigate(`/business/equipment/type/${detailData.equipmentTypeId}/template/edit/${templateId}`);
   }
   async function handleDelete(record: EquipmentListItemDto) {
     try {
@@ -338,13 +317,6 @@ export default function EquipmentTab() {
         columns={columns}
         data={data}
       />
-      <EquipmentFormModal
-        visible={formVisible}
-        editing={editing}
-        types={types}
-        onClose={() => setFormVisible(false)}
-        onSuccess={fetchData}
-      />
       <EquipmentDetailDrawer
         visible={detailVisible}
         data={detailData}
@@ -352,21 +324,6 @@ export default function EquipmentTab() {
         onEditTemplate={handleEditTemplate}
         onClose={() => setDetailVisible(false)}
       />
-      {detailData?.equipmentTypeId && (
-        <TemplateFormModal
-          visible={tplFormVisible}
-          typeId={detailData.equipmentTypeId}
-          editing={tplEditing}
-          onClose={() => setTplFormVisible(false)}
-          onSuccess={() => {
-            setTplFormVisible(false);
-            // 刷新关联的类型数据（模板可能更新）
-            if (detailData.equipmentTypeId) {
-              getEquipmentTypeById(detailData.equipmentTypeId).then(setTypeDetailData).catch(() => {});
-            }
-          }}
-        />
-      )}
     </Card>
   );
 }

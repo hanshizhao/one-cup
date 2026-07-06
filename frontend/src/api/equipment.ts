@@ -122,6 +122,7 @@ export interface EquipmentListItemDto {
   location?: string;
   status: EquipmentStatus;
   isActive: boolean;
+  sortOrder: number;
   createdAt: string;
 }
 

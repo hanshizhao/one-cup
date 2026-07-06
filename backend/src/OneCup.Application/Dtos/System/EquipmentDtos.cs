@@ -178,6 +178,7 @@ public class EquipmentListItemDto
     public string? Location { get; set; }
     public EquipmentStatus Status { get; set; }
     public bool IsActive { get; set; }
+    public int SortOrder { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

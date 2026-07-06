@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -10,16 +11,13 @@ import {
 } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
 import {
-  EquipmentTemplateDto,
   EquipmentTemplateListItemDto,
   deleteEquipmentTemplate,
-  getEquipmentTemplateById,
   getEquipmentTemplates,
 } from '@/api/equipment';
 import useLocale from '@/utils/useLocale';
 import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from '../../locale';
-import TemplateFormModal from './TemplateForm';
 
 interface Props {
   /** 所属设备类型 ID */
@@ -33,11 +31,9 @@ interface Props {
  */
 export default function TemplateList({ typeId }: Props) {
   const t = useLocale(locale);
+  const navigate = useNavigate();
   const [data, setData] = useState<EquipmentTemplateListItemDto[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const [formVisible, setFormVisible] = useState(false);
-  const [editing, setEditing] = useState<EquipmentTemplateDto | null>(null);
 
   function fetchData() {
     if (!typeId) return;
@@ -54,18 +50,10 @@ export default function TemplateList({ typeId }: Props) {
   }, [typeId]);
 
   function openCreate() {
-    setEditing(null);
-    setFormVisible(true);
+    navigate(`/business/equipment/type/${typeId}/template/create`);
   }
   function openEdit(record: EquipmentTemplateListItemDto) {
-    const closeLoading = Message.loading({ content: t['equipment.template.message.loading'] });
-    getEquipmentTemplateById(typeId, record.id)
-      .then((detail) => {
-        setEditing(detail);
-        setFormVisible(true);
-      })
-      .catch(() => Message.error(t['equipment.template.message.loadFailed']))
-      .finally(() => closeLoading());
+    navigate(`/business/equipment/type/${typeId}/template/edit/${record.id}`);
   }
   async function handleDelete(record: EquipmentTemplateListItemDto) {
     try {
@@ -152,13 +140,6 @@ export default function TemplateList({ typeId }: Props) {
           data={data}
         />
       )}
-      <TemplateFormModal
-        visible={formVisible}
-        typeId={typeId}
-        editing={editing}
-        onClose={() => setFormVisible(false)}
-        onSuccess={fetchData}
-      />
     </div>
   );
 }

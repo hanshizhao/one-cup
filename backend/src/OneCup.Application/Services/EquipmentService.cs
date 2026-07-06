@@ -66,6 +66,7 @@ public class EquipmentService : IEquipmentService
                 Location = e.Location,
                 Status = e.Status,
                 IsActive = e.IsActive,
+                SortOrder = e.SortOrder,
                 CreatedAt = e.CreatedAt,
             }).ToList(),
             Total = total,
@@ -96,6 +97,7 @@ public class EquipmentService : IEquipmentService
             WarrantyExpiry = e.WarrantyExpiry,
             Remark = e.Remark,
             IsActive = e.IsActive,
+            SortOrder = e.SortOrder,
             CreatedAt = e.CreatedAt,
             UpdatedAt = e.UpdatedAt,
         };

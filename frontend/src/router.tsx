@@ -17,6 +17,10 @@ const CustomerPage = lazy(() => import('@/pages/business/customer'));
 const MaterialPage = lazy(() => import('@/pages/business/material'));
 const ProcessPage = lazy(() => import('@/pages/business/process'));
 const EquipmentPage = lazy(() => import('@/pages/business/equipment'));
+// 设备模块表单页（页面化表单，非 Modal）
+const EquipmentTypeFormPage = lazy(() => import('@/pages/business/equipment/type/TypeFormPage'));
+const EquipmentFormPage = lazy(() => import('@/pages/business/equipment/equipment/EquipmentFormPage'));
+const EquipmentTemplateFormPage = lazy(() => import('@/pages/business/equipment/type/template/TemplateFormPage'));
 const NumberingPage = lazy(() => import('@/pages/system/numbering'));
 const OperationLogPage = lazy(() => import('@/pages/system/operation-log'));
 const LoginLogPage = lazy(() => import('@/pages/system/login-log'));
@@ -125,6 +129,55 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RequirePermission resource="equipment" actions={['read']}>
             <EquipmentPage />
+          </RequirePermission>
+        ),
+      },
+      // ── 设备模块表单页（页面化，非 Modal）──
+      {
+        path: 'business/equipment/type/create',
+        element: withSuspense(
+          <RequirePermission resource="equipment-type" actions={['create']}>
+            <EquipmentTypeFormPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'business/equipment/type/edit/:id',
+        element: withSuspense(
+          <RequirePermission resource="equipment-type" actions={['update']}>
+            <EquipmentTypeFormPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'business/equipment/create',
+        element: withSuspense(
+          <RequirePermission resource="equipment" actions={['create']}>
+            <EquipmentFormPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'business/equipment/edit/:id',
+        element: withSuspense(
+          <RequirePermission resource="equipment" actions={['update']}>
+            <EquipmentFormPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'business/equipment/type/:typeId/template/create',
+        element: withSuspense(
+          <RequirePermission resource="equipment-type" actions={['create']}>
+            <EquipmentTemplateFormPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: 'business/equipment/type/:typeId/template/edit/:id',
+        element: withSuspense(
+          <RequirePermission resource="equipment-type" actions={['update']}>
+            <EquipmentTemplateFormPage />
           </RequirePermission>
         ),
       },
