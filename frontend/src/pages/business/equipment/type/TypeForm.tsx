@@ -42,18 +42,18 @@ export default function EquipmentTypeFormModal({
   // 参数定义：受控状态，独立于 form（动态表格不适合塞进 Form field）
   const [parameters, setParameters] = useState<ParameterDefinitionDto[]>([]);
   // 新建模式：编号预览 + 分类码自判（规则驱动）
-  const preview = useNumberingPreview('EquipmentType');
+  const preview = useNumberingPreview('equipment-type');
 
   useEffect(() => {
     if (visible) {
       setErrorMsg('');
       if (editing) {
         // 编辑模式：展示实际编号 + 现有参数
-        // 注：后端 EquipmentTypeDto 未返回 SortOrder，编辑时沿用默认 0（与后端 DTO 契约一致）
         form.setFieldsValue({
           name: editing.name,
           remark: editing.remark,
           isActive: editing.isActive,
+          sortOrder: editing.sortOrder,
         });
         setParameters(editing.parameters || []);
       } else {

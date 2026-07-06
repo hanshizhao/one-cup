@@ -35,6 +35,7 @@ export interface EquipmentTypeListItemDto {
   name: string;
   parameterCount: number;
   templateCount: number;
+  sortOrder: number;
   isActive: boolean;
   createdAt: string;
 }

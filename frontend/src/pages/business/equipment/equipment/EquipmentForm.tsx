@@ -46,7 +46,7 @@ export default function EquipmentFormModal({
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   // 新建模式：编号预览 + 分类码自判（规则驱动）
-  const preview = useNumberingPreview('Equipment');
+  const preview = useNumberingPreview('equipment');
 
   useEffect(() => {
     if (visible) {
