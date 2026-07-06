@@ -40,6 +40,13 @@ public class OneCupDbContext : DbContext
     // ===== Process 模块（feat/process-mgmt）=====
     public DbSet<Process> Processes => Set<Process>();
 
+    // ===== Equipment 模块（feat/equipment-mgmt）=====
+    public DbSet<EquipmentType> EquipmentTypes => Set<EquipmentType>();
+    public DbSet<EquipmentTypeParameter> EquipmentTypeParameters => Set<EquipmentTypeParameter>();
+    public DbSet<EquipmentTemplate> EquipmentTemplates => Set<EquipmentTemplate>();
+    public DbSet<EquipmentTemplateValue> EquipmentTemplateValues => Set<EquipmentTemplateValue>();
+    public DbSet<Equipment> Equipments => Set<Equipment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
