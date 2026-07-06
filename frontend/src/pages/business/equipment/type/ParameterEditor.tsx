@@ -417,7 +417,18 @@ export default function ParameterEditor({ value, onChange, unitOptions = [] }: P
         </div>
 
         {value.length === 0 ? (
-          <Empty description={t['equipment.type.param.empty']} />
+          <>
+            <Empty description={t['equipment.type.param.empty']} />
+            <Button
+              className={styles['param-add-btn']}
+              type="dashed"
+              long
+              icon={<IconPlus />}
+              onClick={addRow}
+            >
+              {t['equipment.type.button.addParameter']}
+            </Button>
+          </>
         ) : (
           // SortableList 的类型因 react-sortable-hoc 的 @types 限制无法精确推断业务 props，用 as any 绕过
           <SortableList
