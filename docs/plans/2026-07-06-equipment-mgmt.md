@@ -1893,19 +1893,84 @@ public class EquipmentTypeService : IEquipmentTypeService
 }
 ```
 
-- [ ] **Step 5: 写 EquipmentTypeServiceTests.cs**
+- [ ] **Step 5: 写共享测试辅助 EquipmentTestHelper.cs**
 
-创建 `backend/tests/OneCup.UnitTests/Equipment/EquipmentTypeServiceTests.cs`：
+> **重要**：三个服务测试文件（Task 10/11/12）共用同一命名空间 `OneCup.UnitTests.Equipment`，必须把 `FakeNumberingService` 提到共享文件，否则 CS0101 重复定义。
+
+创建 `backend/tests/OneCup.UnitTests/Equipment/EquipmentTestHelper.cs`：
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
-using OneCup.Application.Common;
-using OneCup.Application.Dtos.System;
 using OneCup.Application.Interfaces;
+using OneCup.Infrastructure.Persistence;
+
+namespace OneCup.UnitTests.Equipment;
+
+/// <summary>
+/// 设备模块测试共享辅助。
+/// FakeNumberingService 支持 Prefix 配置（EQT- 给类型、EQ- 给设备），
+/// 三份测试文件共用，避免同命名空间重复定义。
+/// </summary>
+internal static class EquipmentTestHelper
+{
+    public static OneCupDbContext CreateDb(string namePrefix)
+    {
+        var db = new OneCupDbContext(new DbContextOptionsBuilder<OneCupDbContext>()
+            .UseInMemoryDatabase($"{namePrefix}-{Guid.NewGuid()}")
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .UseInternalServiceProvider(BuildServiceProvider())
+            .Options);
+        return db;
+    }
+
+    private static IServiceProvider BuildServiceProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddEntityFrameworkInMemoryDatabase();
+        return services.BuildServiceProvider();
+    }
+}
+
+/// <summary>
+/// 共享 fake。Prefix 决定生成编号前缀；NextCode 设了就用一次后清空，否则自增。
+/// </summary>
+internal sealed class FakeNumberingService : INumberingService
+{
+    private readonly string _prefix;
+    public string? NextCode { get; set; }
+    private int _seq;
+
+    public FakeNumberingService(string prefix)
+    {
+        _prefix = prefix;
+    }
+
+    public Task<string> GenerateAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
+    {
+        if (NextCode is not null)
+        {
+            var code = NextCode;
+            NextCode = null;
+            return Task.FromResult(code);
+        }
+        _seq++;
+        return Task.FromResult($"{_prefix}{_seq:D4}");
+    }
+
+    public Task<PreviewResult> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
+        => Task.FromResult(new PreviewResult { Code = NextCode ?? $"{_prefix}{(_seq + 1):D4}", IncludeCategory = false });
+}
+```
+
+- [ ] **Step 6: 写 EquipmentTypeServiceTests.cs**
+
+创建 `backend/tests/OneCup.UnitTests/Equipment/EquipmentTypeServiceTests.cs`：
+
+```csharp
+using OneCup.Application.Dtos.System;
 using OneCup.Application.Services;
-using OneCup.Application.Specifications;
 using OneCup.Application.Validators.System;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Enums;
@@ -1919,12 +1984,8 @@ public class EquipmentTypeServiceTests
 {
     private static (OneCupDbContext db, EquipmentTypeService svc, FakeNumberingService numbering) Setup()
     {
-        var db = new OneCupDbContext(new DbContextOptionsBuilder<OneCupDbContext>()
-            .UseInMemoryDatabase($"eqtype-{Guid.NewGuid()}")
-            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-            .UseInternalServiceProvider(BuildServiceProvider())
-            .Options);
-        var numbering = new FakeNumberingService();
+        var db = EquipmentTestHelper.CreateDb("eqtype");
+        var numbering = new FakeNumberingService("EQT-");
         var svc = new EquipmentTypeService(
             new Repository<EquipmentType>(db),
             new Repository<Equipment>(db),
@@ -1933,13 +1994,6 @@ public class EquipmentTypeServiceTests
             new CreateEquipmentTypeRequestValidator(),
             new UpdateEquipmentTypeRequestValidator());
         return (db, svc, numbering);
-    }
-
-    private static IServiceProvider BuildServiceProvider()
-    {
-        var services = new ServiceCollection();
-        services.AddEntityFrameworkInMemoryDatabase();
-        return services.BuildServiceProvider();
     }
 
     private static CreateEquipmentTypeRequest ValidCreate() => new()
@@ -2027,39 +2081,20 @@ public class EquipmentTypeServiceTests
         Assert.Null(found);
     }
 }
-
-internal sealed class FakeNumberingService : INumberingService
-{
-    public string? NextCode { get; set; }
-    private int _seq;
-
-    public Task<string> GenerateAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
-    {
-        if (NextCode is not null)
-        {
-            var code = NextCode;
-            NextCode = null;
-            return Task.FromResult(code);
-        }
-        _seq++;
-        return Task.FromResult($"EQT-{_seq:D4}");
-    }
-
-    public Task<PreviewResult> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
-        => Task.FromResult(new PreviewResult { Code = NextCode ?? $"EQT-{(_seq + 1):D4}", IncludeCategory = false });
-}
 ```
 
-- [ ] **Step 6: 运行测试，验证通过**
+> **注意**：FakeNumberingService 已移到共享文件 `EquipmentTestHelper.cs`（Step 5），本文件不再内联定义。
+
+- [ ] **Step 7: 运行测试，验证通过**
 
 Run: `dotnet test backend/tests/OneCup.UnitTests --filter "FullyQualifiedName~EquipmentTypeServiceTests|FullyQualifiedName~EquipmentParameterValueValidatorTests"`
 Expected: 全部 PASS
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add backend/src/OneCup.Application/Interfaces/IEquipmentTypeService.cs backend/src/OneCup.Application/Services/EquipmentTypeService.cs backend/tests/OneCup.UnitTests/Equipment/
-git commit -m "feat(equipment): 设备类型服务 + 参数校验器单测"
+git commit -m "feat(equipment): 设备类型服务 + 参数校验器单测 + 共享测试辅助"
 ```
 
 ---
@@ -2351,14 +2386,8 @@ public class EquipmentTemplateService : IEquipmentTemplateService
 创建 `backend/tests/OneCup.UnitTests/Equipment/EquipmentTemplateServiceTests.cs`：
 
 ```csharp
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
-using OneCup.Application.Common;
 using OneCup.Application.Dtos.System;
-using OneCup.Application.Interfaces;
 using OneCup.Application.Services;
-using OneCup.Application.Specifications;
 using OneCup.Application.Validators.System;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Enums;
@@ -2372,12 +2401,8 @@ public class EquipmentTemplateServiceTests
 {
     private static (OneCupDbContext db, EquipmentTypeService typeSvc, EquipmentTemplateService tplSvc) Setup()
     {
-        var db = new OneCupDbContext(new DbContextOptionsBuilder<OneCupDbContext>()
-            .UseInMemoryDatabase($"eqtpl-{Guid.NewGuid()}")
-            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-            .UseInternalServiceProvider(BuildServiceProvider())
-            .Options);
-        var numbering = new FakeNumberingService();
+        var db = EquipmentTestHelper.CreateDb("eqtpl");
+        var numbering = new FakeNumberingService("EQT-");
         var typeSvc = new EquipmentTypeService(
             new Repository<EquipmentType>(db),
             new Repository<Equipment>(db),
@@ -2393,13 +2418,6 @@ public class EquipmentTemplateServiceTests
             new CreateEquipmentTemplateRequestValidator(),
             new UpdateEquipmentTemplateRequestValidator());
         return (db, typeSvc, tplSvc);
-    }
-
-    private static IServiceProvider BuildServiceProvider()
-    {
-        var services = new ServiceCollection();
-        services.AddEntityFrameworkInMemoryDatabase();
-        return services.BuildServiceProvider();
     }
 
     private static async Task<(Guid typeId, Guid numberParamId, Guid enumParamId)> SeedType(EquipmentTypeService typeSvc)
@@ -2798,14 +2816,8 @@ public class EquipmentService : IEquipmentService
 创建 `backend/tests/OneCup.UnitTests/Equipment/EquipmentServiceTests.cs`：
 
 ```csharp
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
-using OneCup.Application.Common;
 using OneCup.Application.Dtos.System;
-using OneCup.Application.Interfaces;
 using OneCup.Application.Services;
-using OneCup.Application.Specifications;
 using OneCup.Application.Validators.System;
 using OneCup.Domain.Entities;
 using OneCup.Domain.Enums;
@@ -2819,12 +2831,8 @@ public class EquipmentServiceTests
 {
     private static (OneCupDbContext db, EquipmentService svc, FakeNumberingService numbering) Setup()
     {
-        var db = new OneCupDbContext(new DbContextOptionsBuilder<OneCupDbContext>()
-            .UseInMemoryDatabase($"eq-{Guid.NewGuid()}")
-            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-            .UseInternalServiceProvider(BuildServiceProvider())
-            .Options);
-        var numbering = new FakeNumberingService();
+        var db = EquipmentTestHelper.CreateDb("eq");
+        var numbering = new FakeNumberingService("EQ-");
         var svc = new EquipmentService(
             new Repository<Equipment>(db),
             new Repository<EquipmentType>(db),
@@ -2833,13 +2841,6 @@ public class EquipmentServiceTests
             new CreateEquipmentRequestValidator(),
             new UpdateEquipmentRequestValidator());
         return (db, svc, numbering);
-    }
-
-    private static IServiceProvider BuildServiceProvider()
-    {
-        var services = new ServiceCollection();
-        services.AddEntityFrameworkInMemoryDatabase();
-        return services.BuildServiceProvider();
     }
 
     private static async Task<Guid> SeedType(OneCupDbContext db)
@@ -2926,28 +2927,9 @@ public class EquipmentServiceTests
         Assert.Equal("2号车间", updated.Location);
     }
 }
-
-internal sealed class FakeNumberingService : INumberingService
-{
-    public string? NextCode { get; set; }
-    private int _seq;
-
-    public Task<string> GenerateAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
-    {
-        if (NextCode is not null)
-        {
-            var code = NextCode;
-            NextCode = null;
-            return Task.FromResult(code);
-        }
-        _seq++;
-        return Task.FromResult($"EQ-{_seq:D4}");
-    }
-
-    public Task<PreviewResult> PreviewAsync(string targetType, string? categoryCode = null, CancellationToken ct = default)
-        => Task.FromResult(new PreviewResult { Code = NextCode ?? $"EQ-{(_seq + 1):D4}", IncludeCategory = false });
-}
 ```
+
+> **注意**：FakeNumberingService 已在共享文件 `EquipmentTestHelper.cs`（Task 10 Step 5）定义，本文件不再内联定义。Task 11/12 测试提交时需确认该共享文件已在 Task 10 创建。
 
 - [ ] **Step 4: 运行测试，验证通过**
 
