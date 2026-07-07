@@ -36,14 +36,21 @@ const Option = Select.Option;
 function SearchForm({
   types,
   processes,
+  initialTypeId,
   onSearch,
 }: {
   types: EquipmentTypeListItemDto[];
   processes: ProcessListItem[];
+  initialTypeId?: string;
   onSearch: (v: Record<string, any>) => void;
 }) {
   const [form] = Form.useForm();
   const t = useLocale(locale);
+  useEffect(() => {
+    if (initialTypeId) {
+      form.setFieldsValue({ typeId: initialTypeId });
+    }
+  }, [initialTypeId, form]);
   const handleSubmit = () => onSearch(form.getFieldsValue());
   const handleReset = () => {
     form.resetFields();
@@ -100,9 +107,13 @@ export default function TemplateTab() {
   const t = useLocale(locale);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  // 从 URL ?typeId= 初始化筛选（便于从设备类型详情抽屉跳转时自动定位类型）
+  const initialTypeId = searchParams.get('typeId') || undefined;
   const [data, setData] = useState<EquipmentTemplateListItemDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formParams, setFormParams] = useState<Record<string, any>>({});
+  const [formParams, setFormParams] = useState<Record<string, any>>(
+    initialTypeId ? { typeId: initialTypeId } : {}
+  );
   const [pagination, setPagination] = useState({
     sizeCanChange: true,
     showTotal: true,
@@ -147,7 +158,7 @@ export default function TemplateTab() {
       Message.success(t['equipment.template.message.deleteSuccess']);
       fetchData();
     } catch {
-      // ignore
+      Message.error(t['equipment.template.message.loadFailed']);
     }
   }
 
@@ -211,7 +222,7 @@ export default function TemplateTab() {
   return (
     <Card>
       <Title heading={6}>{t['equipment.template.tab.title']}</Title>
-      <SearchForm types={types} processes={processes} onSearch={handleSearch} />
+      <SearchForm types={types} processes={processes} initialTypeId={initialTypeId} onSearch={handleSearch} />
       <div className={styles['button-group']}>
         <Space>
           <PermissionWrapper requiredPermissions={[{ resource: 'equipment-type', actions: ['create'] }]}>
