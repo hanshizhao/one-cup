@@ -5,6 +5,7 @@ import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from './locale';
 import EquipmentTab from './equipment/EquipmentTab';
 import TypeTab from './type/TypeTab';
+import TemplateTab from './template/TemplateTab';
 
 const { Title } = Typography;
 
@@ -19,7 +20,8 @@ export default function EquipmentPage() {
   const t = useLocale(locale);
   // Tab 状态持久化到 URL query（?tab=equipment|type），刷新/返回可恢复
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') === 'type' ? 'type' : 'equipment';
+  const tab = searchParams.get('tab');
+  const activeTab = tab === 'type' ? 'type' : tab === 'template' ? 'template' : 'equipment';
   const setActiveTab = (key: string) => {
     // 函数式更新：只改 tab，保留其它 query 参数（如未来列表页的 ?page=）
     setSearchParams(
@@ -46,6 +48,16 @@ export default function EquipmentPage() {
             requiredPermissions={[{ resource: 'equipment-type', actions: ['read'] }]}
           >
             <TypeTab />
+          </PermissionWrapper>
+        </Tabs.TabPane>
+        <Tabs.TabPane
+          key="template"
+          title={t['equipment.tab.template']}
+        >
+          <PermissionWrapper
+            requiredPermissions={[{ resource: 'equipment-type', actions: ['read'] }]}
+          >
+            <TemplateTab />
           </PermissionWrapper>
         </Tabs.TabPane>
       </Tabs>
