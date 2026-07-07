@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -33,6 +32,7 @@ import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from '../locale';
 import styles from '../style/index.module.less';
 import EquipmentDetailDrawer from './EquipmentDetail';
+import EquipmentFormDrawer from './EquipmentFormDrawer';
 
 const { Title } = Typography;
 const { Row, Col } = Grid;
@@ -140,8 +140,11 @@ export default function EquipmentTab() {
     pageSizeChangeResetCurrent: true,
   });
 
-  const navigate = useNavigate();
   const [types, setTypes] = useState<EquipmentTypeListItemDto[]>([]);
+
+  // 表单 Drawer 状态（与 customer/index.tsx 范式一致）
+  const [formVisible, setFormVisible] = useState(false);
+  const [editing, setEditing] = useState<EquipmentDto | null>(null);
 
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailData, setDetailData] = useState<EquipmentDto | null>(null);
@@ -170,10 +173,19 @@ export default function EquipmentTab() {
   }
 
   function openCreate() {
-    navigate('/business/equipment/create');
+    setEditing(null);
+    setFormVisible(true);
   }
   function openEdit(record: EquipmentListItemDto) {
-    navigate(`/business/equipment/edit/${record.id}`);
+    // 列表项不含 remark/日期等完整字段，需拉详情（EquipmentDto）再回填 Drawer
+    const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
+    getEquipmentById(record.id)
+      .then((detail) => {
+        setEditing(detail);
+        setFormVisible(true);
+      })
+      .catch(() => Message.error(t['equipment.item.message.loadFailed']))
+      .finally(() => closeLoading());
   }
   function openDetail(record: EquipmentListItemDto) {
     const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
@@ -316,6 +328,12 @@ export default function EquipmentTab() {
         data={detailData}
         typeDetailData={typeDetailData}
         onClose={() => setDetailVisible(false)}
+      />
+      <EquipmentFormDrawer
+        visible={formVisible}
+        editing={editing}
+        onClose={() => setFormVisible(false)}
+        onSuccess={fetchData}
       />
     </Card>
   );

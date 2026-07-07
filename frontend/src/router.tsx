@@ -17,9 +17,8 @@ const CustomerPage = lazy(() => import('@/pages/business/customer'));
 const MaterialPage = lazy(() => import('@/pages/business/material'));
 const ProcessPage = lazy(() => import('@/pages/business/process'));
 const EquipmentPage = lazy(() => import('@/pages/business/equipment'));
-// 设备模块表单页（页面化表单，非 Modal）
+// 设备模块表单页：设备类型 / 模板走独立页；设备走 Drawer（无独立路由）
 const EquipmentTypeFormPage = lazy(() => import('@/pages/business/equipment/type/TypeFormPage'));
-const EquipmentFormPage = lazy(() => import('@/pages/business/equipment/equipment/EquipmentFormPage'));
 const EquipmentTemplateFormPage = lazy(() => import('@/pages/business/equipment/type/template/TemplateFormPage'));
 const NumberingPage = lazy(() => import('@/pages/system/numbering'));
 const OperationLogPage = lazy(() => import('@/pages/system/operation-log'));
@@ -132,7 +131,7 @@ export const router = createBrowserRouter([
           </RequirePermission>
         ),
       },
-      // ── 设备模块表单页（页面化，非 Modal）──
+      // ── 设备模块表单页（设备类型 / 模板走独立页；设备走 Drawer）──
       {
         path: 'business/equipment/type/create',
         element: withSuspense(
@@ -146,22 +145,6 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RequirePermission resource="equipment-type" actions={['update']}>
             <EquipmentTypeFormPage />
-          </RequirePermission>
-        ),
-      },
-      {
-        path: 'business/equipment/create',
-        element: withSuspense(
-          <RequirePermission resource="equipment" actions={['create']}>
-            <EquipmentFormPage />
-          </RequirePermission>
-        ),
-      },
-      {
-        path: 'business/equipment/edit/:id',
-        element: withSuspense(
-          <RequirePermission resource="equipment" actions={['update']}>
-            <EquipmentFormPage />
           </RequirePermission>
         ),
       },
