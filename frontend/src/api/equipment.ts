@@ -84,6 +84,8 @@ export interface EquipmentTemplateValueDto extends TemplateValueDto {
 
 export interface EquipmentTemplateListItemDto {
   id: string;
+  equipmentTypeId: string;
+  equipmentTypeName: string;
   name: string;
   processId: string;
   processName: string;
@@ -189,6 +191,25 @@ export const getEquipmentTemplates = (typeId: string, processId?: string) =>
 
 export const getEquipmentTemplateById = (typeId: string, id: string) =>
   request.get<unknown, EquipmentTemplateDto>(`/api/equipment-types/${typeId}/templates/${id}`);
+
+export interface EquipmentTemplatePagedQuery {
+  typeId?: string;
+  keyword?: string;
+  processId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export function getEquipmentTemplatesPaged(params: EquipmentTemplatePagedQuery) {
+  return request.get<unknown, PagedResult<EquipmentTemplateListItemDto>>(
+    '/api/equipment-templates',
+    { params }
+  );
+}
+
+export function getEquipmentTemplateByIdTopLevel(id: string) {
+  return request.get<unknown, EquipmentTemplateDto>(`/api/equipment-templates/${id}`);
+}
 
 export const createEquipmentTemplate = (typeId: string, data: CreateEquipmentTemplateRequest) =>
   request.post<unknown, EquipmentTemplateDto>(`/api/equipment-types/${typeId}/templates`, data);
