@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   Form,
-  Grid,
   Input,
   InputNumber,
   Message,
@@ -29,7 +28,6 @@ import ParameterEditor from './ParameterEditor';
 import styles from '../style/index.module.less';
 
 const { Title } = Typography;
-const { Row, Col } = Grid;
 const FormItem = Form.Item;
 const TextArea = Input.TextArea;
 
@@ -159,13 +157,13 @@ export default function EquipmentTypeFormPage() {
         layout="vertical"
         disabled={!editing && preview.noRule}
       >
-        {/* Card ① 基础信息 */}
-        <Card className={styles['form-page-card']}>
-          <Title heading={6} style={{ marginTop: 0 }}>
-            {t['equipment.type.detail.baseInfo']}
-          </Title>
-          <Row gutter={48}>
-            <Col span={8}>
+        <div className={styles['form-split-layout']}>
+          {/* 左栏：基础信息（顶标签单列） */}
+          <div className={styles['form-split-left']}>
+            <Card className={styles['form-page-card']}>
+              <Title heading={6} style={{ marginTop: 0 }}>
+                {t['equipment.type.detail.baseInfo']}
+              </Title>
               <FormItem label={t['equipment.type.form.code']}>
                 <Input
                   value={(editing ? code : preview.code) ?? undefined}
@@ -177,13 +175,9 @@ export default function EquipmentTypeFormPage() {
                   }
                 />
               </FormItem>
-            </Col>
-            <Col span={8}>
               <FormItem label={t['equipment.type.form.name']} field="name" rules={[{ required: true }]}>
                 <Input maxLength={50} />
               </FormItem>
-            </Col>
-            <Col span={8}>
               {!editing && preview.includeCategory && (
                 <FormItem
                   label={t['equipment.type.form.categoryCode']}
@@ -199,35 +193,30 @@ export default function EquipmentTypeFormPage() {
                   />
                 </FormItem>
               )}
-            </Col>
-          </Row>
-          <Row gutter={48}>
-            <Col span={8}>
               <FormItem label={t['equipment.type.form.sortOrder']} field="sortOrder" initialValue={0}>
                 <InputNumber min={0} style={{ width: '100%' }} />
               </FormItem>
-            </Col>
-            <Col span={8}>
               <FormItem label={t['equipment.type.form.isActive']} field="isActive" triggerPropName="checked">
                 <Switch />
               </FormItem>
-            </Col>
-          </Row>
-          {/* 备注：全宽 TextArea，独立成行（不进三列网格） */}
-          <FormItem label={t['equipment.type.form.remark']} field="remark">
-            <TextArea maxLength={500} showWordLimit />
-          </FormItem>
-        </Card>
+              <FormItem label={t['equipment.type.form.remark']} field="remark">
+                <TextArea maxLength={500} showWordLimit />
+              </FormItem>
+            </Card>
+          </div>
 
-        {/* Card ② 参数定义 */}
-        <Card className={styles['form-page-card']}>
-          <Title heading={6} style={{ marginTop: 0 }}>
-            {t['equipment.type.form.parameters']}
-          </Title>
-          <FormItem>
-            <ParameterEditor value={parameters} onChange={setParameters} />
-          </FormItem>
-        </Card>
+          {/* 右栏：参数定义 */}
+          <div className={styles['form-split-right']}>
+            <Card className={styles['form-page-card']}>
+              <Title heading={6} style={{ marginTop: 0 }}>
+                {t['equipment.type.form.parameters']}
+              </Title>
+              <FormItem>
+                <ParameterEditor value={parameters} onChange={setParameters} />
+              </FormItem>
+            </Card>
+          </div>
+        </div>
       </Form>
 
       {/* 底部操作栏（sticky，右对齐 取消/保存） */}
