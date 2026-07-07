@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -19,17 +20,18 @@ import {
   EquipmentDto,
   EquipmentListItemDto,
   EquipmentStatus,
+  EquipmentTypeDto,
   EquipmentTypeListItemDto,
   deleteEquipment,
   getActiveEquipmentTypes,
   getEquipmentById,
+  getEquipmentTypeById,
   getEquipments,
 } from '@/api/equipment';
 import useLocale from '@/utils/useLocale';
 import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from '../locale';
 import styles from '../style/index.module.less';
-import EquipmentFormModal from './EquipmentForm';
 import EquipmentDetailDrawer from './EquipmentDetail';
 
 const { Title } = Typography;
@@ -138,12 +140,12 @@ export default function EquipmentTab() {
     pageSizeChangeResetCurrent: true,
   });
 
+  const navigate = useNavigate();
   const [types, setTypes] = useState<EquipmentTypeListItemDto[]>([]);
 
-  const [formVisible, setFormVisible] = useState(false);
-  const [editing, setEditing] = useState<EquipmentDto | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailData, setDetailData] = useState<EquipmentDto | null>(null);
+  const [typeDetailData, setTypeDetailData] = useState<EquipmentTypeDto | null>(null);
 
   useEffect(() => {
     getActiveEquipmentTypes()
@@ -168,29 +170,33 @@ export default function EquipmentTab() {
   }
 
   function openCreate() {
-    setEditing(null);
-    setFormVisible(true);
+    navigate('/business/equipment/create');
   }
   function openEdit(record: EquipmentListItemDto) {
-    const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
-    getEquipmentById(record.id)
-      .then((detail) => {
-        setEditing(detail);
-        setFormVisible(true);
-      })
-      .catch(() => Message.error(t['equipment.item.message.loadFailed']))
-      .finally(() => closeLoading());
+    navigate(`/business/equipment/edit/${record.id}`);
   }
   function openDetail(record: EquipmentListItemDto) {
     const closeLoading = Message.loading({ content: t['equipment.item.message.loading'] });
     getEquipmentById(record.id)
-      .then((detail) => {
+      .then(async (detail) => {
         setDetailData(detail);
         setDetailVisible(true);
+        // 关联区：额外 fetch 所属类型完整数据（含参数定义 + 模板列表）
+        if (detail.equipmentTypeId) {
+          try {
+            const typeDetail = await getEquipmentTypeById(detail.equipmentTypeId);
+            setTypeDetailData(typeDetail);
+          } catch {
+            setTypeDetailData(null);
+          }
+        } else {
+          setTypeDetailData(null);
+        }
       })
       .catch(() => Message.error(t['equipment.item.message.loadFailed']))
       .finally(() => closeLoading());
   }
+
   async function handleDelete(record: EquipmentListItemDto) {
     try {
       await deleteEquipment(record.id);
@@ -305,16 +311,10 @@ export default function EquipmentTab() {
         columns={columns}
         data={data}
       />
-      <EquipmentFormModal
-        visible={formVisible}
-        editing={editing}
-        types={types}
-        onClose={() => setFormVisible(false)}
-        onSuccess={fetchData}
-      />
       <EquipmentDetailDrawer
         visible={detailVisible}
         data={detailData}
+        typeDetailData={typeDetailData}
         onClose={() => setDetailVisible(false)}
       />
     </Card>

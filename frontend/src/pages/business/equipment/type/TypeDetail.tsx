@@ -1,4 +1,4 @@
-import { Descriptions, Drawer, Table, Typography } from '@arco-design/web-react';
+import { Descriptions, Drawer, Table, Tag, Typography } from '@arco-design/web-react';
 import {
   EquipmentTypeDto,
   EquipmentTypeParameterDto,
@@ -24,22 +24,59 @@ export default function EquipmentTypeDetailDrawer({
     {
       title: t['equipment.type.detail.column.index'],
       key: 'index',
-      width: 60,
+      width: 50,
       render: (_: unknown, _record: EquipmentTypeParameterDto, idx: number) => idx + 1,
     },
-    { title: t['equipment.type.param.name'], dataIndex: 'name' },
+    { title: t['equipment.type.param.name'], dataIndex: 'name', width: 100 },
     {
       title: t['equipment.type.param.valueType'],
       dataIndex: 'valueType',
-      render: (vt: string) => t[`equipment.type.param.valueType.${vt.toLowerCase()}`],
+      width: 70,
+      render: (vt: string) => (
+        <Tag
+          size="small"
+          color={vt === 'Number' ? 'arcoblue' : vt === 'Enum' ? 'green' : 'gray'}
+        >
+          {t[`equipment.type.param.valueType.${vt.toLowerCase()}`]}
+        </Tag>
+      ),
     },
     {
       title: t['equipment.type.param.required'],
       dataIndex: 'required',
+      width: 50,
       render: (v: boolean) => (v ? '✓' : '-'),
     },
-    { title: t['equipment.type.param.unit'], dataIndex: 'unitSymbol', render: (v?: string) => v || '-' },
-    { title: t['equipment.type.form.remark'], dataIndex: 'remark', render: (v?: string) => v || '-' },
+    {
+      title: t['equipment.type.detail.column.constraint'],
+      key: 'constraint',
+      render: (_: unknown, record: EquipmentTypeParameterDto) => {
+        if (record.valueType !== 'Number') return <span style={{ color: 'var(--color-text-4)' }}>—</span>;
+        const range =
+          record.minValue != null || record.maxValue != null
+            ? `${record.minValue ?? '−∞'} ~ ${record.maxValue ?? '+∞'}`
+            : t['equipment.type.param.preview.noRange'];
+        const unit = record.unitSymbol ? ` ${record.unitSymbol}` : '';
+        const prec = record.precision != null ? ` · ${t['equipment.template.value.precisionLabel']} ${record.precision}` : '';
+        return <span style={{ fontSize: 12 }}>{range}{unit}<span style={{ color: 'var(--color-text-4)' }}>{prec}</span></span>;
+      },
+    },
+    {
+      title: t['equipment.type.detail.column.options'],
+      key: 'options',
+      render: (_: unknown, record: EquipmentTypeParameterDto) => {
+        if (record.valueType !== 'Enum') return <span style={{ color: 'var(--color-text-4)' }}>—</span>;
+        return (
+          <span>
+            {(record.options || []).map((o) => (
+              <Tag key={o} size="small" style={{ marginRight: 4 }}>
+                {o}
+              </Tag>
+            ))}
+          </span>
+        );
+      },
+    },
   ];
 
   return (

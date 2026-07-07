@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -24,7 +25,6 @@ import useLocale from '@/utils/useLocale';
 import PermissionWrapper from '@/components/PermissionWrapper';
 import locale from '../locale';
 import styles from '../style/index.module.less';
-import EquipmentTypeFormModal from './TypeForm';
 import EquipmentTypeDetailDrawer from './TypeDetail';
 
 const { Title } = Typography;
@@ -93,8 +93,7 @@ export default function EquipmentTypeTab() {
     pageSizeChangeResetCurrent: true,
   });
 
-  const [formVisible, setFormVisible] = useState(false);
-  const [editing, setEditing] = useState<EquipmentTypeDto | null>(null);
+  const navigate = useNavigate();
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailData, setDetailData] = useState<EquipmentTypeDto | null>(null);
 
@@ -113,18 +112,10 @@ export default function EquipmentTypeTab() {
   }
 
   function openCreate() {
-    setEditing(null);
-    setFormVisible(true);
+    navigate('/business/equipment/type/create');
   }
   function openEdit(record: EquipmentTypeListItemDto) {
-    const closeLoading = Message.loading({ content: t['equipment.type.message.loading'] });
-    getEquipmentTypeById(record.id)
-      .then((detail) => {
-        setEditing(detail);
-        setFormVisible(true);
-      })
-      .catch(() => Message.error(t['equipment.type.message.loadFailed']))
-      .finally(() => closeLoading());
+    navigate(`/business/equipment/type/edit/${record.id}`);
   }
   function openDetail(record: EquipmentTypeListItemDto) {
     const closeLoading = Message.loading({ content: t['equipment.type.message.loading'] });
@@ -241,12 +232,6 @@ export default function EquipmentTypeTab() {
         pagination={pagination}
         columns={columns}
         data={data}
-      />
-      <EquipmentTypeFormModal
-        visible={formVisible}
-        editing={editing}
-        onClose={() => setFormVisible(false)}
-        onSuccess={fetchData}
       />
       <EquipmentTypeDetailDrawer
         visible={detailVisible}
