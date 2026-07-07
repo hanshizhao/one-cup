@@ -18,6 +18,7 @@ public class EquipmentTypeService : IEquipmentTypeService
 {
     private readonly IRepository<EquipmentType> _types;
     private readonly IRepository<Equipment> _equipments;
+    private readonly IRepository<Process> _processes;
     private readonly IUnitOfWork _uow;
     private readonly INumberingService _numbering;
     private readonly IValidator<CreateEquipmentTypeRequest> _createValidator;
@@ -26,6 +27,7 @@ public class EquipmentTypeService : IEquipmentTypeService
     public EquipmentTypeService(
         IRepository<EquipmentType> types,
         IRepository<Equipment> equipments,
+        IRepository<Process> processes,
         IUnitOfWork uow,
         INumberingService numbering,
         IValidator<CreateEquipmentTypeRequest> createValidator,
@@ -33,6 +35,7 @@ public class EquipmentTypeService : IEquipmentTypeService
     {
         _types = types;
         _equipments = equipments;
+        _processes = processes;
         _uow = uow;
         _numbering = numbering;
         _createValidator = createValidator;
@@ -71,6 +74,7 @@ public class EquipmentTypeService : IEquipmentTypeService
         if (t is null) return null;
 
         // 单位符号批量查（避免 N+1，这里类型参数量不大，逐个查可接受；如需优化可改 IQueryable 投影）
+        var processNames = await GetProcessNames(t.Templates.Select(tl => tl.ProcessId).Distinct(), ct);
         return new EquipmentTypeDto
         {
             Id = t.Id,
@@ -102,11 +106,19 @@ public class EquipmentTypeService : IEquipmentTypeService
                 Id = tl.Id,
                 Name = tl.Name,
                 ProcessId = tl.ProcessId,
-                ProcessName = "",  // ProcessName 在 Controller 层或此处补查；为简化，先留空，后续可优化
+                ProcessName = processNames.GetValueOrDefault(tl.ProcessId, ""),
                 Status = "valid",  // 摘要不带逐值校验，详情才校验
                 SortOrder = tl.SortOrder,
             }).ToList(),
         };
+    }
+
+    private async Task<Dictionary<Guid, string>> GetProcessNames(IEnumerable<Guid> processIds, CancellationToken ct)
+    {
+        var ids = processIds.ToList();
+        if (ids.Count == 0) return new();
+        var processes = await _processes.ListAsync(ct);
+        return processes.Where(p => ids.Contains(p.Id)).ToDictionary(p => p.Id, p => p.Name);
     }
 
     public async Task<List<EquipmentTypeListItemDto>> GetActiveAsync(CancellationToken ct = default)

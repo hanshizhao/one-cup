@@ -197,12 +197,6 @@ export default function EquipmentTab() {
       .finally(() => closeLoading());
   }
 
-  // 关联区：点击可运行模板 → 跳转模板编辑页
-  function handleEditTemplate(templateId: string) {
-    if (!detailData?.equipmentTypeId) return;
-    setDetailVisible(false); // 关闭详情 Drawer
-    navigate(`/business/equipment/type/${detailData.equipmentTypeId}/template/edit/${templateId}`);
-  }
   async function handleDelete(record: EquipmentListItemDto) {
     try {
       await deleteEquipment(record.id);
@@ -321,7 +315,6 @@ export default function EquipmentTab() {
         visible={detailVisible}
         data={detailData}
         typeDetailData={typeDetailData}
-        onEditTemplate={handleEditTemplate}
         onClose={() => setDetailVisible(false)}
       />
     </Card>

@@ -205,7 +205,7 @@ export default {
   'equipment.item.detail.relation.params': '参数',
   'equipment.item.detail.relation.templates': '运行模板',
   'equipment.item.detail.relation.paramList': '该类型的参数定义',
-  'equipment.item.detail.relation.templateList': '可运行模板（点击编辑）',
+  'equipment.item.detail.relation.templateList': '可运行模板',
   'equipment.item.column.operations': '操作',
   'equipment.item.active': '启用',
   'equipment.item.inactive': '停用',

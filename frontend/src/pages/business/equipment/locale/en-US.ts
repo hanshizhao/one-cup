@@ -205,7 +205,7 @@ export default {
   'equipment.item.detail.relation.params': 'params',
   'equipment.item.detail.relation.templates': 'templates',
   'equipment.item.detail.relation.paramList': 'Parameter definitions of this type',
-  'equipment.item.detail.relation.templateList': 'Runnable templates (click to edit)',
+  'equipment.item.detail.relation.templateList': 'Runnable templates',
   'equipment.item.column.operations': 'Operations',
   'equipment.item.active': 'Active',
   'equipment.item.inactive': 'Inactive',
