@@ -2,6 +2,17 @@ export default {
   'equipment.title': '设备管理',
   'equipment.tab.equipment': '设备',
   'equipment.tab.type': '设备类型',
+  // ── 运行模板 Tab ──
+  'equipment.tab.template': '运行模板',
+  'equipment.template.tab.title': '运行模板',
+  'equipment.template.tab.search.type': '设备类型',
+  'equipment.template.tab.search.type.all': '全部类型',
+  'equipment.template.tab.search.keyword': '模板名称',
+  'equipment.template.tab.search.process': '工序',
+  'equipment.template.tab.button.create': '新建模板',
+  'equipment.template.tab.column.type': '所属类型',
+  'equipment.template.tab.selectTypeFirst': '请先选择设备类型',
+  'equipment.template.tab.manageInTab': '在「运行模板」Tab 中管理',
 
   // ── 设备类型 列表 ──
   'equipment.type.title': '设备类型',

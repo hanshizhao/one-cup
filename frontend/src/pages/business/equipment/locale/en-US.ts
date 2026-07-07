@@ -2,6 +2,17 @@ export default {
   'equipment.title': 'Equipment Management',
   'equipment.tab.equipment': 'Equipment',
   'equipment.tab.type': 'Equipment Type',
+  // ── Run Template tab ──
+  'equipment.tab.template': 'Templates',
+  'equipment.template.tab.title': 'Templates',
+  'equipment.template.tab.search.type': 'Equipment Type',
+  'equipment.template.tab.search.type.all': 'All Types',
+  'equipment.template.tab.search.keyword': 'Template Name',
+  'equipment.template.tab.search.process': 'Process',
+  'equipment.template.tab.button.create': 'New Template',
+  'equipment.template.tab.column.type': 'Type',
+  'equipment.template.tab.selectTypeFirst': 'Please select an equipment type first',
+  'equipment.template.tab.manageInTab': 'Manage in Templates tab',
 
   // ── Equipment Type list ──
   'equipment.type.title': 'Equipment Types',
