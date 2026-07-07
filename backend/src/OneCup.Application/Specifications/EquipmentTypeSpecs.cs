@@ -52,6 +52,17 @@ public class EquipmentTypeByIdSpec : Specification<EquipmentType>
     }
 }
 
+/// <summary>按多个 Id 批量查询设备类型（含参数定义，用于跨类型模板查询算 status）。</summary>
+public class EquipmentTypesByIdsSpec : Specification<EquipmentType>
+{
+    public EquipmentTypesByIdsSpec(IEnumerable<Guid> ids)
+    {
+        var idList = ids.ToList();
+        ApplyCriteria(t => idList.Contains(t.Id));
+        ApplyInclude(nameof(EquipmentType.Parameters));
+    }
+}
+
 /// <summary>名称唯一性校验。</summary>
 public class EquipmentTypeByNameSpec : Specification<EquipmentType>
 {

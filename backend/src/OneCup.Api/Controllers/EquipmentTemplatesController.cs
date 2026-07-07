@@ -38,6 +38,30 @@ public class EquipmentTemplatesController : ControllerBase
         return template is null ? NotFound() : Ok(template);
     }
 
+    // ── 顶层端点（非嵌套：不带 typeId）── `~` 覆盖类级 Route 前缀。
+
+    /// <summary>跨类型分页查询模板（顶层 Templates 标签页用）。</summary>
+    [HttpGet("~/api/equipment-templates")]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] Guid? typeId,
+        [FromQuery] string? keyword,
+        [FromQuery] Guid? processId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken ct = default)
+    {
+        var result = await _service.GetPagedAsync(typeId, keyword, processId, page, pageSize, ct);
+        return Ok(result);
+    }
+
+    /// <summary>顶层模板详情（编辑模式只知道模板 id 时用）。</summary>
+    [HttpGet("~/api/equipment-templates/{id:guid}")]
+    public async Task<IActionResult> GetByIdTopLevel(Guid id, CancellationToken ct)
+    {
+        var template = await _service.GetByIdAsync(id, ct);
+        return template is null ? NotFound() : Ok(template);
+    }
+
     [Authorize(Policy = "equipment-type:create")]
     [HttpPost]
     public async Task<IActionResult> Create(

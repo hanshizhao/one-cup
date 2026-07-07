@@ -18,6 +18,7 @@ public class EquipmentTemplateServiceTests
         var typeSvc = new EquipmentTypeService(
             new Repository<EquipmentType>(db),
             new Repository<Domain.Entities.Equipment>(db),
+            new Repository<Domain.Entities.Process>(db),
             new UnitOfWork(db),
             numbering,
             new CreateEquipmentTypeRequestValidator(),

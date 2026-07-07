@@ -58,6 +58,8 @@ public class EquipmentTemplateService : IEquipmentTemplateService
             return new EquipmentTemplateListItemDto
             {
                 Id = t.Id,
+                EquipmentTypeId = type.Id,
+                EquipmentTypeName = type.Name,
                 Name = t.Name,
                 ProcessId = t.ProcessId,
                 ProcessName = processNames.GetValueOrDefault(t.ProcessId, ""),
@@ -83,6 +85,8 @@ public class EquipmentTemplateService : IEquipmentTemplateService
         return new EquipmentTemplateDto
         {
             Id = template.Id,
+            EquipmentTypeId = type.Id,
+            EquipmentTypeName = type.Name,
             Name = template.Name,
             ProcessId = template.ProcessId,
             ProcessName = processNames.GetValueOrDefault(template.ProcessId, ""),
@@ -91,20 +95,89 @@ public class EquipmentTemplateService : IEquipmentTemplateService
             CreatedAt = template.CreatedAt,
             UpdatedAt = template.UpdatedAt,
             Status = "valid",
-            Values = template.Values.Select(v =>
+            Values = MapValues(template.Values, paramsById),
+        };
+    }
+
+    /// <summary>顶层详情查询：直接按模板 id 取模板，再按 EquipmentTypeId 取类型算 status。</summary>
+    public async Task<EquipmentTemplateDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var template = await _templates.FirstOrDefaultAsync(new EquipmentTemplateByIdSpec(id), ct);
+        if (template is null) return null;
+
+        var type = await _types.FirstOrDefaultAsync(new EquipmentTypeByIdSpec(template.EquipmentTypeId), ct);
+        var paramsById = type?.Parameters.ToDictionary(p => p.Id) ?? new();
+        var processNames = await GetProcessNames(new[] { template.ProcessId }, ct);
+
+        return new EquipmentTemplateDto
+        {
+            Id = template.Id,
+            EquipmentTypeId = template.EquipmentTypeId,
+            EquipmentTypeName = type?.Name ?? string.Empty,
+            Name = template.Name,
+            ProcessId = template.ProcessId,
+            ProcessName = processNames.GetValueOrDefault(template.ProcessId, ""),
+            Remark = template.Remark,
+            SortOrder = template.SortOrder,
+            CreatedAt = template.CreatedAt,
+            UpdatedAt = template.UpdatedAt,
+            Status = "valid",
+            Values = MapValues(template.Values, paramsById),
+        };
+    }
+
+    /// <summary>跨类型分页查询：直接查模板表，批量加载各类型参数定义算 per-template worst-status。</summary>
+    public async Task<PagedResult<EquipmentTemplateListItemDto>> GetPagedAsync(
+        Guid? typeId, string? keyword, Guid? processId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var total = await _templates.CountAsync(
+            new EquipmentTemplateFilterSpec(typeId, keyword, processId), ct);
+        var templates = await _templates.ListAsync(
+            new EquipmentTemplatePagedSpec(typeId, keyword, processId, page, pageSize), ct);
+
+        if (templates.Count == 0)
+        {
+            return new PagedResult<EquipmentTemplateListItemDto>
             {
-                paramsById.TryGetValue(v.ParameterId, out var param);
-                var (status, msg) = EquipmentParameterValueValidator.EvaluateStatus(param, v.Value);
-                return new EquipmentTemplateValueDto
-                {
-                    ParameterId = v.ParameterId,
-                    ParameterName = param?.Name ?? "(已删除)",
-                    ValueType = param?.ValueType ?? Domain.Enums.ParameterValueType.Text,
-                    Value = v.Value,
-                    Status = status,
-                    StatusMessage = msg,
-                };
-            }).ToList(),
+                Items = new List<EquipmentTemplateListItemDto>(),
+                Total = total,
+                Page = page,
+                PageSize = pageSize,
+            };
+        }
+
+        // 涉及的类型（用于类型名 + 参数定义算 status）
+        var typeIds = templates.Select(t => t.EquipmentTypeId).Distinct().ToList();
+        var types = await _types.ListAsync(new EquipmentTypesByIdsSpec(typeIds), ct);
+        var typesById = types.ToDictionary(t => t.Id);
+        var processNames = await GetProcessNames(templates.Select(t => t.ProcessId).Distinct(), ct);
+
+        var items = templates.Select(t =>
+        {
+            var type = typesById.GetValueOrDefault(t.EquipmentTypeId);
+            var paramsById = type?.Parameters.ToDictionary(p => p.Id) ?? new();
+            var worst = WorstStatus(t.Values, paramsById);
+            return new EquipmentTemplateListItemDto
+            {
+                Id = t.Id,
+                EquipmentTypeId = t.EquipmentTypeId,
+                EquipmentTypeName = type?.Name ?? string.Empty,
+                Name = t.Name,
+                ProcessId = t.ProcessId,
+                ProcessName = processNames.GetValueOrDefault(t.ProcessId, ""),
+                Status = worst.Status,
+                StatusMessage = worst.Message,
+                SortOrder = t.SortOrder,
+                CreatedAt = t.CreatedAt,
+            };
+        }).ToList();
+
+        return new PagedResult<EquipmentTemplateListItemDto>
+        {
+            Items = items,
+            Total = total,
+            Page = page,
+            PageSize = pageSize,
         };
     }
 
@@ -245,5 +318,25 @@ public class EquipmentTemplateService : IEquipmentTemplateService
             }
         }
         return (worst ?? "valid", msg);
+    }
+
+    /// <summary>把模板值集合映射为详情 DTO（按当前参数定义读时校验）。</summary>
+    private static List<EquipmentTemplateValueDto> MapValues(
+        List<EquipmentTemplateValue> values, Dictionary<Guid, EquipmentTypeParameter> paramsById)
+    {
+        return values.Select(v =>
+        {
+            paramsById.TryGetValue(v.ParameterId, out var param);
+            var (status, msg) = EquipmentParameterValueValidator.EvaluateStatus(param, v.Value);
+            return new EquipmentTemplateValueDto
+            {
+                ParameterId = v.ParameterId,
+                ParameterName = param?.Name ?? "(已删除)",
+                ValueType = param?.ValueType ?? Domain.Enums.ParameterValueType.Text,
+                Value = v.Value,
+                Status = status,
+                StatusMessage = msg,
+            };
+        }).ToList();
     }
 }

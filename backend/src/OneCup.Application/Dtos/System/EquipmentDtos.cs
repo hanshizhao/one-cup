@@ -104,6 +104,8 @@ public class ParameterDefinitionDto
 public class EquipmentTemplateListItemDto
 {
     public Guid Id { get; set; }
+    public Guid EquipmentTypeId { get; set; }
+    public string EquipmentTypeName { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public Guid ProcessId { get; set; }
     public string ProcessName { get; set; } = string.Empty;
@@ -159,6 +161,16 @@ public class TemplateValueDto
 {
     public Guid ParameterId { get; set; }
     public string? Value { get; set; }
+}
+
+/// <summary>模板跨类型分页查询参数。</summary>
+public class TemplatePagedQuery
+{
+    public Guid? TypeId { get; set; }
+    public string? Keyword { get; set; }
+    public Guid? ProcessId { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
 }
 
 // ═══════════════════════════════════════════
