@@ -20,6 +20,7 @@ public class EquipmentTemplatePagedSpec : Specification<EquipmentTemplate>
 {
     public EquipmentTemplatePagedSpec(Guid? typeId, string? keyword, Guid? processId, int page, int pageSize)
     {
+        ApplyInclude(nameof(EquipmentTemplate.Values));
         var kw = string.IsNullOrWhiteSpace(keyword) ? null : keyword.Trim();
         ApplyCriteria(t =>
             (typeId == null || t.EquipmentTypeId == typeId.Value) &&

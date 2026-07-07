@@ -82,6 +82,8 @@ public class EquipmentTemplateService : IEquipmentTemplateService
         var paramsById = type.Parameters.ToDictionary(p => p.Id);
         var processNames = await GetProcessNames(new[] { template.ProcessId }, ct);
 
+        var worst = WorstStatus(template.Values, paramsById);
+
         return new EquipmentTemplateDto
         {
             Id = template.Id,
@@ -94,7 +96,7 @@ public class EquipmentTemplateService : IEquipmentTemplateService
             SortOrder = template.SortOrder,
             CreatedAt = template.CreatedAt,
             UpdatedAt = template.UpdatedAt,
-            Status = "valid",
+            Status = worst.Status,
             Values = MapValues(template.Values, paramsById),
         };
     }
@@ -109,6 +111,8 @@ public class EquipmentTemplateService : IEquipmentTemplateService
         var paramsById = type?.Parameters.ToDictionary(p => p.Id) ?? new();
         var processNames = await GetProcessNames(new[] { template.ProcessId }, ct);
 
+        var worst = WorstStatus(template.Values, paramsById);
+
         return new EquipmentTemplateDto
         {
             Id = template.Id,
@@ -121,7 +125,7 @@ public class EquipmentTemplateService : IEquipmentTemplateService
             SortOrder = template.SortOrder,
             CreatedAt = template.CreatedAt,
             UpdatedAt = template.UpdatedAt,
-            Status = "valid",
+            Status = worst.Status,
             Values = MapValues(template.Values, paramsById),
         };
     }
