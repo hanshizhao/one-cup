@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, Tabs, Typography } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import PermissionWrapper from '@/components/PermissionWrapper';
@@ -17,7 +17,19 @@ const { Title } = Typography;
  */
 export default function EquipmentPage() {
   const t = useLocale(locale);
-  const [activeTab, setActiveTab] = useState('equipment');
+  // Tab 状态持久化到 URL query（?tab=equipment|type），刷新/返回可恢复
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'type' ? 'type' : 'equipment';
+  const setActiveTab = (key: string) => {
+    // 函数式更新：只改 tab，保留其它 query 参数（如未来列表页的 ?page=）
+    setSearchParams(
+      (prev) => {
+        prev.set('tab', key);
+        return prev;
+      },
+      { replace: true }
+    );
+  };
 
   return (
     <Card>
