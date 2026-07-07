@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   Alert,
   Button,
@@ -10,7 +10,6 @@ import {
   Select,
   Space,
   Switch,
-  Tag,
   Tooltip,
 } from '@arco-design/web-react';
 import {
@@ -97,8 +96,6 @@ const ParamCard: any = SortableElement(
     idx,
     errors,
     unitOptions,
-    selected,
-    onSelect,
     onUpdate,
     onRemove,
     onTypeChange,
@@ -107,8 +104,6 @@ const ParamCard: any = SortableElement(
     idx: number;
     errors: string[];
     unitOptions: { label: string; value: string }[];
-    selected: boolean;
-    onSelect: () => void;
     onUpdate: (patch: Partial<ParameterDefinitionDto>) => void;
     onRemove: () => void;
     onTypeChange: (vt: ParameterValueType) => void;
@@ -188,13 +183,7 @@ const ParamCard: any = SortableElement(
 
     return (
       <div
-        className={`${styles['param-card']} ${isError ? styles['is-error'] : ''} ${
-          selected ? styles['is-selected'] : ''
-        }`}
-        onClick={(e) => {
-          if ((e.target as HTMLElement).closest('input, select, button, .arco-select, .arco-switch, .' + styles['drag-handle'])) return;
-          onSelect();
-        }}
+        className={`${styles['param-card']} ${isError ? styles['is-error'] : ''}`}
       >
         <div className={styles['param-card-head']}>
           <DragHandle />
@@ -262,8 +251,7 @@ const SortableList: any = SortableContainer(
     items,
     errorMap,
     unitOptions,
-    selectedId,
-    onSelect,
+    onAdd,
     onUpdate,
     onRemove,
     onTypeChange,
@@ -271,8 +259,7 @@ const SortableList: any = SortableContainer(
     items: ParameterDefinitionDto[];
     errorMap: ErrorMap;
     unitOptions: { label: string; value: string }[];
-    selectedId: string | null;
-    onSelect: (id: string) => void;
+    onAdd: () => void;
     onUpdate: (idx: number, patch: Partial<ParameterDefinitionDto>) => void;
     onRemove: (idx: number) => void;
     onTypeChange: (idx: number, vt: ParameterValueType) => void;
@@ -290,8 +277,6 @@ const SortableList: any = SortableContainer(
               idx={idx}
               errors={errorMap[key] || []}
               unitOptions={unitOptions}
-              selected={selectedId === key}
-              onSelect={() => onSelect(key)}
               onUpdate={(patch: Partial<ParameterDefinitionDto>) => onUpdate(idx, patch)}
               onRemove={() => onRemove(idx)}
               onTypeChange={(vt: ParameterValueType) => onTypeChange(idx, vt)}
@@ -303,7 +288,7 @@ const SortableList: any = SortableContainer(
           type="dashed"
           long
           icon={<IconPlus />}
-          onClick={() => onSelect('__add__')}
+          onClick={onAdd}
         >
           {t['equipment.type.button.addParameter']}
         </Button>
@@ -313,11 +298,10 @@ const SortableList: any = SortableContainer(
 );
 
 /**
- * 参数定义编辑器（优化版）：竖向参数卡片 + 拖拽排序 + 实时校验 + 右栏预览。
+ * 参数定义编辑器（优化版）：竖向参数卡片 + 拖拽排序 + 实时校验。
  */
 export default function ParameterEditor({ value, onChange, unitOptions = [] }: Props) {
   const t = useLocale(locale);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   const errorMap = useMemo(() => computeErrors(value, t), [value, t]);
   const errorCount = Object.keys(errorMap).length;
@@ -337,7 +321,6 @@ export default function ParameterEditor({ value, onChange, unitOptions = [] }: P
       sortOrder: value.length + 1,
     };
     onChange([...value, newParam]);
-    setSelectedKey(`-${value.length + 1}-`);
   };
 
   const removeRow = (idx: number) => onChange(value.filter((_, i) => i !== idx));
@@ -365,180 +348,75 @@ export default function ParameterEditor({ value, onChange, unitOptions = [] }: P
     }
   };
 
-  const handleSelect = (id: string) => {
-    if (id === '__add__') {
-      addRow();
-      return;
-    }
-    setSelectedKey(id);
-  };
-
-  // 选中的参数（用于右栏预览）
-  const selectedParam = useMemo(() => {
-    if (!selectedKey) return value[0] || null;
-    return value.find((p) => (p.id || `${p.name}-${p.sortOrder}`) === selectedKey) || value[0] || null;
-  }, [value, selectedKey]);
-
-  const stepOf = (p: ParameterDefinitionDto) =>
-    p.precision != null ? Math.pow(10, -p.precision) : 1;
-
   return (
-    <div className={styles['editor-layout']}>
-      <div className={styles['param-list-col']}>
-        {/* 统计条 */}
-        <div className={styles['param-stats']}>
-          <div className={styles['param-stat']}>
-            <b>{stats.total}</b>
-            <span>{t['equipment.type.param.stat.total']}</span>
-          </div>
-          <span className={styles['param-stat-divider']} />
-          <div className={styles['param-stat']}>
-            <b>{stats.number}</b>
-            <span>{t['equipment.type.param.stat.number']}</span>
-          </div>
-          <span className={styles['param-stat-divider']} />
-          <div className={styles['param-stat']}>
-            <b>{stats.enum}</b>
-            <span>{t['equipment.type.param.stat.enum']}</span>
-          </div>
-          <span className={styles['param-stat-divider']} />
-          <div className={styles['param-stat']}>
-            <b>{stats.text}</b>
-            <span>{t['equipment.type.param.stat.text']}</span>
-          </div>
-          <span className={styles['param-stat-divider']} />
-          <div className={`${styles['param-stat']} ${errorCount > 0 ? styles['stat-error'] : ''}`}>
-            <b>{errorCount}</b>
-            <span>{t['equipment.type.param.stat.error']}</span>
-          </div>
-          <span style={{ marginLeft: 'auto', color: 'var(--color-text-3)', fontSize: 12 }}>
-            {t['equipment.type.param.dragHint']}
-          </span>
+    <div>
+      {/* 统计条 */}
+      <div className={styles['param-stats']}>
+        <div className={styles['param-stat']}>
+          <b>{stats.total}</b>
+          <span>{t['equipment.type.param.stat.total']}</span>
         </div>
-
-        {value.length === 0 ? (
-          <>
-            <Empty description={t['equipment.type.param.empty']} />
-            <Button
-              className={styles['param-add-btn']}
-              type="dashed"
-              long
-              icon={<IconPlus />}
-              onClick={addRow}
-            >
-              {t['equipment.type.button.addParameter']}
-            </Button>
-          </>
-        ) : (
-          // SortableList 的类型因 react-sortable-hoc 的 @types 限制无法精确推断业务 props，用 as any 绕过
-          <SortableList
-            items={value}
-            onSortEnd={onSortEnd}
-            useDragHandle
-            lockAxis="y"
-            errorMap={errorMap}
-            unitOptions={unitOptions}
-            selectedId={selectedKey}
-            onSelect={handleSelect}
-            onUpdate={updateRow}
-            onRemove={removeRow}
-            onTypeChange={changeValueType}
-          />
-        )}
-
-        {errorCount > 0 && (
-          <Alert
-            type="error"
-            style={{ marginTop: 12 }}
-            content={t['equipment.type.param.error.summary'].replace('{n}', String(errorCount))}
-          />
-        )}
+        <span className={styles['param-stat-divider']} />
+        <div className={styles['param-stat']}>
+          <b>{stats.number}</b>
+          <span>{t['equipment.type.param.stat.number']}</span>
+        </div>
+        <span className={styles['param-stat-divider']} />
+        <div className={styles['param-stat']}>
+          <b>{stats.enum}</b>
+          <span>{t['equipment.type.param.stat.enum']}</span>
+        </div>
+        <span className={styles['param-stat-divider']} />
+        <div className={styles['param-stat']}>
+          <b>{stats.text}</b>
+          <span>{t['equipment.type.param.stat.text']}</span>
+        </div>
+        <span className={styles['param-stat-divider']} />
+        <div className={`${styles['param-stat']} ${errorCount > 0 ? styles['stat-error'] : ''}`}>
+          <b>{errorCount}</b>
+          <span>{t['equipment.type.param.stat.error']}</span>
+        </div>
+        <span style={{ marginLeft: 'auto', color: 'var(--color-text-3)', fontSize: 12 }}>
+          {t['equipment.type.param.dragHint']}
+        </span>
       </div>
 
-      {/* 右栏预览 */}
-      <div className={styles['preview-panel']}>
-        <div className={styles['preview-head']}>
-          <div className={styles['preview-head-title']}>
-            {t['equipment.type.param.preview.title']}
-          </div>
-          <div className={styles['preview-head-sub']}>
-            {t['equipment.type.param.preview.sub']}
-          </div>
-        </div>
-        <div className={styles['preview-body']}>
-          {selectedParam ? (
-            <>
-              <div className={styles['preview-mock-label']}>
-                {selectedParam.name || t['equipment.type.param.preview.unnamed']}
-                {selectedParam.required && (
-                  <span style={{ color: 'var(--color-danger-6)' }}>*</span>
-                )}
-                <Tag
-                  size="small"
-                  color={
-                    selectedParam.valueType === 'Number'
-                      ? 'arcoblue'
-                      : selectedParam.valueType === 'Enum'
-                      ? 'green'
-                      : 'gray'
-                  }
-                  style={{ marginLeft: 6 }}
-                >
-                  {t[`equipment.type.param.valueType.${selectedParam.valueType.toLowerCase()}`]}
-                </Tag>
-              </div>
-              {selectedParam.valueType === 'Number' && (
-                <>
-                  <InputNumber
-                    placeholder={t['equipment.template.value.placeholder']}
-                    min={selectedParam.minValue != null ? Number(selectedParam.minValue) : undefined}
-                    max={selectedParam.maxValue != null ? Number(selectedParam.maxValue) : undefined}
-                    step={stepOf(selectedParam)}
-                    precision={selectedParam.precision}
-                    suffix={selectedParam.unitId || undefined}
-                    style={{ width: '100%' }}
-                  />
-                  <div className={styles['preview-hint']}>
-                    {selectedParam.minValue != null || selectedParam.maxValue != null
-                      ? `${t['equipment.template.value.range']} ${selectedParam.minValue ?? '−∞'} ~ ${selectedParam.maxValue ?? '+∞'}`
-                      : t['equipment.type.param.preview.noRange']}
-                    {selectedParam.precision != null && ` · ${t['equipment.template.value.precisionLabel']} ${selectedParam.precision}`}
-                    {` · ${t['equipment.template.value.stepLabel']} ${stepOf(selectedParam)}`}
-                  </div>
-                </>
-              )}
-              {selectedParam.valueType === 'Enum' && (
-                <>
-                  <Select placeholder={t['equipment.template.value.placeholder']} style={{ width: '100%' }}>
-                    {(selectedParam.options || []).map((o) => (
-                      <Option key={o} value={o}>
-                        {o}
-                      </Option>
-                    ))}
-                  </Select>
-                  <div className={styles['preview-hint']}>
-                    {t['equipment.template.value.optionsLabel']}：{' '}
-                    {(selectedParam.options || []).length > 0
-                      ? (selectedParam.options || []).join(' / ')
-                      : t['equipment.type.param.preview.noOptions']}
-                  </div>
-                </>
-              )}
-              {selectedParam.valueType === 'Text' && (
-                <>
-                  <Input placeholder={t['equipment.template.value.placeholder']} maxLength={200} />
-                  <div className={styles['preview-hint']}>{t['equipment.template.value.textHint']}</div>
-                </>
-              )}
-              <div className={styles['preview-foot']}>
-                {t['equipment.type.param.preview.order'].replace('{n}', String((value.indexOf(selectedParam) || 0) + 1))}
-              </div>
-            </>
-          ) : (
-            <Empty description={t['equipment.type.param.preview.empty']} />
-          )}
-        </div>
-      </div>
+      {value.length === 0 ? (
+        <>
+          <Empty description={t['equipment.type.param.empty']} />
+          <Button
+            className={styles['param-add-btn']}
+            type="dashed"
+            long
+            icon={<IconPlus />}
+            onClick={addRow}
+          >
+            {t['equipment.type.button.addParameter']}
+          </Button>
+        </>
+      ) : (
+        // SortableList 的类型因 react-sortable-hoc 的 @types 限制无法精确推断业务 props，用 as any 绕过
+        <SortableList
+          items={value}
+          onSortEnd={onSortEnd}
+          useDragHandle
+          lockAxis="y"
+          errorMap={errorMap}
+          unitOptions={unitOptions}
+          onAdd={addRow}
+          onUpdate={updateRow}
+          onRemove={removeRow}
+          onTypeChange={changeValueType}
+        />
+      )}
+
+      {errorCount > 0 && (
+        <Alert
+          type="error"
+          style={{ marginTop: 12 }}
+          content={t['equipment.type.param.error.summary'].replace('{n}', String(errorCount))}
+        />
+      )}
     </div>
   );
 }
