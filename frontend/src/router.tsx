@@ -149,7 +149,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'business/equipment/type/:typeId/template/create',
+        path: 'business/equipment/template/create',
         element: withSuspense(
           <RequirePermission resource="equipment-type" actions={['create']}>
             <EquipmentTemplateFormPage />
@@ -157,7 +157,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'business/equipment/type/:typeId/template/edit/:id',
+        path: 'business/equipment/template/edit/:id',
         element: withSuspense(
           <RequirePermission resource="equipment-type" actions={['update']}>
             <EquipmentTemplateFormPage />
