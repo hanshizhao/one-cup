@@ -101,7 +101,7 @@ export default function EquipmentTypeFormPage() {
         await createEquipmentType({ ...payload, categoryCode: preview.categoryCode });
         Message.success(t['equipment.type.message.createSuccess']);
       }
-      navigate(-1);
+      navigate('/business/equipment?tab=type');
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || '';
       if (msg.includes('编号') || msg.includes('rule') || msg.includes('numbering')) {
@@ -130,7 +130,7 @@ export default function EquipmentTypeFormPage() {
         <Breadcrumb.Item>{pageTitle}</Breadcrumb.Item>
       </Breadcrumb>
 
-      {/* 页头 */}
+      {/* 页头：标题 + 副标题（操作按钮移到底部栏）*/}
       <div className={styles['form-page-head']}>
         <div>
           <Title heading={5} style={{ marginBottom: 4 }}>
@@ -142,19 +142,6 @@ export default function EquipmentTypeFormPage() {
               ? t['equipment.type.form.page.sub.edit']
               : t['equipment.type.form.page.sub.create']}
           </div>
-        </div>
-        <div className={styles['form-page-actions']}>
-          <Button onClick={() => navigate(-1)} style={{ marginRight: 8 }}>
-            {t['equipment.type.form.page.cancel']}
-          </Button>
-          <Button
-            type="primary"
-            loading={confirmLoading}
-            disabled={!editing && preview.noRule}
-            onClick={handleSave}
-          >
-            {t['equipment.type.form.page.save']}
-          </Button>
         </div>
       </div>
 
@@ -172,9 +159,12 @@ export default function EquipmentTypeFormPage() {
         layout="vertical"
         disabled={!editing && preview.noRule}
       >
-        {/* 基础信息 */}
+        {/* Card ① 基础信息 */}
         <Card className={styles['form-page-card']}>
-          <Row gutter={24}>
+          <Title heading={6} style={{ marginTop: 0 }}>
+            {t['equipment.type.detail.baseInfo']}
+          </Title>
+          <Row gutter={48}>
             <Col span={8}>
               <FormItem label={t['equipment.type.form.code']}>
                 <Input
@@ -211,7 +201,7 @@ export default function EquipmentTypeFormPage() {
               )}
             </Col>
           </Row>
-          <Row gutter={24}>
+          <Row gutter={48}>
             <Col span={8}>
               <FormItem label={t['equipment.type.form.sortOrder']} field="sortOrder" initialValue={0}>
                 <InputNumber min={0} style={{ width: '100%' }} />
@@ -222,21 +212,38 @@ export default function EquipmentTypeFormPage() {
                 <Switch />
               </FormItem>
             </Col>
-            <Col span={8}>
-              <FormItem label={t['equipment.type.form.remark']} field="remark">
-                <Input maxLength={500} />
-              </FormItem>
-            </Col>
           </Row>
+          {/* 备注：全宽 TextArea，独立成行（不进三列网格） */}
+          <FormItem label={t['equipment.type.form.remark']} field="remark">
+            <TextArea maxLength={500} showWordLimit />
+          </FormItem>
         </Card>
 
-        {/* 参数定义 */}
-        <Card className={styles['form-page-card']} title={t['equipment.type.form.parameters']}>
+        {/* Card ② 参数定义 */}
+        <Card className={styles['form-page-card']}>
+          <Title heading={6} style={{ marginTop: 0 }}>
+            {t['equipment.type.form.parameters']}
+          </Title>
           <FormItem>
             <ParameterEditor value={parameters} onChange={setParameters} />
           </FormItem>
         </Card>
       </Form>
+
+      {/* 底部操作栏（sticky，右对齐 取消/保存） */}
+      <div className={styles['form-page-actions-bar']}>
+        <Button onClick={() => navigate('/business/equipment?tab=type')}>
+          {t['equipment.type.form.page.cancel']}
+        </Button>
+        <Button
+          type="primary"
+          loading={confirmLoading}
+          disabled={!editing && preview.noRule}
+          onClick={handleSave}
+        >
+          {t['equipment.type.form.page.save']}
+        </Button>
+      </div>
     </div>
   );
 }
