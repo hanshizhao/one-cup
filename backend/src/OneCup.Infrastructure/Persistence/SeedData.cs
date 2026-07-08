@@ -75,4 +75,14 @@ internal static class SeedData
     public static readonly Guid PermProcessUpdate = Guid.Parse("00000000-0000-0000-0000-00000000032d");
     public static readonly Guid PermProcessDelete = Guid.Parse("00000000-0000-0000-0000-00000000032e");
     public static readonly Guid TargetTypeProcess = Guid.Parse("00000000-0000-0000-0000-000000000207");
+
+    // === Equipment 模块（feat/equipment-mgmt）===
+    // 设备实例 Equipment 权限码已存在: PermEquipmentRead/Create/Update/Delete (...0309-030c)
+    // 设备实例 targetType 已存在: TargetTypeEquipment (...0203, code="equipment")
+    // 以下为设备类型 EquipmentType 新增:
+    public static readonly Guid PermEquipmentTypeRead   = Guid.Parse("00000000-0000-0000-0000-00000000032f");
+    public static readonly Guid PermEquipmentTypeCreate = Guid.Parse("00000000-0000-0000-0000-000000000330");
+    public static readonly Guid PermEquipmentTypeUpdate = Guid.Parse("00000000-0000-0000-0000-000000000331");
+    public static readonly Guid PermEquipmentTypeDelete = Guid.Parse("00000000-0000-0000-0000-000000000332");
+    public static readonly Guid TargetTypeEquipmentType = Guid.Parse("00000000-0000-0000-0000-000000000208");
 }

@@ -40,6 +40,13 @@ public class OneCupDbContext : DbContext
     // ===== Process 模块（feat/process-mgmt）=====
     public DbSet<Process> Processes => Set<Process>();
 
+    // ===== Equipment 模块（feat/equipment-mgmt）=====
+    public DbSet<EquipmentType> EquipmentTypes => Set<EquipmentType>();
+    public DbSet<EquipmentTypeParameter> EquipmentTypeParameters => Set<EquipmentTypeParameter>();
+    public DbSet<EquipmentTemplate> EquipmentTemplates => Set<EquipmentTemplate>();
+    public DbSet<EquipmentTemplateValue> EquipmentTemplateValues => Set<EquipmentTemplateValue>();
+    public DbSet<Equipment> Equipments => Set<Equipment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -139,7 +146,12 @@ public class OneCupDbContext : DbContext
             new Permission { Id = SeedData.PermProcessRead, Code = "process:read", Name = "查看工序", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermProcessCreate, Code = "process:create", Name = "录入工序", CreatedAt = SeedTimestamp },
             new Permission { Id = SeedData.PermProcessUpdate, Code = "process:update", Name = "编辑工序", CreatedAt = SeedTimestamp },
-            new Permission { Id = SeedData.PermProcessDelete, Code = "process:delete", Name = "删除工序", CreatedAt = SeedTimestamp }
+            new Permission { Id = SeedData.PermProcessDelete, Code = "process:delete", Name = "删除工序", CreatedAt = SeedTimestamp },
+            // EquipmentType 模块
+            new Permission { Id = SeedData.PermEquipmentTypeRead,   Code = "equipment-type:read",   Name = "查看设备类型", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermEquipmentTypeCreate, Code = "equipment-type:create", Name = "录入设备类型", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermEquipmentTypeUpdate, Code = "equipment-type:update", Name = "编辑设备类型", CreatedAt = SeedTimestamp },
+            new Permission { Id = SeedData.PermEquipmentTypeDelete, Code = "equipment-type:delete", Name = "删除设备类型", CreatedAt = SeedTimestamp }
         );
 
         // ── 角色 ──
@@ -177,7 +189,8 @@ public class OneCupDbContext : DbContext
             SeedData.PermFabricRead, SeedData.PermFabricCreate, SeedData.PermFabricUpdate, SeedData.PermFabricDelete,
             SeedData.PermMaterialRead, SeedData.PermEquipmentRead, SeedData.PermCustomerRead,
             SeedData.PermColorRead, SeedData.PermProductRead, SeedData.PermSystemAuditRead,
-            SeedData.PermProcessRead
+            SeedData.PermProcessRead,
+            SeedData.PermEquipmentTypeRead
         };
         modelBuilder.Entity<Role>()
             .HasMany(r => r.Permissions)
@@ -195,7 +208,8 @@ public class OneCupDbContext : DbContext
             new NumberingTargetType { Id = SeedData.TargetTypeCustomer, Code = "customer", NameZh = "客户", NameEn = "Customer", SortOrder = 4, IsActive = true, CreatedAt = SeedTimestamp },
             new NumberingTargetType { Id = SeedData.TargetTypeColor, Code = "color", NameZh = "颜色", NameEn = "Color", SortOrder = 5, IsActive = true, CreatedAt = SeedTimestamp },
             new NumberingTargetType { Id = SeedData.TargetTypeProduct, Code = "product", NameZh = "产品", NameEn = "Product", SortOrder = 6, IsActive = true, CreatedAt = SeedTimestamp },
-            new NumberingTargetType { Id = SeedData.TargetTypeProcess, Code = "process", NameZh = "工序", NameEn = "Process", SortOrder = 7, IsActive = true, CreatedAt = SeedTimestamp }
+            new NumberingTargetType { Id = SeedData.TargetTypeProcess, Code = "process", NameZh = "工序", NameEn = "Process", SortOrder = 7, IsActive = true, CreatedAt = SeedTimestamp },
+            new NumberingTargetType { Id = SeedData.TargetTypeEquipmentType, Code = "equipment-type", NameZh = "设备类型", NameEn = "EquipmentType", SortOrder = 8, IsActive = true, CreatedAt = SeedTimestamp }
         );
 
         // ===== Unit 模块：计量单位 =====

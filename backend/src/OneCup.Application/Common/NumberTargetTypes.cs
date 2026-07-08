@@ -14,4 +14,5 @@ public static class NumberTargetTypes
     public const string Color = "color";
     public const string Product = "product";
     public const string Process = "process";
+    public const string EquipmentType = "equipment-type";
 }
